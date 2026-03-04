@@ -20,6 +20,30 @@ class _ProcessPayload {
   });
 }
 
+/// Convert format string to file extension
+String _formatToExt(String format) {
+  switch (format.toUpperCase()) {
+    case 'PNG':
+      return 'png';
+    case 'WEBP':
+      return 'webp';
+    default:
+      return 'jpg';
+  }
+}
+
+/// Convert format string to CompressFormat enum
+CompressFormat _formatToCompressFormat(String format) {
+  switch (format.toUpperCase()) {
+    case 'PNG':
+      return CompressFormat.png;
+    case 'WEBP':
+      return CompressFormat.webp;
+    default:
+      return CompressFormat.jpeg;
+  }
+}
+
 /// Top-level function required by compute() – runs in a background isolate.
 Future<CompressionResult> _compressInIsolate(_ProcessPayload payload) async {
   final inputFile = File(payload.inputPath);
@@ -77,28 +101,6 @@ class ImageProcessor {
     );
 
     return compute(_compressInIsolate, payload);
-  }
-
-  static String _formatToExt(String format) {
-    switch (format.toUpperCase()) {
-      case 'PNG':
-        return 'png';
-      case 'WEBP':
-        return 'webp';
-      default:
-        return 'jpg';
-    }
-  }
-
-  static CompressFormat _formatToCompressFormat(String format) {
-    switch (format.toUpperCase()) {
-      case 'PNG':
-        return CompressFormat.png;
-      case 'WEBP':
-        return CompressFormat.webp;
-      default:
-        return CompressFormat.jpeg;
-    }
   }
 }
 
