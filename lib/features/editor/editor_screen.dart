@@ -96,7 +96,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       }
     });
 
-    // Fit mode only relevant when aspect ratio is unlocked in resize mode
     final showFitMode = !isCompress && !settings.keepAspectRatio;
 
     return Scaffold(
@@ -113,7 +112,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ---- Image Preview ----
               _ImagePreview(
                 path: widget.image.path,
                 originalSize: widget.image.originalSize,
@@ -132,7 +130,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         children: [
                           const _SectionLabel('Quality'),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
                             decoration: BoxDecoration(
                               color: cs.primary.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(20),
@@ -157,8 +156,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         max: AppConstants.maxQuality.toDouble(),
                         divisions: 18,
                         label: '${settings.quality}%',
-                        onChanged: (v) =>
-                            ref.read(editorProvider.notifier).setQuality(v.round()),
+                        onChanged: (v) => ref
+                            .read(editorProvider.notifier)
+                            .setQuality(v.round()),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -175,7 +175,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                 ),
                 const Gap(16),
               ] else ...[
-                // ---- Resize Dimensions ----
                 _SectionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,7 +185,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           const _SectionLabel('Dimensions'),
                           _SegmentedToggle(
                             selected: _usePercentage,
-                            onChanged: (v) => setState(() => _usePercentage = v),
+                            onChanged: (v) =>
+                                setState(() => _usePercentage = v),
                           ),
                         ],
                       ),
@@ -203,9 +203,11 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                               child: TextField(
                                 controller: _percentCtrl,
                                 keyboardType:
-                                    const TextInputType.numberWithOptions(decimal: true),
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'[0-9.]')),
                                 ],
                                 decoration: const InputDecoration(
                                   labelText: 'Percentage',
@@ -217,17 +219,20 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                             const Gap(12),
                             _PercentPreset(
                               percent: 75,
-                              onTap: () => setState(() => _percentCtrl.text = '75'),
+                              onTap: () =>
+                                  setState(() => _percentCtrl.text = '75'),
                             ),
                             const Gap(6),
                             _PercentPreset(
                               percent: 50,
-                              onTap: () => setState(() => _percentCtrl.text = '50'),
+                              onTap: () =>
+                                  setState(() => _percentCtrl.text = '50'),
                             ),
                             const Gap(6),
                             _PercentPreset(
                               percent: 25,
-                              onTap: () => setState(() => _percentCtrl.text = '25'),
+                              onTap: () =>
+                                  setState(() => _percentCtrl.text = '25'),
                             ),
                           ],
                         ),
@@ -240,7 +245,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           ),
                         ],
                       ] else ...[
-                        Text('Enter width, height, or both', style: tt.bodySmall),
+                        Text('Enter width, height, or both',
+                            style: tt.bodySmall),
                         const Gap(10),
                         Row(
                           children: [
@@ -248,7 +254,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                               child: TextField(
                                 controller: _widthCtrl,
                                 keyboardType: TextInputType.number,
-                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly
+                                ],
                                 decoration: InputDecoration(
                                   labelText: 'Width',
                                   suffixText: 'px',
@@ -262,7 +270,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                               child: TextField(
                                 controller: _heightCtrl,
                                 keyboardType: TextInputType.number,
-                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly
+                                ],
                                 decoration: InputDecoration(
                                   labelText: 'Height',
                                   suffixText: 'px',
@@ -273,8 +283,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                             ),
                           ],
                         ),
-                        // Live px preview
-                        if (_widthCtrl.text.isNotEmpty || _heightCtrl.text.isNotEmpty) ...[
+                        if (_widthCtrl.text.isNotEmpty ||
+                            _heightCtrl.text.isNotEmpty) ...[
                           const Gap(12),
                           _PxDimensionPreview(
                             originalW: widget.image.width,
@@ -286,13 +296,13 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         ],
                       ],
                       const Gap(12),
-                      // Aspect ratio toggle
                       Row(
                         children: [
                           Switch(
                             value: settings.keepAspectRatio,
-                            onChanged: (_) =>
-                                ref.read(editorProvider.notifier).toggleAspectRatio(),
+                            onChanged: (_) => ref
+                                .read(editorProvider.notifier)
+                                .toggleAspectRatio(),
                           ),
                           const Gap(8),
                           Text('Keep aspect ratio', style: tt.bodyMedium),
@@ -302,9 +312,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                   ),
                 ),
                 const Gap(16),
-
-                // ---- Fit Mode (only when aspect ratio is unlocked) ----
-                if (showFitMode)
+                if (showFitMode) ...[
                   _SectionCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,16 +326,17 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         const Gap(14),
                         _FitModeSelector(
                           current: settings.fitMode,
-                          onChanged: (m) =>
-                              ref.read(editorProvider.notifier).setFitMode(m),
+                          onChanged: (m) => ref
+                              .read(editorProvider.notifier)
+                              .setFitMode(m),
                         ),
                       ],
                     ),
                   ),
-                if (showFitMode) const Gap(16),
+                  const Gap(16),
+                ],
               ],
 
-              // ---- Format Section ----
               _SectionCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,14 +370,14 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   }
 
   String _qualityLabel(int q) {
-    if (q >= 85) return 'High quality · Larger file size';
+    if (q >= 85) return 'High quality \u00b7 Larger file size';
     if (q >= 60) return 'Balanced quality and size';
-    if (q >= 35) return 'Smaller file · Some quality loss';
-    return 'Maximum compression · Visible quality loss';
+    if (q >= 35) return 'Smaller file \u00b7 Some quality loss';
+    return 'Maximum compression \u00b7 Visible quality loss';
   }
 }
 
-// ─── Widgets ────────────────────────────────────────────────────────────
+// ---- Widgets ----------------------------------------------------------------
 
 class _ImagePreview extends StatelessWidget {
   final String path;
@@ -397,15 +406,9 @@ class _ImagePreview extends StatelessWidget {
           ),
         ),
         Positioned(
-          bottom: 10,
-          left: 10,
-          child: _Badge('${width}×${height}'),
-        ),
+            bottom: 10, left: 10, child: _Badge('${width}\u00d7${height}')),
         Positioned(
-          bottom: 10,
-          right: 10,
-          child: _Badge(formatBytes(originalSize)),
-        ),
+            bottom: 10, right: 10, child: _Badge(formatBytes(originalSize))),
       ],
     );
   }
@@ -426,10 +429,7 @@ class _Badge extends StatelessWidget {
       child: Text(
         text,
         style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
+            color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -468,9 +468,8 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.text);
 
   @override
-  Widget build(BuildContext context) {
-    return Text(text, style: Theme.of(context).textTheme.labelLarge);
-  }
+  Widget build(BuildContext context) =>
+      Text(text, style: Theme.of(context).textTheme.labelLarge);
 }
 
 class _SegmentedToggle extends StatelessWidget {
@@ -484,7 +483,8 @@ class _SegmentedToggle extends StatelessWidget {
     return Container(
       height: 34,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
+        color:
+            isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -502,7 +502,8 @@ class _ToggleTab extends StatelessWidget {
   final String label;
   final bool active;
   final VoidCallback onTap;
-  const _ToggleTab({required this.label, required this.active, required this.onTap});
+  const _ToggleTab(
+      {required this.label, required this.active, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -519,7 +520,9 @@ class _ToggleTab extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: active ? Colors.white : Theme.of(context).textTheme.bodySmall?.color,
+            color: active
+                ? Colors.white
+                : Theme.of(context).textTheme.bodySmall?.color,
             fontWeight: FontWeight.w600,
             fontSize: 13,
           ),
@@ -542,13 +545,14 @@ class _PercentPreset extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
+          color: isDark
+              ? AppColors.surfaceElevated
+              : AppColors.lightSurfaceElevated,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(
-          '$percent%',
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
+        child: Text('$percent%',
+            style:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
       ),
     );
   }
@@ -558,39 +562,19 @@ class _DimensionPreview extends StatelessWidget {
   final int originalW;
   final int originalH;
   final double pct;
-  const _DimensionPreview({
-    required this.originalW,
-    required this.originalH,
-    required this.pct,
-  });
+  const _DimensionPreview(
+      {required this.originalW,
+      required this.originalH,
+      required this.pct});
 
   @override
   Widget build(BuildContext context) {
     final newW = (originalW * pct / 100).round();
     final newH = (originalH * pct / 100).round();
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: cs.primary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.info_outline_rounded, size: 14, color: cs.primary),
-          const Gap(6),
-          Text(
-            '${originalW}×${originalH}  →  ${newW}×${newH}',
-            style: TextStyle(
-              color: cs.primary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
+    return _PreviewChip(
+        text: '${originalW}\u00d7${originalH}  \u2192  ${newW}\u00d7${newH}',
+        color: cs.primary);
   }
 }
 
@@ -623,35 +607,60 @@ class _PxDimensionPreview extends StatelessWidget {
         final scale = (resolvedW / originalW) < (resolvedH / originalH)
             ? resolvedW / originalW
             : resolvedH / originalH;
-        resolvedW = (originalW * scale).round();
+        resolvedW = (originalWidth * scale).round();
         resolvedH = (originalH * scale).round();
       }
     }
 
     final cs = Theme.of(context).colorScheme;
+    return _PreviewChip(
+        text:
+            '${originalW}\u00d7${originalH}  \u2192  ${resolvedW}\u00d7${resolvedH}',
+        color: cs.primary);
+  }
+}
+
+class _PreviewChip extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _PreviewChip({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: cs.primary.withOpacity(0.08),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.info_outline_rounded, size: 14, color: cs.primary),
+          Icon(Icons.info_outline_rounded, size: 14, color: color),
           const Gap(6),
           Text(
-            '${originalW}×${originalH}  →  ${resolvedW}×${resolvedH}',
+            text,
             style: TextStyle(
-              color: cs.primary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
+                color: color, fontSize: 13, fontWeight: FontWeight.w500),
           ),
         ],
       ),
     );
   }
+}
+
+// ---- Fit Mode Selector ------------------------------------------------------
+
+class _FitModeOption {
+  final ResizeFitMode mode;
+  final String label;
+  final IconData icon;
+  final String desc;
+  const _FitModeOption(
+      {required this.mode,
+      required this.label,
+      required this.icon,
+      required this.desc});
 }
 
 class _FitModeSelector extends StatelessWidget {
@@ -660,29 +669,29 @@ class _FitModeSelector extends StatelessWidget {
   const _FitModeSelector({required this.current, required this.onChanged});
 
   static const _modes = [
-    (
+    _FitModeOption(
       mode: ResizeFitMode.stretch,
       label: 'Stretch',
       icon: Icons.open_with_rounded,
       desc: 'Fill frame exactly, may distort',
     ),
-    (
+    _FitModeOption(
       mode: ResizeFitMode.crop,
       label: 'Crop',
       icon: Icons.crop_rounded,
       desc: 'Fill frame, center-crop excess',
     ),
-    (
+    _FitModeOption(
       mode: ResizeFitMode.fit,
       label: 'Fit',
       icon: Icons.fit_screen_rounded,
-      desc: 'Fit inside frame, transparent fill',
+      desc: 'Fit inside, transparent fill',
     ),
-    (
+    _FitModeOption(
       mode: ResizeFitMode.background,
       label: 'Background',
       icon: Icons.rectangle_outlined,
-      desc: 'Fit inside frame, white fill',
+      desc: 'Fit inside, white fill',
     ),
   ];
 
@@ -703,11 +712,14 @@ class _FitModeSelector extends StatelessWidget {
           onTap: () => onChanged(m.mode),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
                   ? cs.primary.withOpacity(0.12)
-                  : (isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated),
+                  : (isDark
+                      ? AppColors.surfaceElevated
+                      : AppColors.lightSurfaceElevated),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isSelected ? cs.primary : Colors.transparent,
@@ -719,7 +731,9 @@ class _FitModeSelector extends StatelessWidget {
                 Icon(
                   m.icon,
                   size: 18,
-                  color: isSelected ? cs.primary : Theme.of(context).textTheme.bodySmall?.color,
+                  color: isSelected
+                      ? cs.primary
+                      : Theme.of(context).textTheme.bodySmall?.color,
                 ),
                 const Gap(8),
                 Expanded(
@@ -739,7 +753,10 @@ class _FitModeSelector extends StatelessWidget {
                       ),
                       Text(
                         m.desc,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(fontSize: 10),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -773,11 +790,14 @@ class _FormatSelector extends StatelessWidget {
             onTap: () => onChanged(f),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 color: isSelected
                     ? cs.primary
-                    : (isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated),
+                    : (isDark
+                        ? AppColors.surfaceElevated
+                        : AppColors.lightSurfaceElevated),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(

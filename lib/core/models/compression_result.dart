@@ -19,10 +19,11 @@ class CompressionResult {
     final saved = originalSize > 0
         ? ((originalSize - newSize) / originalSize * 100)
         : 0.0;
+    // Allow negative values so result screen can show if output is larger
     return CompressionResult(
       originalSize: originalSize,
       newSize: newSize,
-      savedPercent: saved.clamp(0.0, 100.0),
+      savedPercent: saved,
       outputPath: outputPath,
     );
   }
