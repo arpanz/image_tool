@@ -1,8 +1,8 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image_size_getter/image_size_getter.dart';
-import 'package:image_size_getter/file_input.dart';
-import 'dart:io';
 import '../../core/models/selected_image.dart';
 
 sealed class PickerState {}
@@ -38,11 +38,15 @@ class PickerNotifier extends Notifier<PickerState> {
       final file = File(picked.path);
       final bytes = await file.length();
 
+      // Decode image to get width/height without extra packages
       int w = 0, h = 0;
       try {
-        final size = ImageSizeGetter.getSize(FileInput(file));
-        w = size.width;
-        h = size.height;
+        final data = await file.readAsBytes();
+        final codec = await ui.instantiateImageCodec(data);
+        final frame = await codec.getNextFrame();
+        w = frame.image.width;
+        h = frame.image.height;
+        frame.image.dispose();
       } catch (_) {}
 
       state = PickerLoaded(
