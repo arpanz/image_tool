@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
-import 'features/picker/picker_screen.dart';
+import 'core/providers/theme_provider.dart';
+import 'features/home/home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,25 +11,22 @@ void main() {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
   runApp(const ProviderScope(child: PixelForgeApp()));
 }
 
-class PixelForgeApp extends StatelessWidget {
+class PixelForgeApp extends ConsumerWidget {
   const PixelForgeApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = ref.watch(themeProvider);
     return MaterialApp(
       title: 'Pixel Forge',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: const PickerScreen(),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      home: const HomeScreen(),
     );
   }
 }

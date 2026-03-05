@@ -1,73 +1,64 @@
-import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_size_getter/image_size_getter.dart';
+import 'package:image_size_getter/file_input.dart';
+import 'dart:io';
 import '../../core/models/selected_image.dart';
 
-/// State sealed class for the picker feature
-sealed class PickerState {
-  const PickerState();
-}
+sealed class PickerState {}
 
-final class PickerIdle extends PickerState {
-  const PickerIdle();
-}
+class PickerIdle extends PickerState {}
 
-final class PickerLoading extends PickerState {
-  const PickerLoading();
-}
+class PickerLoading extends PickerState {}
 
-final class PickerLoaded extends PickerState {
+class PickerLoaded extends PickerState {
   final SelectedImage image;
-  const PickerLoaded(this.image);
+  PickerLoaded(this.image);
 }
 
-final class PickerError extends PickerState {
+class PickerError extends PickerState {
   final String message;
-  const PickerError(this.message);
+  PickerError(this.message);
 }
 
 class PickerNotifier extends Notifier<PickerState> {
-  final _picker = ImagePicker();
-
   @override
-  PickerState build() => const PickerIdle();
+  PickerState build() => PickerIdle();
 
-  Future<SelectedImage?> pickImage() async {
-    state = const PickerLoading();
+  Future<void> pickImage() async {
+    state = PickerLoading();
     try {
-      final XFile? xfile = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 100,
-      );
-
-      if (xfile == null) {
-        state = const PickerIdle();
-        return null;
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: ImageSource.gallery);
+      if (picked == null) {
+        state = PickerIdle();
+        return;
       }
 
-      final file = File(xfile.path);
-      final bytes = await file.readAsBytes();
-      final size = bytes.length;
+      final file = File(picked.path);
+      final bytes = await file.length();
 
-      // Decode dimensions without blocking UI using basic file stat
-      // For accurate dims we'd use image package; keeping dep-list lean:
-      // fallback dims from flutter_image_compress are set at editor level.
-      final selected = SelectedImage(
-        path: xfile.path,
-        originalSize: size,
-        width: 0, // resolved in editor
-        height: 0,
+      int w = 0, h = 0;
+      try {
+        final size = ImageSizeGetter.getSize(FileInput(file));
+        w = size.width;
+        h = size.height;
+      } catch (_) {}
+
+      state = PickerLoaded(
+        SelectedImage(
+          path: picked.path,
+          originalSize: bytes,
+          width: w,
+          height: h,
+        ),
       );
-
-      state = PickerLoaded(selected);
-      return selected;
-    } on Exception catch (e) {
-      state = PickerError('Failed to pick image: $e');
-      return null;
+    } catch (e) {
+      state = PickerError('Could not load image: $e');
     }
   }
 
-  void reset() => state = const PickerIdle();
+  void reset() => state = PickerIdle();
 }
 
 final pickerProvider = NotifierProvider<PickerNotifier, PickerState>(

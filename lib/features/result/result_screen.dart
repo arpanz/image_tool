@@ -15,19 +15,20 @@ class ResultScreen extends ConsumerWidget {
   final CompressionResult result;
   const ResultScreen({super.key, required this.result});
 
-  Future<void> _saveToGallery(BuildContext context) async {
+  Future<void> _saveToDevice(BuildContext context) async {
     try {
       final dir = await getExternalStorageDirectory() ??
           await getApplicationDocumentsDirectory();
       final savePath =
           '${dir.path}/PixelForge_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final srcFile = File(result.outputPath);
-      await srcFile.copy(savePath);
+      await File(result.outputPath).copy(savePath);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Saved to: $savePath'),
+            content: const Text('Saved to device!'),
             backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -37,6 +38,8 @@ class ResultScreen extends ConsumerWidget {
           SnackBar(
             content: Text('Save failed: $e'),
             backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -50,14 +53,31 @@ class ResultScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final saved = result.savedPercent;
-    final savedColor = saved >= 0 ? AppColors.success : AppColors.error;
+    final savedPositive = saved >= 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Result'),
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: const Text('Done!'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              ref.read(pickerProvider.notifier).reset();
+              ref.read(editorProvider.notifier).reset();
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: Text(
+              'New Image',
+              style: TextStyle(
+                color: cs.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -69,30 +89,40 @@ class ResultScreen extends ConsumerWidget {
 
               // ---- Success Icon ----
               Container(
-                width: 96,
-                height: 96,
+                width: 88,
+                height: 88,
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.12),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4CAF50).withOpacity(0.35),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
                 child: const Icon(
-                  Icons.check_circle_outline_rounded,
-                  size: 56,
-                  color: AppColors.success,
+                  Icons.check_rounded,
+                  size: 48,
+                  color: Colors.white,
                 ),
               ),
-              const Gap(16),
+              const Gap(20),
               Text(
-                'Compression Complete!',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontSize: 20,
-                    ),
+                'All done!',
+                style: tt.headlineMedium,
               ),
-              const Gap(8),
+              const Gap(6),
               Text(
-                'Your image has been optimised.',
-                style: Theme.of(context).textTheme.bodyMedium,
+                'Your image has been processed.',
+                style: tt.bodyMedium,
               ),
+
               const Spacer(),
 
               // ---- Stats Card ----
@@ -100,36 +130,58 @@ class ResultScreen extends ConsumerWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  color: isDark ? AppColors.surface : AppColors.lightSurface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark
+                          ? Colors.black.withOpacity(0.2)
+                          : Colors.black.withOpacity(0.05),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
                     _StatRow(
-                      label: 'Original Size',
+                      label: 'Original',
                       value: formatBytes(result.originalSize),
-                      valueColor: AppColors.textSecondary,
+                      valueColor: tt.bodyMedium?.color ?? Colors.grey,
                     ),
-                    const Divider(color: AppColors.background, height: 24),
+                    Divider(
+                      color: isDark
+                          ? AppColors.surfaceElevated
+                          : AppColors.lightSurfaceElevated,
+                      height: 24,
+                    ),
                     _StatRow(
-                      label: 'New Size',
+                      label: 'New size',
                       value: formatBytes(result.newSize),
-                      valueColor: AppColors.primary,
+                      valueColor: cs.primary,
                     ),
-                    const Divider(color: AppColors.background, height: 24),
+                    Divider(
+                      color: isDark
+                          ? AppColors.surfaceElevated
+                          : AppColors.lightSurfaceElevated,
+                      height: 24,
+                    ),
                     _StatRow(
-                      label: 'Space Saved',
-                      value: '${result.savedPercent.toStringAsFixed(1)}%',
-                      valueColor: savedColor,
+                      label: 'Saved',
+                      value: savedPositive
+                          ? '-${result.savedPercent.toStringAsFixed(1)}%'
+                          : '+${(-result.savedPercent).toStringAsFixed(1)}%',
+                      valueColor: savedPositive ? AppColors.success : AppColors.error,
                     ),
                   ],
                 ),
               ),
+
               const Spacer(),
 
               // ---- Actions ----
               PfButton(
-                label: 'Share Image',
+                label: 'Share',
                 icon: Icons.share_outlined,
                 onPressed: _share,
               ),
@@ -137,20 +189,8 @@ class ResultScreen extends ConsumerWidget {
               PfButton(
                 label: 'Save to Device',
                 icon: Icons.download_outlined,
-                backgroundColor: AppColors.surface,
-                onPressed: () => _saveToGallery(context),
-              ),
-              const Gap(12),
-              TextButton(
-                onPressed: () {
-                  ref.read(pickerProvider.notifier).reset();
-                  ref.read(editorProvider.notifier).reset();
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
-                child: const Text(
-                  'Process Another Image',
-                  style: TextStyle(color: AppColors.primary),
-                ),
+                backgroundColor: isDark ? AppColors.surface : AppColors.lightSurfaceElevated,
+                onPressed: () => _saveToDevice(context),
               ),
               const Gap(8),
             ],
@@ -177,10 +217,7 @@ class _StatRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+        Text(label, style: Theme.of(context).textTheme.bodyMedium),
         Text(
           value,
           style: TextStyle(

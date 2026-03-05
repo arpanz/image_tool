@@ -19,24 +19,30 @@ class PfButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = backgroundColor ?? cs.primary;
+    final fg = backgroundColor != null ? (isDark ? Colors.white : AppColors.lightTextPrimary) : Colors.white;
+
     return ElevatedButton(
       onPressed: isLoading ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: backgroundColor ?? AppColors.primary,
-        foregroundColor: AppColors.background,
+        backgroundColor: bg,
+        foregroundColor: fg,
         minimumSize: const Size(double.infinity, 52),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
-        disabledBackgroundColor: AppColors.primary.withOpacity(0.4),
+        elevation: 0,
+        disabledBackgroundColor: cs.primary.withOpacity(0.4),
       ),
       child: isLoading
-          ? const SizedBox(
+          ? SizedBox(
               width: 22,
               height: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: AppColors.background,
+                color: fg,
               ),
             )
           : Row(
