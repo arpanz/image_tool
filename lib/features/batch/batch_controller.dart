@@ -7,6 +7,25 @@ import '../../core/models/compression_settings.dart';
 import '../../core/models/selected_image.dart';
 import '../../core/utils/image_processor.dart';
 
+// ─── Helper ────────────────────────────────────────────────────────────────────
+
+class _ImageSize {
+  final int width;
+  final int height;
+  const _ImageSize(this.width, this.height);
+}
+
+Future<_ImageSize> _decodeSize(File file) async {
+  try {
+    final bytes = await file.readAsBytes();
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    return _ImageSize(frame.image.width, frame.image.height);
+  } catch (_) {
+    return const _ImageSize(800, 600);
+  }
+}
+
 // ─── Models ────────────────────────────────────────────────────────────────────
 
 enum BatchItemStatus { pending, processing, done, failed }
@@ -91,8 +110,8 @@ class BatchNotifier extends StateNotifier<BatchState> {
         newItems.add(BatchItem(
           image: SelectedImage(
             path: xf.path,
-            width: size.$1,
-            height: size.$2,
+            width: size.width,
+            height: size.height,
             originalSize: bytes,
           ),
         ));
@@ -120,7 +139,6 @@ class BatchNotifier extends StateNotifier<BatchState> {
   Future<void> processAll() async {
     if (state.items.isEmpty || state.isProcessing) return;
 
-    // Reset all to pending
     state = state.copyWith(
       isProcessing: true,
       isDone: false,
@@ -165,16 +183,3 @@ final batchProvider =
     StateNotifierProvider.autoDispose<BatchNotifier, BatchState>(
   (_) => BatchNotifier(),
 );
-
-// ─── Helper ────────────────────────────────────────────────────────────────────
-
-Future<(int, int)> _decodeSize(File file) async {
-  try {
-    final bytes = await file.readAsBytes();
-    final codec = await ui.instantiateImageCodec(bytes);
-    final frame = await codec.getNextFrame();
-    return (frame.image.width, frame.image.height);
-  } catch (_) {
-    return (800, 600);
-  }
-}
