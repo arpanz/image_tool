@@ -37,26 +37,21 @@ Future<ui.Image> _decodeImage(File file) async {
   return frame.image;
 }
 
-/// Encode a ui.Image to compressed bytes via PNG intermediate
 Future<Uint8List> _encodeImage(
   ui.Image image,
   String format,
   int quality,
 ) async {
-  // Export as raw PNG from canvas first
   final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
   if (byteData == null) throw Exception('Failed to encode canvas to PNG');
   final pngBytes = byteData.buffer.asUint8List();
-
-  // Re-compress to target format + quality
-  final result = await FlutterImageCompress.compressWithList(
+  return FlutterImageCompress.compressWithList(
     pngBytes,
     minWidth: image.width,
     minHeight: image.height,
     quality: quality,
     format: _formatToCompressFormat(format),
   );
-  return result;
 }
 
 Future<ui.Image> _resizeCanvas(
@@ -81,53 +76,49 @@ Future<ui.Image> _resizeCanvas(
         ui.Rect.fromLTWH(0, 0, dstW, dstH),
         ui.Paint(),
       );
-
     case ResizeFitMode.crop:
-      final scale = (dstW / srcW) > (dstH / srcH) ? dstW / srcW : dstH / srcH;
+      final scale =
+          (dstW / srcW) > (dstH / srcH) ? dstW / srcW : dstH / srcH;
       final scaledW = srcW * scale;
       final scaledH = srcH * scale;
-      final offsetX = (dstW - scaledW) / 2;
-      final offsetY = (dstH - scaledH) / 2;
       canvas.drawImageRect(
         src,
         ui.Rect.fromLTWH(0, 0, srcW, srcH),
-        ui.Rect.fromLTWH(offsetX, offsetY, scaledW, scaledH),
+        ui.Rect.fromLTWH(
+            (dstW - scaledW) / 2, (dstH - scaledH) / 2, scaledW, scaledH),
         ui.Paint(),
       );
-
     case ResizeFitMode.fit:
-      final scale = (dstW / srcW) < (dstH / srcH) ? dstW / srcW : dstH / srcH;
+      final scale =
+          (dstW / srcW) < (dstH / srcH) ? dstW / srcW : dstH / srcH;
       final scaledW = srcW * scale;
       final scaledH = srcH * scale;
-      final offsetX = (dstW - scaledW) / 2;
-      final offsetY = (dstH - scaledH) / 2;
       canvas.drawImageRect(
         src,
         ui.Rect.fromLTWH(0, 0, srcW, srcH),
-        ui.Rect.fromLTWH(offsetX, offsetY, scaledW, scaledH),
+        ui.Rect.fromLTWH(
+            (dstW - scaledW) / 2, (dstH - scaledH) / 2, scaledW, scaledH),
         ui.Paint(),
       );
-
     case ResizeFitMode.background:
       canvas.drawRect(
         ui.Rect.fromLTWH(0, 0, dstW, dstH),
         ui.Paint()..color = const ui.Color(0xFFFFFFFF),
       );
-      final scale = (dstW / srcW) < (dstH / srcH) ? dstW / srcW : dstH / srcH;
+      final scale =
+          (dstW / srcW) < (dstH / srcH) ? dstW / srcW : dstH / srcH;
       final scaledW = srcW * scale;
       final scaledH = srcH * scale;
-      final offsetX = (dstW - scaledW) / 2;
-      final offsetY = (dstH - scaledH) / 2;
       canvas.drawImageRect(
         src,
         ui.Rect.fromLTWH(0, 0, srcW, srcH),
-        ui.Rect.fromLTWH(offsetX, offsetY, scaledW, scaledH),
+        ui.Rect.fromLTWH(
+            (dstW - scaledW) / 2, (dstH - scaledH) / 2, scaledW, scaledH),
         ui.Paint(),
       );
   }
 
-  final picture = recorder.endRecording();
-  return picture.toImage(targetW, targetH);
+  return recorder.endRecording().toImage(targetW, targetH);
 }
 
 class ImageProcessor {
@@ -150,9 +141,10 @@ class ImageProcessor {
 
     final bool hasResize = settings.width != null || settings.height != null;
     Uint8List resultBytes;
+    int outW = originalWidth;
+    int outH = originalHeight;
 
     if (!hasResize) {
-      // Compress only — pass original dims to prevent any upscale
       final compressed = await FlutterImageCompress.compressWithFile(
         inputPath,
         quality: settings.quality,
@@ -166,7 +158,6 @@ class ImageProcessor {
       }
       resultBytes = compressed;
     } else {
-      // Resize — pixel-perfect via dart:ui canvas
       final src = await _decodeImage(inputFile);
 
       int targetW = settings.width ?? originalWidth;
@@ -178,17 +169,22 @@ class ImageProcessor {
         } else if (settings.height != null && settings.width == null) {
           targetW = (originalWidth * targetH / originalHeight).round();
         } else {
-          final scaleW = targetW / originalWidth;
-          final scaleH = targetH / originalHeight;
-          final scale = scaleW < scaleH ? scaleW : scaleH;
+          final scale = (targetW / originalWidth) < (targetH / originalHeight)
+              ? targetW / originalWidth
+              : targetH / originalHeight;
           targetW = (originalWidth * scale).round();
           targetH = (originalHeight * scale).round();
         }
       }
 
-      final resized = await _resizeCanvas(src, targetW, targetH, settings.fitMode);
+      outW = targetW;
+      outH = targetH;
+
+      final resized =
+          await _resizeCanvas(src, targetW, targetH, settings.fitMode);
       src.dispose();
-      resultBytes = await _encodeImage(resized, settings.format, settings.quality);
+      resultBytes =
+          await _encodeImage(resized, settings.format, settings.quality);
       resized.dispose();
     }
 
@@ -198,6 +194,8 @@ class ImageProcessor {
       originalSize: originalSize,
       newSize: resultBytes.length,
       outputPath: outputPath,
+      outWidth: outW,
+      outHeight: outH,
     );
   }
 }

@@ -8,22 +8,29 @@ import '../../core/theme/app_theme.dart';
 import '../../core/models/compression_result.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/widgets/pf_button.dart';
+import '../home/home_screen.dart';
 import '../picker/picker_controller.dart';
 import '../editor/editor_controller.dart';
 
 class ResultScreen extends ConsumerWidget {
   final CompressionResult result;
-  const ResultScreen({super.key, required this.result});
+  final ImageMode mode;
+
+  const ResultScreen({
+    super.key,
+    required this.result,
+    required this.mode,
+  });
 
   Future<void> _saveToDevice(BuildContext context) async {
     try {
       final dir = await getExternalStorageDirectory() ??
           await getApplicationDocumentsDirectory();
       final dot = result.outputPath.lastIndexOf('.');
-      final ext = dot >= 0 ? result.outputPath.substring(dot).toLowerCase() : '.jpg';
-      final savePath =
-          '${dir.path}/PixelForge_${DateTime.now().millisecondsSinceEpoch}$ext';
-      await File(result.outputPath).copy(savePath);
+      final ext =
+          dot >= 0 ? result.outputPath.substring(dot).toLowerCase() : '.jpg';
+      await File(result.outputPath)
+          .copy('${dir.path}/PixelForge_${DateTime.now().millisecondsSinceEpoch}$ext');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -54,10 +61,14 @@ class ResultScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isResize = mode == ImageMode.resize;
     final savedPositive = result.savedPercent >= 0;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final cardColor = isDark ? AppColors.surface : AppColors.lightSurface;
+    final dividerColor =
+        isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated;
 
     return Scaffold(
       appBar: AppBar(
@@ -72,23 +83,22 @@ class ResultScreen extends ConsumerWidget {
             },
             child: Text(
               'New Image',
-              style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+              style:
+                  TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
             ),
           ),
         ],
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Spacer(),
-
               // ---- Success Icon ----
               Container(
-                width: 88,
-                height: 88,
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
@@ -98,27 +108,120 @@ class ResultScreen extends ConsumerWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF4CAF50).withOpacity(0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
+                      color: const Color(0xFF4CAF50).withOpacity(0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
-                child: const Icon(Icons.check_rounded, size: 48, color: Colors.white),
+                child: const Icon(Icons.check_rounded,
+                    size: 40, color: Colors.white),
+              ),
+              const Gap(14),
+              Text('All done!', style: tt.headlineMedium),
+              const Gap(4),
+              Text('Your image has been processed.', style: tt.bodyMedium),
+              const Gap(24),
+
+              // ---- Image Preview ----
+              GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        _FullscreenViewer(path: result.outputPath),
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.file(
+                        File(result.outputPath),
+                        width: double.infinity,
+                        height: 220,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 220,
+                          decoration: BoxDecoration(
+                            color: cardColor,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Center(
+                            child: Icon(Icons.broken_image_outlined,
+                                size: 48,
+                                color: tt.bodySmall?.color),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Tap-to-expand hint
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.fullscreen_rounded,
+                            size: 18, color: Colors.white),
+                      ),
+                    ),
+                    // Dimension badge (resize only)
+                    if (isResize && result.outWidth > 0)
+                      Positioned(
+                        bottom: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${result.outWidth}\u00d7${result.outHeight}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    // File size badge
+                    Positioned(
+                      bottom: 10,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          formatBytes(result.newSize),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const Gap(20),
-              Text('All done!', style: tt.headlineMedium),
-              const Gap(6),
-              Text('Your image has been processed.', style: tt.bodyMedium),
-
-              const Spacer(),
 
               // ---- Stats Card ----
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surface : AppColors.lightSurface,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -137,31 +240,29 @@ class ResultScreen extends ConsumerWidget {
                       value: formatBytes(result.originalSize),
                       valueColor: tt.bodyMedium?.color ?? Colors.grey,
                     ),
-                    Divider(
-                      color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
-                      height: 24,
-                    ),
+                    Divider(color: dividerColor, height: 24),
                     _StatRow(
                       label: 'New size',
                       value: formatBytes(result.newSize),
                       valueColor: cs.primary,
                     ),
-                    Divider(
-                      color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
-                      height: 24,
-                    ),
-                    _StatRow(
-                      label: 'Saved',
-                      value: savedPositive
-                          ? '-${result.savedPercent.toStringAsFixed(1)}%'
-                          : '+${(-result.savedPercent).toStringAsFixed(1)}%',
-                      valueColor: savedPositive ? AppColors.success : AppColors.error,
-                    ),
+                    // Show Saved % only for compress mode
+                    if (!isResize) ...[
+                      Divider(color: dividerColor, height: 24),
+                      _StatRow(
+                        label: 'Saved',
+                        value: savedPositive
+                            ? '-${result.savedPercent.toStringAsFixed(1)}%'
+                            : '+${(-result.savedPercent).toStringAsFixed(1)}%',
+                        valueColor: savedPositive
+                            ? AppColors.success
+                            : AppColors.error,
+                      ),
+                    ],
                   ],
                 ),
               ),
-
-              const Spacer(),
+              const Gap(24),
 
               // ---- Actions ----
               PfButton(
@@ -191,11 +292,10 @@ class _StatRow extends StatelessWidget {
   final String value;
   final Color valueColor;
 
-  const _StatRow({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-  });
+  const _StatRow(
+      {required this.label,
+      required this.value,
+      required this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -206,12 +306,44 @@ class _StatRow extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            color: valueColor,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+              color: valueColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w700),
         ),
       ],
+    );
+  }
+}
+
+class _FullscreenViewer extends StatelessWidget {
+  final String path;
+  const _FullscreenViewer({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Preview',
+            style: TextStyle(color: Colors.white)),
+      ),
+      body: InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 6.0,
+        child: Center(
+          child: Image.file(
+            File(path),
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Icon(
+              Icons.broken_image_outlined,
+              color: Colors.white54,
+              size: 64,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

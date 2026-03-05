@@ -68,7 +68,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final result = await notifier.compress(widget.image);
     if (result != null && mounted) {
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ResultScreen(result: result)),
+        MaterialPageRoute(
+          builder: (_) =>
+              ResultScreen(result: result, mode: widget.mode),
+        ),
       );
     }
   }
@@ -90,7 +93,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             content: Text('Failed: $err'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -148,7 +152,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         ],
                       ),
                       const Gap(4),
-                      Text(_qualityLabel(settings.quality), style: tt.bodySmall),
+                      Text(_qualityLabel(settings.quality),
+                          style: tt.bodySmall),
                       const Gap(8),
                       Slider(
                         value: settings.quality.toDouble(),
@@ -218,22 +223,19 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                             ),
                             const Gap(12),
                             _PercentPreset(
-                              percent: 75,
-                              onTap: () =>
-                                  setState(() => _percentCtrl.text = '75'),
-                            ),
+                                percent: 75,
+                                onTap: () => setState(
+                                    () => _percentCtrl.text = '75')),
                             const Gap(6),
                             _PercentPreset(
-                              percent: 50,
-                              onTap: () =>
-                                  setState(() => _percentCtrl.text = '50'),
-                            ),
+                                percent: 50,
+                                onTap: () => setState(
+                                    () => _percentCtrl.text = '50')),
                             const Gap(6),
                             _PercentPreset(
-                              percent: 25,
-                              onTap: () =>
-                                  setState(() => _percentCtrl.text = '25'),
-                            ),
+                                percent: 25,
+                                onTap: () => setState(
+                                    () => _percentCtrl.text = '25')),
                           ],
                         ),
                         if (_percentCtrl.text.isNotEmpty) ...[
@@ -241,7 +243,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           _DimensionPreview(
                             originalW: widget.image.width,
                             originalH: widget.image.height,
-                            pct: double.tryParse(_percentCtrl.text) ?? 100,
+                            pct:
+                                double.tryParse(_percentCtrl.text) ?? 100,
                           ),
                         ],
                       ] else ...[
@@ -320,7 +323,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         const _SectionLabel('Fit Mode'),
                         const Gap(4),
                         Text(
-                          'How to handle the image when it doesn\'t fill the target frame',
+                          'How to handle image when it doesn\'t fill the frame',
                           style: tt.bodySmall,
                         ),
                         const Gap(14),
@@ -406,9 +409,13 @@ class _ImagePreview extends StatelessWidget {
           ),
         ),
         Positioned(
-            bottom: 10, left: 10, child: _Badge('${width}\u00d7${height}')),
+            bottom: 10,
+            left: 10,
+            child: _Badge('${width}\u00d7${height}')),
         Positioned(
-            bottom: 10, right: 10, child: _Badge(formatBytes(originalSize))),
+            bottom: 10,
+            right: 10,
+            child: _Badge(formatBytes(originalSize))),
       ],
     );
   }
@@ -426,11 +433,11 @@ class _Badge extends StatelessWidget {
         color: Colors.black.withOpacity(0.6),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(
-            color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-      ),
+      child: Text(text,
+          style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600)),
     );
   }
 }
@@ -483,15 +490,18 @@ class _SegmentedToggle extends StatelessWidget {
     return Container(
       height: 34,
       decoration: BoxDecoration(
-        color:
-            isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
+        color: isDark
+            ? AppColors.surfaceElevated
+            : AppColors.lightSurfaceElevated,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _ToggleTab(label: 'px', active: !selected, onTap: () => onChanged(false)),
-          _ToggleTab(label: '%', active: selected, onTap: () => onChanged(true)),
+          _ToggleTab(
+              label: 'px', active: !selected, onTap: () => onChanged(false)),
+          _ToggleTab(
+              label: '%', active: selected, onTap: () => onChanged(true)),
         ],
       ),
     );
@@ -573,7 +583,8 @@ class _DimensionPreview extends StatelessWidget {
     final newH = (originalH * pct / 100).round();
     final cs = Theme.of(context).colorScheme;
     return _PreviewChip(
-        text: '${originalW}\u00d7${originalH}  \u2192  ${newW}\u00d7${newH}',
+        text:
+            '${originalW}\u00d7${originalH}  \u2192  ${newW}\u00d7${newH}',
         color: cs.primary);
   }
 }
@@ -607,7 +618,7 @@ class _PxDimensionPreview extends StatelessWidget {
         final scale = (resolvedW / originalW) < (resolvedH / originalH)
             ? resolvedW / originalW
             : resolvedH / originalH;
-        resolvedW = (originalWidth * scale).round();
+        resolvedW = (originalW * scale).round();
         resolvedH = (originalH * scale).round();
       }
     }
@@ -638,18 +649,18 @@ class _PreviewChip extends StatelessWidget {
         children: [
           Icon(Icons.info_outline_rounded, size: 14, color: color),
           const Gap(6),
-          Text(
-            text,
-            style: TextStyle(
-                color: color, fontSize: 13, fontWeight: FontWeight.w500),
-          ),
+          Text(text,
+              style: TextStyle(
+                  color: color,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 }
 
-// ---- Fit Mode Selector ------------------------------------------------------
+// ---- Fit Mode ---------------------------------------------------------------
 
 class _FitModeOption {
   final ResizeFitMode mode;
@@ -670,29 +681,25 @@ class _FitModeSelector extends StatelessWidget {
 
   static const _modes = [
     _FitModeOption(
-      mode: ResizeFitMode.stretch,
-      label: 'Stretch',
-      icon: Icons.open_with_rounded,
-      desc: 'Fill frame exactly, may distort',
-    ),
+        mode: ResizeFitMode.stretch,
+        label: 'Stretch',
+        icon: Icons.open_with_rounded,
+        desc: 'Fill frame exactly, may distort'),
     _FitModeOption(
-      mode: ResizeFitMode.crop,
-      label: 'Crop',
-      icon: Icons.crop_rounded,
-      desc: 'Fill frame, center-crop excess',
-    ),
+        mode: ResizeFitMode.crop,
+        label: 'Crop',
+        icon: Icons.crop_rounded,
+        desc: 'Fill frame, center-crop excess'),
     _FitModeOption(
-      mode: ResizeFitMode.fit,
-      label: 'Fit',
-      icon: Icons.fit_screen_rounded,
-      desc: 'Fit inside, transparent fill',
-    ),
+        mode: ResizeFitMode.fit,
+        label: 'Fit',
+        icon: Icons.fit_screen_rounded,
+        desc: 'Fit inside, transparent fill'),
     _FitModeOption(
-      mode: ResizeFitMode.background,
-      label: 'Background',
-      icon: Icons.rectangle_outlined,
-      desc: 'Fit inside, white fill',
-    ),
+        mode: ResizeFitMode.background,
+        label: 'Background',
+        icon: Icons.rectangle_outlined,
+        desc: 'Fit inside, white fill'),
   ];
 
   @override
@@ -728,38 +735,35 @@ class _FitModeSelector extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(
-                  m.icon,
-                  size: 18,
-                  color: isSelected
-                      ? cs.primary
-                      : Theme.of(context).textTheme.bodySmall?.color,
-                ),
+                Icon(m.icon,
+                    size: 18,
+                    color: isSelected
+                        ? cs.primary
+                        : Theme.of(context).textTheme.bodySmall?.color),
                 const Gap(8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        m.label,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected
-                              ? cs.primary
-                              : Theme.of(context).textTheme.bodyMedium?.color,
-                        ),
-                      ),
-                      Text(
-                        m.desc,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(fontSize: 10),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      Text(m.label,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected
+                                ? cs.primary
+                                : Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color,
+                          )),
+                      Text(m.desc,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(fontSize: 10),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
@@ -800,16 +804,14 @@ class _FormatSelector extends StatelessWidget {
                         : AppColors.lightSurfaceElevated),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Text(
-                f,
-                style: TextStyle(
-                  color: isSelected
-                      ? Colors.white
-                      : Theme.of(context).textTheme.bodySmall?.color,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
+              child: Text(f,
+                  style: TextStyle(
+                    color: isSelected
+                        ? Colors.white
+                        : Theme.of(context).textTheme.bodySmall?.color,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  )),
             ),
           ),
         );
