@@ -1,13 +1,11 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-
+import '../../core/theme/app_theme.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/models/selected_image.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/widgets/pf_button.dart';
 import '../home/home_screen.dart';
@@ -34,7 +32,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     super.initState();
     _widthCtrl = TextEditingController();
     _heightCtrl = TextEditingController();
-    // Reset editor state when entering from a fresh pick
+    _percentCtrl = TextEditingController(text: '75');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(editorProvider.notifier).reset();
     });
@@ -51,10 +49,22 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   Future<void> _onProcess() async {
     final notifier = ref.read(editorProvider.notifier);
 
-    final widthText = _widthCtrl.text.trim();
-    final heightText = _heightCtrl.text.trim();
-    if (widthText.isNotEmpty) notifier.setWidth(int.tryParse(widthText));
-    if (heightText.isNotEmpty) notifier.setHeight(int.tryParse(heightText));
+    if (widget.mode == ImageMode.resize) {
+      if (_usePercentage) {
+        final pct = double.tryParse(_percentCtrl.text.trim());
+        if (pct != null && pct > 0) {
+          final newW = (widget.image.width * pct / 100).round();
+          final newH = (widget.image.height * pct / 100).round();
+          notifier.setWidth(newW);
+          notifier.setHeight(newH);
+        }
+      } else {
+        final w = int.tryParse(_widthCtrl.text.trim());
+        final h = int.tryParse(_heightCtrl.text.trim());
+        if (w != null) notifier.setWidth(w);
+        if (h != null) notifier.setHeight(h);
+      }
+    }
 
     final result = await notifier.compress(widget.image);
     if (result != null && mounted) {
@@ -91,10 +101,11 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Editor'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: const BackButton(),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(isCompress ? 'Compress' : 'Resize'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -103,85 +114,213 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ---- Image Preview ----
-              _ImagePreview(path: widget.image.path, originalSize: widget.image.originalSize),
-              const Gap(24),
-
-              // ---- Quality Slider ----
-              _SectionLabel('Quality: ${settings.quality}%'),
-              const Gap(8),
-              Slider(
-                value: settings.quality.toDouble(),
-                min: AppConstants.minQuality.toDouble(),
-                max: AppConstants.maxQuality.toDouble(),
-                divisions: 18,
-                label: '${settings.quality}%',
-                onChanged: (v) =>
-                    ref.read(editorProvider.notifier).setQuality(v.round()),
+              _ImagePreview(
+                path: widget.image.path,
+                originalSize: widget.image.originalSize,
+                width: widget.image.width,
+                height: widget.image.height,
               ),
-              const Gap(20),
+              const Gap(28),
 
-              // ---- Dimensions ----
-              _SectionLabel('Resize (optional)'),
-              const Gap(10),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _widthCtrl,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(labelText: 'Width (px)'),
-                      style: const TextStyle(color: AppColors.textPrimary),
+              if (isCompress) ...[
+                // ---- Quality Section ----
+                _SectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const _SectionLabel('Quality'),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: cs.primary.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${settings.quality}%',
+                              style: TextStyle(
+                                color: cs.primary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Gap(4),
+                      Text(
+                        _qualityLabel(settings.quality),
+                        style: tt.bodySmall,
+                      ),
+                      const Gap(8),
+                      Slider(
+                        value: settings.quality.toDouble(),
+                        min: AppConstants.minQuality.toDouble(),
+                        max: AppConstants.maxQuality.toDouble(),
+                        divisions: 18,
+                        label: '${settings.quality}%',
+                        onChanged: (v) =>
+                            ref.read(editorProvider.notifier).setQuality(v.round()),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Smallest', style: tt.bodySmall),
+                            Text('Best quality', style: tt.bodySmall),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(16),
+              ] else ...[
+                // ---- Resize Section ----
+                _SectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const _SectionLabel('Resize Mode'),
+                          _SegmentedToggle(
+                            selected: _usePercentage,
+                            onChanged: (v) => setState(() => _usePercentage = v),
+                          ),
+                        ],
+                      ),
+                      const Gap(16),
+                      if (_usePercentage) ...[
+                        Text(
+                          'Scale to ${_percentCtrl.text.isNotEmpty ? _percentCtrl.text : "?"}% of original',
+                          style: tt.bodySmall,
+                        ),
+                        const Gap(10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _percentCtrl,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                                ],
+                                decoration: const InputDecoration(
+                                  labelText: 'Percentage',
+                                  suffixText: '%',
+                                ),
+                                onChanged: (_) => setState(() {}),
+                              ),
+                            ),
+                            const Gap(12),
+                            _PercentPreset(
+                              percent: 75,
+                              onTap: () => setState(() => _percentCtrl.text = '75'),
+                            ),
+                            const Gap(6),
+                            _PercentPreset(
+                              percent: 50,
+                              onTap: () => setState(() => _percentCtrl.text = '50'),
+                            ),
+                            const Gap(6),
+                            _PercentPreset(
+                              percent: 25,
+                              onTap: () => setState(() => _percentCtrl.text = '25'),
+                            ),
+                          ],
+                        ),
+                        if (_percentCtrl.text.isNotEmpty) ...[
+                          const Gap(12),
+                          _DimensionPreview(
+                            originalW: widget.image.width,
+                            originalH: widget.image.height,
+                            pct: double.tryParse(_percentCtrl.text) ?? 100,
+                          ),
+                        ],
+                      ] else ...[
+                        Text(
+                          'Enter width, height, or both',
+                          style: tt.bodySmall,
+                        ),
+                        const Gap(10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _widthCtrl,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                decoration: InputDecoration(
+                                  labelText: 'Width',
+                                  suffixText: 'px',
+                                  hintText: '${widget.image.width}',
+                                ),
+                              ),
+                            ),
+                            const Gap(12),
+                            Expanded(
+                              child: TextField(
+                                controller: _heightCtrl,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                decoration: InputDecoration(
+                                  labelText: 'Height',
+                                  suffixText: 'px',
+                                  hintText: '${widget.image.height}',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const Gap(12),
+                      Row(
+                        children: [
+                          Switch(
+                            value: settings.keepAspectRatio,
+                            onChanged: (_) =>
+                                ref.read(editorProvider.notifier).toggleAspectRatio(),
+                          ),
+                          const Gap(8),
+                          Text('Keep aspect ratio', style: tt.bodyMedium),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(16),
+              ],
+
+              // ---- Format Section ----
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _SectionLabel('Output Format'),
+                    const Gap(12),
+                    _FormatSelector(
+                      current: settings.format,
+                      onChanged: (f) =>
+                          ref.read(editorProvider.notifier).setFormat(f),
                     ),
-                  ),
-                  const Gap(12),
-                  Expanded(
-                    child: TextField(
-                      controller: _heightCtrl,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(labelText: 'Height (px)'),
-                      style: const TextStyle(color: AppColors.textPrimary),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const Gap(12),
+              const Gap(28),
 
-              // ---- Aspect Ratio Toggle ----
-              Row(
-                children: [
-                  Switch(
-                    value: settings.keepAspectRatio,
-                    onChanged: (_) =>
-                        ref.read(editorProvider.notifier).toggleAspectRatio(),
-                    activeColor: AppColors.primary,
-                  ),
-                  const Gap(8),
-                  Text(
-                    'Keep aspect ratio',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-              const Gap(20),
-
-              // ---- Format Dropdown ----
-              _SectionLabel('Output Format'),
-              const Gap(10),
-              _FormatDropdown(
-                current: settings.format,
-                onChanged: (f) =>
-                    ref.read(editorProvider.notifier).setFormat(f),
-              ),
-              const Gap(32),
-
-              // ---- Compress Button ----
+              // ---- Process Button ----
               PfButton(
-                label: 'Compress Image',
-                isLoading: isCompressing,
-                icon: Icons.compress,
-                onPressed: _onCompress,
+                label: isCompress ? 'Compress Image' : 'Resize Image',
+                isLoading: isProcessing,
+                icon: isCompress
+                    ? Icons.compress_rounded
+                    : Icons.photo_size_select_large_rounded,
+                onPressed: _onProcess,
               ),
               const Gap(16),
             ],
@@ -199,25 +338,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   }
 }
 
-class _SurfaceCard extends StatelessWidget {
-  final Widget child;
-
-  const _SurfaceCard({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withOpacity(0.78),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: child,
-    );
-  }
-}
+// ─── Widgets ────────────────────────────────────────────────────────────────
 
 class _ImagePreview extends StatelessWidget {
   final String path;
@@ -234,7 +355,6 @@ class _ImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Stack(
       children: [
         ClipRRect(
@@ -248,12 +368,31 @@ class _ImagePreview extends StatelessWidget {
         ),
         Positioned(
           bottom: 10,
+          left: 10,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${width}×${height}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 10,
           right: 10,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.65),
-              borderRadius: BorderRadius.circular(6),
+              color: Colors.black.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               formatBytes(originalSize),
@@ -304,12 +443,86 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        color: AppColors.textPrimary,
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
+    return Text(text, style: Theme.of(context).textTheme.labelLarge);
+  }
+}
+
+class _SegmentedToggle extends StatelessWidget {
+  final bool selected;
+  final ValueChanged<bool> onChanged;
+  const _SegmentedToggle({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      height: 34,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ToggleTab(label: 'px', active: !selected, onTap: () => onChanged(false)),
+          _ToggleTab(label: '%', active: selected, onTap: () => onChanged(true)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToggleTab extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _ToggleTab({required this.label, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? cs.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? Colors.white : Theme.of(context).textTheme.bodySmall?.color,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PercentPreset extends StatelessWidget {
+  final int percent;
+  final VoidCallback onTap;
+  const _PercentPreset({required this.percent, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          '$percent%',
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
@@ -333,22 +546,23 @@ class _DimensionPreview extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: cs.primary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: current,
-          dropdownColor: AppColors.surface,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
-          iconEnabledColor: AppColors.primary,
-          items: AppConstants.supportedFormats
-              .map((f) => DropdownMenuItem(value: f, child: Text(f)))
-              .toList(),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.info_outline_rounded, size: 14, color: cs.primary),
+          const Gap(6),
+          Text(
+            '${originalW}×${originalH}  →  ${newW}×${newH}',
+            style: TextStyle(
+              color: cs.primary,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
