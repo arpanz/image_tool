@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/models/compression_settings.dart';
 import '../../core/models/selected_image.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/widgets/pf_button.dart';
@@ -53,10 +54,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       if (_usePercentage) {
         final pct = double.tryParse(_percentCtrl.text.trim());
         if (pct != null && pct > 0) {
-          final newW = (widget.image.width * pct / 100).round();
-          final newH = (widget.image.height * pct / 100).round();
-          notifier.setWidth(newW);
-          notifier.setHeight(newH);
+          notifier.setWidth((widget.image.width * pct / 100).round());
+          notifier.setHeight((widget.image.height * pct / 100).round());
         }
       } else {
         final w = int.tryParse(_widthCtrl.text.trim());
@@ -69,9 +68,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final result = await notifier.compress(widget.image);
     if (result != null && mounted) {
       Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ResultScreen(result: result),
-        ),
+        MaterialPageRoute(builder: (_) => ResultScreen(result: result)),
       );
     }
   }
@@ -99,6 +96,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       }
     });
 
+    // Fit mode only relevant when aspect ratio is unlocked in resize mode
+    final showFitMode = !isCompress && !settings.keepAspectRatio;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -123,7 +123,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
               const Gap(28),
 
               if (isCompress) ...[
-                // ---- Quality Section ----
                 _SectionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,10 +149,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         ],
                       ),
                       const Gap(4),
-                      Text(
-                        _qualityLabel(settings.quality),
-                        style: tt.bodySmall,
-                      ),
+                      Text(_qualityLabel(settings.quality), style: tt.bodySmall),
                       const Gap(8),
                       Slider(
                         value: settings.quality.toDouble(),
@@ -179,7 +175,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                 ),
                 const Gap(16),
               ] else ...[
-                // ---- Resize Section ----
+                // ---- Resize Dimensions ----
                 _SectionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +183,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const _SectionLabel('Resize Mode'),
+                          const _SectionLabel('Dimensions'),
                           _SegmentedToggle(
                             selected: _usePercentage,
                             onChanged: (v) => setState(() => _usePercentage = v),
@@ -206,7 +202,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                             Expanded(
                               child: TextField(
                                 controller: _percentCtrl,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(decimal: true),
                                 inputFormatters: [
                                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                                 ],
@@ -243,10 +240,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           ),
                         ],
                       ] else ...[
-                        Text(
-                          'Enter width, height, or both',
-                          style: tt.bodySmall,
-                        ),
+                        Text('Enter width, height, or both', style: tt.bodySmall),
                         const Gap(10),
                         Row(
                           children: [
@@ -260,6 +254,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                   suffixText: 'px',
                                   hintText: '${widget.image.width}',
                                 ),
+                                onChanged: (_) => setState(() {}),
                               ),
                             ),
                             const Gap(12),
@@ -273,12 +268,25 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                   suffixText: 'px',
                                   hintText: '${widget.image.height}',
                                 ),
+                                onChanged: (_) => setState(() {}),
                               ),
                             ),
                           ],
                         ),
+                        // Live px preview
+                        if (_widthCtrl.text.isNotEmpty || _heightCtrl.text.isNotEmpty) ...[
+                          const Gap(12),
+                          _PxDimensionPreview(
+                            originalW: widget.image.width,
+                            originalH: widget.image.height,
+                            targetW: int.tryParse(_widthCtrl.text),
+                            targetH: int.tryParse(_heightCtrl.text),
+                            keepAspect: settings.keepAspectRatio,
+                          ),
+                        ],
                       ],
                       const Gap(12),
+                      // Aspect ratio toggle
                       Row(
                         children: [
                           Switch(
@@ -294,6 +302,29 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                   ),
                 ),
                 const Gap(16),
+
+                // ---- Fit Mode (only when aspect ratio is unlocked) ----
+                if (showFitMode)
+                  _SectionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _SectionLabel('Fit Mode'),
+                        const Gap(4),
+                        Text(
+                          'How to handle the image when it doesn\'t fill the target frame',
+                          style: tt.bodySmall,
+                        ),
+                        const Gap(14),
+                        _FitModeSelector(
+                          current: settings.fitMode,
+                          onChanged: (m) =>
+                              ref.read(editorProvider.notifier).setFitMode(m),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (showFitMode) const Gap(16),
               ],
 
               // ---- Format Section ----
@@ -313,7 +344,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
               ),
               const Gap(28),
 
-              // ---- Process Button ----
               PfButton(
                 label: isCompress ? 'Compress Image' : 'Resize Image',
                 isLoading: isProcessing,
@@ -338,7 +368,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   }
 }
 
-// ─── Widgets ────────────────────────────────────────────────────────────────
+// ─── Widgets ────────────────────────────────────────────────────────────
 
 class _ImagePreview extends StatelessWidget {
   final String path;
@@ -369,42 +399,38 @@ class _ImagePreview extends StatelessWidget {
         Positioned(
           bottom: 10,
           left: 10,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '${width}×${height}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+          child: _Badge('${width}×${height}'),
         ),
         Positioned(
           bottom: 10,
           right: 10,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              formatBytes(originalSize),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+          child: _Badge(formatBytes(originalSize)),
         ),
       ],
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  final String text;
+  const _Badge(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
@@ -564,6 +590,167 @@ class _DimensionPreview extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PxDimensionPreview extends StatelessWidget {
+  final int originalW;
+  final int originalH;
+  final int? targetW;
+  final int? targetH;
+  final bool keepAspect;
+
+  const _PxDimensionPreview({
+    required this.originalW,
+    required this.originalH,
+    required this.targetW,
+    required this.targetH,
+    required this.keepAspect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    int resolvedW = targetW ?? originalW;
+    int resolvedH = targetH ?? originalH;
+
+    if (keepAspect) {
+      if (targetW != null && targetH == null) {
+        resolvedH = (originalH * resolvedW / originalW).round();
+      } else if (targetH != null && targetW == null) {
+        resolvedW = (originalW * resolvedH / originalH).round();
+      } else if (targetW != null && targetH != null) {
+        final scale = (resolvedW / originalW) < (resolvedH / originalH)
+            ? resolvedW / originalW
+            : resolvedH / originalH;
+        resolvedW = (originalW * scale).round();
+        resolvedH = (originalH * scale).round();
+      }
+    }
+
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: cs.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.info_outline_rounded, size: 14, color: cs.primary),
+          const Gap(6),
+          Text(
+            '${originalW}×${originalH}  →  ${resolvedW}×${resolvedH}',
+            style: TextStyle(
+              color: cs.primary,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FitModeSelector extends StatelessWidget {
+  final ResizeFitMode current;
+  final ValueChanged<ResizeFitMode> onChanged;
+  const _FitModeSelector({required this.current, required this.onChanged});
+
+  static const _modes = [
+    (
+      mode: ResizeFitMode.stretch,
+      label: 'Stretch',
+      icon: Icons.open_with_rounded,
+      desc: 'Fill frame exactly, may distort',
+    ),
+    (
+      mode: ResizeFitMode.crop,
+      label: 'Crop',
+      icon: Icons.crop_rounded,
+      desc: 'Fill frame, center-crop excess',
+    ),
+    (
+      mode: ResizeFitMode.fit,
+      label: 'Fit',
+      icon: Icons.fit_screen_rounded,
+      desc: 'Fit inside frame, transparent fill',
+    ),
+    (
+      mode: ResizeFitMode.background,
+      label: 'Background',
+      icon: Icons.rectangle_outlined,
+      desc: 'Fit inside frame, white fill',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 2.6,
+      children: _modes.map((m) {
+        final isSelected = m.mode == current;
+        return GestureDetector(
+          onTap: () => onChanged(m.mode),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? cs.primary.withOpacity(0.12)
+                  : (isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected ? cs.primary : Colors.transparent,
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  m.icon,
+                  size: 18,
+                  color: isSelected ? cs.primary : Theme.of(context).textTheme.bodySmall?.color,
+                ),
+                const Gap(8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        m.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? cs.primary
+                              : Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
+                      ),
+                      Text(
+                        m.desc,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
