@@ -45,8 +45,7 @@ class PickerScreen extends ConsumerWidget {
         ? Icons.compress_rounded
         : Icons.photo_size_select_large_rounded;
     final modeTitle = isCompress ? 'Compress' : 'Resize';
-    final modeSubtitle =
-        isCompress ? 'Reduce file size' : 'Change dimensions';
+    final modeSubtitle = isCompress ? 'Reduce file size' : 'Change dimensions';
 
     return Scaffold(
       appBar: AppBar(
@@ -64,8 +63,8 @@ class PickerScreen extends ConsumerWidget {
             children: [
               // Mode badge
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: modeGradient),
                   borderRadius: BorderRadius.circular(30),
@@ -101,12 +100,12 @@ class PickerScreen extends ConsumerWidget {
                 ),
               ),
 
-              const Gap(16),
-
-              // Banner ad
-              Center(child: AdManager.instance.getBannerAdWidget()),
-
               const Gap(12),
+
+              // Small native ad
+              AdManager.instance.getSmallNativeAdWidget(),
+
+              const Gap(8),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -150,10 +149,8 @@ class _UploadZoneState extends State<_UploadZone> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor =
-        isDark ? AppColors.surface : AppColors.lightSurface;
-    final borderColor =
-        widget.gradient[0].withOpacity(_hovered ? 0.7 : 0.3);
+    final surfaceColor = isDark ? AppColors.surface : AppColors.lightSurface;
+    final borderColor = widget.gradient[0].withOpacity(_hovered ? 0.7 : 0.3);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _hovered = true),
@@ -165,9 +162,7 @@ class _UploadZoneState extends State<_UploadZone> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: _hovered
-              ? widget.gradient[0].withOpacity(0.06)
-              : surfaceColor,
+          color: _hovered ? widget.gradient[0].withOpacity(0.06) : surfaceColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: borderColor, width: 1.5),
           boxShadow: [
@@ -221,15 +216,10 @@ class _UploadZoneState extends State<_UploadZone> {
                     const Gap(20),
                     Text(
                       'Tap to select an image',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                     ),
                     const Gap(8),

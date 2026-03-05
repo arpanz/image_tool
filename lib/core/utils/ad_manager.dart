@@ -185,6 +185,11 @@ class AdManager {
     if (_isPro) return const SizedBox.shrink();
     return _NativeAdWrapper(adUnitId: _nativeId);
   }
+
+  Widget getSmallNativeAdWidget() {
+    if (_isPro) return const SizedBox.shrink();
+    return _SmallNativeAdWrapper(adUnitId: _nativeId);
+  }
 }
 
 class _BannerAdWrapper extends StatefulWidget {
@@ -253,6 +258,76 @@ class _BannerAdWrapperState extends State<_BannerAdWrapper> {
       width: _bannerAd!.size.width.toDouble(),
       height: _bannerAd!.size.height.toDouble(),
       child: AdWidget(ad: _bannerAd!),
+    );
+  }
+}
+
+class _SmallNativeAdWrapper extends StatefulWidget {
+  final String adUnitId;
+  const _SmallNativeAdWrapper({required this.adUnitId});
+
+  @override
+  State<_SmallNativeAdWrapper> createState() => _SmallNativeAdWrapperState();
+}
+
+class _SmallNativeAdWrapperState extends State<_SmallNativeAdWrapper> {
+  NativeAd? _nativeAd;
+  bool _isLoaded = false;
+  int _retryAttempt = 0;
+  static const int _maxRetries = 4;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
+
+  void _loadAd() {
+    _nativeAd = NativeAd(
+      adUnitId: widget.adUnitId,
+      factoryId: 'adFactorySmall',
+      request: const AdRequest(),
+      listener: NativeAdListener(
+        onAdLoaded: (_) {
+          _retryAttempt = 0;
+          if (mounted) setState(() => _isLoaded = true);
+        },
+        onAdFailedToLoad: (ad, error) {
+          debugPrint('SmallNativeAd failed to load: ${error.message}');
+          ad.dispose();
+          _retryLoad();
+        },
+      ),
+      nativeTemplateStyle: NativeTemplateStyle(
+        templateType: TemplateType.small,
+      ),
+    )..load();
+  }
+
+  void _retryLoad() {
+    if (_retryAttempt >= _maxRetries || !mounted) return;
+    _retryAttempt++;
+    Future.delayed(Duration(seconds: 1 << _retryAttempt), () {
+      if (mounted) _loadAd();
+    });
+  }
+
+  @override
+  void dispose() {
+    _nativeAd?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isLoaded || _nativeAd == null) return const SizedBox.shrink();
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: 320,
+        minHeight: 80,
+        maxHeight: 120,
+      ),
+      child: AdWidget(ad: _nativeAd!),
     );
   }
 }
