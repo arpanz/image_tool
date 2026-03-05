@@ -35,7 +35,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,8 +49,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       Text('Pixel Forge', style: tt.headlineLarge),
                       const Gap(4),
-                      Text('What do you want to do?',
-                          style: tt.bodyMedium),
+                      Text('What do you want to do?', style: tt.bodyMedium),
                     ],
                   ),
                   Row(
@@ -92,10 +91,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [
-                              Color(0xFF4ADE80),
-                              Color(0xFF22C55E)
-                            ]),
+                            gradient: const LinearGradient(
+                                colors: [Color(0xFF4ADE80), Color(0xFF22C55E)]),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Row(
@@ -115,9 +112,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const Gap(10),
                       // Theme toggle
                       GestureDetector(
-                        onTap: () => ref
-                            .read(themeProvider.notifier)
-                            .state = !isDark,
+                        onTap: () =>
+                            ref.read(themeProvider.notifier).state = !isDark,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
                           width: 52,
@@ -159,39 +155,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const Gap(48),
 
               // ---- Mode Cards ----
-              Expanded(
-                child: Column(
-                  children: [
-                    _ModeCard(
-                      icon: Icons.compress_rounded,
-                      title: 'Compress',
-                      subtitle: 'Reduce file size while keeping quality',
-                      gradient: [
-                        const Color(0xFF6C63FF),
-                        const Color(0xFF9D97FF)
-                      ],
-                      onTap: () => _navigate(context, ImageMode.compress),
-                    ),
-                    const Gap(16),
-                    _ModeCard(
-                      icon: Icons.photo_size_select_large_rounded,
-                      title: 'Resize',
-                      subtitle:
-                          'Change dimensions by pixels or percentage',
-                      gradient: [
-                        const Color(0xFF11998E),
-                        const Color(0xFF38EF7D)
-                      ],
-                      onTap: () => _navigate(context, ImageMode.resize),
-                    ),
-                  ],
-                ),
+              _ModeCard(
+                icon: Icons.compress_rounded,
+                title: 'Compress',
+                subtitle: 'Reduce file size while keeping quality',
+                gradient: [const Color(0xFF6C63FF), const Color(0xFF9D97FF)],
+                onTap: () => _navigate(context, ImageMode.compress),
+              ),
+              const Gap(16),
+              _ModeCard(
+                icon: Icons.photo_size_select_large_rounded,
+                title: 'Resize',
+                subtitle: 'Change dimensions by pixels or percentage',
+                gradient: [const Color(0xFF11998E), const Color(0xFF38EF7D)],
+                onTap: () => _navigate(context, ImageMode.resize),
               ),
 
               const Gap(16),
 
-              // ---- Banner Ad (free users only) ----
-              Center(child: AdManager.instance.getBannerAdWidget()),
+              // ---- Medium Native Ad (free users only) ----
+              AdManager.instance.getMediumNativeAdWidget(),
 
               const Gap(16),
 
@@ -201,8 +184,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Icon(Icons.lock_outline_rounded,
                       size: 13,
-                      color:
-                          Theme.of(context).textTheme.bodySmall?.color),
+                      color: Theme.of(context).textTheme.bodySmall?.color),
                   const Gap(6),
                   Text(
                     'Fully offline \u00b7 No data leaves your device',
@@ -272,8 +254,7 @@ class _ModeCardState extends State<_ModeCard> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: widget.gradient[0]
-                    .withOpacity(isDark ? 0.35 : 0.25),
+                color: widget.gradient[0].withOpacity(isDark ? 0.35 : 0.25),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),

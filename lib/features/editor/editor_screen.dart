@@ -27,7 +27,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   late final TextEditingController _widthCtrl;
   late final TextEditingController _heightCtrl;
   late final TextEditingController _percentCtrl;
+  late final TextEditingController _targetSizeCtrl;
   bool _usePercentage = false;
+  bool _useTargetSize = false;
 
   @override
   void initState() {
@@ -35,6 +37,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     _widthCtrl = TextEditingController();
     _heightCtrl = TextEditingController();
     _percentCtrl = TextEditingController(text: '75');
+    _targetSizeCtrl = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(editorProvider.notifier).reset();
     });
@@ -45,11 +48,20 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     _widthCtrl.dispose();
     _heightCtrl.dispose();
     _percentCtrl.dispose();
+    _targetSizeCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _onProcess() async {
     final notifier = ref.read(editorProvider.notifier);
+
+    // Apply target size if enabled
+    if (widget.mode == ImageMode.compress && _useTargetSize) {
+      final kb = int.tryParse(_targetSizeCtrl.text.trim());
+      notifier.setTargetSizeKB(kb != null && kb > 0 ? kb : null);
+    } else {
+      notifier.setTargetSizeKB(null);
+    }
 
     if (widget.mode == ImageMode.resize) {
       if (_usePercentage) {
@@ -101,8 +113,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             content: Text('Failed: $err'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -174,8 +186,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                             .setQuality(v.round()),
                       ),
                       Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -184,6 +195,84 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           ],
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                const Gap(16),
+                // Target file-size option
+                _SectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const _SectionLabel('Target Size'),
+                          Switch(
+                            value: _useTargetSize,
+                            onChanged: (v) =>
+                                setState(() => _useTargetSize = v),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'Compress to a specific file size (adjusts quality automatically)',
+                        style: tt.bodySmall,
+                      ),
+                      if (_useTargetSize) ...[
+                        const Gap(12),
+                        TextField(
+                          controller: _targetSizeCtrl,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          decoration: InputDecoration(
+                            labelText: 'Max file size',
+                            suffixText: 'KB',
+                            hintText: 'e.g. 500',
+                            helperText: _targetSizeCtrl.text.isNotEmpty
+                                ? '≈ ${(int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024 > 1 ? '${((int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024).toStringAsFixed(1)} MB' : '${_targetSizeCtrl.text} KB'}'
+                                : null,
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const Gap(8),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            _SizePresetChip(
+                                label: '100 KB',
+                                onTap: () => setState(
+                                    () => _targetSizeCtrl.text = '100')),
+                            _SizePresetChip(
+                                label: '250 KB',
+                                onTap: () => setState(
+                                    () => _targetSizeCtrl.text = '250')),
+                            _SizePresetChip(
+                                label: '500 KB',
+                                onTap: () => setState(
+                                    () => _targetSizeCtrl.text = '500')),
+                            _SizePresetChip(
+                                label: '1 MB',
+                                onTap: () => setState(
+                                    () => _targetSizeCtrl.text = '1024')),
+                            _SizePresetChip(
+                                label: '2 MB',
+                                onTap: () => setState(
+                                    () => _targetSizeCtrl.text = '2048')),
+                          ],
+                        ),
+                        if (settings.format.toUpperCase() == 'PNG')
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              'Target size is not supported for PNG format. Switch to JPG or WEBP.',
+                              style: tt.bodySmall
+                                  ?.copyWith(color: AppColors.error),
+                            ),
+                          ),
+                      ],
                     ],
                   ),
                 ),
@@ -233,18 +322,18 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                             const Gap(12),
                             _PercentPreset(
                                 percent: 75,
-                                onTap: () => setState(
-                                    () => _percentCtrl.text = '75')),
+                                onTap: () =>
+                                    setState(() => _percentCtrl.text = '75')),
                             const Gap(6),
                             _PercentPreset(
                                 percent: 50,
-                                onTap: () => setState(
-                                    () => _percentCtrl.text = '50')),
+                                onTap: () =>
+                                    setState(() => _percentCtrl.text = '50')),
                             const Gap(6),
                             _PercentPreset(
                                 percent: 25,
-                                onTap: () => setState(
-                                    () => _percentCtrl.text = '25')),
+                                onTap: () =>
+                                    setState(() => _percentCtrl.text = '25')),
                           ],
                         ),
                         if (_percentCtrl.text.isNotEmpty) ...[
@@ -252,8 +341,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           _DimensionPreview(
                             originalW: widget.image.width,
                             originalH: widget.image.height,
-                            pct: double.tryParse(_percentCtrl.text) ??
-                                100,
+                            pct: double.tryParse(_percentCtrl.text) ?? 100,
                           ),
                         ],
                       ] else ...[
@@ -301,10 +389,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           _PxDimensionPreview(
                             originalW: widget.image.width,
                             originalH: widget.image.height,
-                            targetW:
-                                int.tryParse(_widthCtrl.text),
-                            targetH:
-                                int.tryParse(_heightCtrl.text),
+                            targetW: int.tryParse(_widthCtrl.text),
+                            targetH: int.tryParse(_heightCtrl.text),
                             keepAspect: settings.keepAspectRatio,
                           ),
                         ],
@@ -319,8 +405,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                 .toggleAspectRatio(),
                           ),
                           const Gap(8),
-                          Text('Keep aspect ratio',
-                              style: tt.bodyMedium),
+                          Text('Keep aspect ratio', style: tt.bodyMedium),
                         ],
                       ),
                     ],
@@ -341,9 +426,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         const Gap(14),
                         _FitModeSelector(
                           current: settings.fitMode,
-                          onChanged: (m) => ref
-                              .read(editorProvider.notifier)
-                              .setFitMode(m),
+                          onChanged: (m) =>
+                              ref.read(editorProvider.notifier).setFitMode(m),
                         ),
                       ],
                     ),
@@ -360,9 +444,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                     const Gap(12),
                     _FormatSelector(
                       current: settings.format,
-                      onChanged: (f) => ref
-                          .read(editorProvider.notifier)
-                          .setFormat(f),
+                      onChanged: (f) =>
+                          ref.read(editorProvider.notifier).setFormat(f),
                     ),
                   ],
                 ),
@@ -426,13 +509,9 @@ class _ImagePreview extends StatelessWidget {
           ),
         ),
         Positioned(
-            bottom: 10,
-            left: 10,
-            child: _Badge('${width}\u00d7${height}')),
+            bottom: 10, left: 10, child: _Badge('${width}\u00d7${height}')),
         Positioned(
-            bottom: 10,
-            right: 10,
-            child: _Badge(formatBytes(originalSize))),
+            bottom: 10, right: 10, child: _Badge(formatBytes(originalSize))),
       ],
     );
   }
@@ -452,9 +531,7 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(text,
           style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w600)),
+              color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
     );
   }
 }
@@ -499,8 +576,7 @@ class _SectionLabel extends StatelessWidget {
 class _SegmentedToggle extends StatelessWidget {
   final bool selected;
   final ValueChanged<bool> onChanged;
-  const _SegmentedToggle(
-      {required this.selected, required this.onChanged});
+  const _SegmentedToggle({required this.selected, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -508,22 +584,17 @@ class _SegmentedToggle extends StatelessWidget {
     return Container(
       height: 34,
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.surfaceElevated
-            : AppColors.lightSurfaceElevated,
+        color:
+            isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _ToggleTab(
-              label: 'px',
-              active: !selected,
-              onTap: () => onChanged(false)),
+              label: 'px', active: !selected, onTap: () => onChanged(false)),
           _ToggleTab(
-              label: '%',
-              active: selected,
-              onTap: () => onChanged(true)),
+              label: '%', active: selected, onTap: () => onChanged(true)),
         ],
       ),
     );
@@ -544,8 +615,7 @@ class _ToggleTab extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: active ? cs.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(7),
@@ -576,8 +646,7 @@ class _PercentPreset extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isDark
               ? AppColors.surfaceElevated
@@ -585,8 +654,29 @@ class _PercentPreset extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text('$percent%',
-            style: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600)),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+}
+
+class _SizePresetChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _SizePresetChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Chip(
+        label: Text(label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        backgroundColor:
+            isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
       ),
     );
   }
@@ -597,9 +687,7 @@ class _DimensionPreview extends StatelessWidget {
   final int originalH;
   final double pct;
   const _DimensionPreview(
-      {required this.originalW,
-      required this.originalH,
-      required this.pct});
+      {required this.originalW, required this.originalH, required this.pct});
 
   @override
   Widget build(BuildContext context) {
@@ -607,8 +695,7 @@ class _DimensionPreview extends StatelessWidget {
     final newH = (originalH * pct / 100).round();
     final cs = Theme.of(context).colorScheme;
     return _PreviewChip(
-        text:
-            '${originalW}\u00d7${originalH}  \u2192  ${newW}\u00d7${newH}',
+        text: '${originalW}\u00d7${originalH}  \u2192  ${newW}\u00d7${newH}',
         color: cs.primary);
   }
 }
@@ -663,8 +750,7 @@ class _PreviewChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),
@@ -676,9 +762,7 @@ class _PreviewChip extends StatelessWidget {
           const Gap(6),
           Text(text,
               style: TextStyle(
-                  color: color,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500)),
+                  color: color, fontSize: 13, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -700,8 +784,7 @@ class _FitModeOption {
 class _FitModeSelector extends StatelessWidget {
   final ResizeFitMode current;
   final ValueChanged<ResizeFitMode> onChanged;
-  const _FitModeSelector(
-      {required this.current, required this.onChanged});
+  const _FitModeSelector({required this.current, required this.onChanged});
 
   static const _modes = [
     _FitModeOption(
@@ -743,8 +826,7 @@ class _FitModeSelector extends StatelessWidget {
           onTap: () => onChanged(m.mode),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
                   ? cs.primary.withOpacity(0.12)
@@ -753,8 +835,7 @@ class _FitModeSelector extends StatelessWidget {
                       : AppColors.lightSurfaceElevated),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color:
-                    isSelected ? cs.primary : Colors.transparent,
+                color: isSelected ? cs.primary : Colors.transparent,
                 width: 1.5,
               ),
             ),
@@ -764,10 +845,7 @@ class _FitModeSelector extends StatelessWidget {
                     size: 18,
                     color: isSelected
                         ? cs.primary
-                        : Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.color),
+                        : Theme.of(context).textTheme.bodySmall?.color),
                 const Gap(8),
                 Expanded(
                   child: Column(
@@ -780,10 +858,7 @@ class _FitModeSelector extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             color: isSelected
                                 ? cs.primary
-                                : Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.color,
+                                : Theme.of(context).textTheme.bodyMedium?.color,
                           )),
                       Text(m.desc,
                           style: Theme.of(context)
@@ -807,8 +882,7 @@ class _FitModeSelector extends StatelessWidget {
 class _FormatSelector extends StatelessWidget {
   final String current;
   final ValueChanged<String> onChanged;
-  const _FormatSelector(
-      {required this.current, required this.onChanged});
+  const _FormatSelector({required this.current, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -823,8 +897,7 @@ class _FormatSelector extends StatelessWidget {
             onTap: () => onChanged(f),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 color: isSelected
                     ? cs.primary
@@ -837,10 +910,7 @@ class _FormatSelector extends StatelessWidget {
                   style: TextStyle(
                     color: isSelected
                         ? Colors.white
-                        : Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.color,
+                        : Theme.of(context).textTheme.bodySmall?.color,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   )),

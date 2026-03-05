@@ -54,6 +54,12 @@ class EditorNotifier extends Notifier<EditorState> {
   void setFitMode(ResizeFitMode mode) =>
       state = state.copyWith(settings: state.settings.copyWith(fitMode: mode));
 
+  void setTargetSizeKB(int? kb) => state = state.copyWith(
+        settings: kb == null
+            ? state.settings.copyWith(clearTargetSizeKB: true)
+            : state.settings.copyWith(targetSizeKB: kb),
+      );
+
   Future<CompressionResult?> compress(SelectedImage image) async {
     state = state.copyWith(compressionState: const AsyncLoading());
     try {

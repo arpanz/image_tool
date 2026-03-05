@@ -77,8 +77,7 @@ Future<ui.Image> _resizeCanvas(
         ui.Paint(),
       );
     case ResizeFitMode.crop:
-      final scale =
-          (dstW / srcW) > (dstH / srcH) ? dstW / srcW : dstH / srcH;
+      final scale = (dstW / srcW) > (dstH / srcH) ? dstW / srcW : dstH / srcH;
       final scaledW = srcW * scale;
       final scaledH = srcH * scale;
       canvas.drawImageRect(
@@ -89,8 +88,7 @@ Future<ui.Image> _resizeCanvas(
         ui.Paint(),
       );
     case ResizeFitMode.fit:
-      final scale =
-          (dstW / srcW) < (dstH / srcH) ? dstW / srcW : dstH / srcH;
+      final scale = (dstW / srcW) < (dstH / srcH) ? dstW / srcW : dstH / srcH;
       final scaledW = srcW * scale;
       final scaledH = srcH * scale;
       canvas.drawImageRect(
@@ -105,8 +103,7 @@ Future<ui.Image> _resizeCanvas(
         ui.Rect.fromLTWH(0, 0, dstW, dstH),
         ui.Paint()..color = const ui.Color(0xFFFFFFFF),
       );
-      final scale =
-          (dstW / srcW) < (dstH / srcH) ? dstW / srcW : dstH / srcH;
+      final scale = (dstW / srcW) < (dstH / srcH) ? dstW / srcW : dstH / srcH;
       final scaledW = srcW * scale;
       final scaledH = srcH * scale;
       canvas.drawImageRect(
@@ -186,6 +183,76 @@ class ImageProcessor {
       resultBytes =
           await _encodeImage(resized, settings.format, settings.quality);
       resized.dispose();
+    }
+
+    // ── Target-size binary search ──
+    if (settings.targetSizeKB != null &&
+        settings.format.toUpperCase() != 'PNG') {
+      final targetBytes = settings.targetSizeKB! * 1024;
+      // Only attempt if the first pass is already larger than target
+      if (resultBytes.length > targetBytes) {
+        int lo = 1;
+        int hi = settings.quality;
+        Uint8List? bestUnder; // best result that fits within target
+        int bestQuality = 1;
+
+        while (lo <= hi) {
+          final mid = (lo + hi) ~/ 2;
+          Uint8List attempt;
+          if (!hasResize) {
+            final c = await FlutterImageCompress.compressWithFile(
+              inputPath,
+              quality: mid,
+              minWidth: originalWidth,
+              minHeight: originalHeight,
+              keepExif: false,
+              format: _formatToCompressFormat(settings.format),
+            );
+            if (c == null || c.isEmpty) break;
+            attempt = c;
+          } else {
+            final src = await _decodeImage(inputFile);
+            final resized =
+                await _resizeCanvas(src, outW, outH, settings.fitMode);
+            src.dispose();
+            attempt = await _encodeImage(resized, settings.format, mid);
+            resized.dispose();
+          }
+
+          if (attempt.length <= targetBytes) {
+            // Fits! Remember it, try higher quality
+            bestUnder = attempt;
+            bestQuality = mid;
+            lo = mid + 1;
+          } else {
+            // Too large, try lower quality
+            hi = mid - 1;
+          }
+        }
+
+        if (bestUnder != null) {
+          resultBytes = bestUnder;
+        } else {
+          // Even quality=1 is too large — progressively downscale dimensions
+          int scaleW = outW;
+          int scaleH = outH;
+          Uint8List scaled = resultBytes;
+          for (double factor = 0.9; factor >= 0.1; factor -= 0.1) {
+            scaleW = (outW * factor).round().clamp(1, outW);
+            scaleH = (outH * factor).round().clamp(1, outH);
+            final src = await _decodeImage(inputFile);
+            final resized =
+                await _resizeCanvas(src, scaleW, scaleH, settings.fitMode);
+            src.dispose();
+            scaled = await _encodeImage(resized, settings.format, bestQuality);
+            resized.dispose();
+            if (scaled.length <= targetBytes) break;
+          }
+          resultBytes = scaled;
+          outW = scaleW;
+          outH = scaleH;
+        }
+      }
     }
 
     await File(outputPath).writeAsBytes(resultBytes);

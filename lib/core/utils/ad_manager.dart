@@ -32,12 +32,16 @@ class AdManager {
   // Ad unit IDs
   final String _realBannerId = 'ca-app-pub-4397005408366648/3614410900';
   final String _realInterstitialId = 'ca-app-pub-4397005408366648/8916523251';
+  final String _realNativeId = 'ca-app-pub-4397005408366648/5765432100';
 
   final String _testBannerId = 'ca-app-pub-3940256099942544/6300978111';
   final String _testInterstitialId = 'ca-app-pub-3940256099942544/1033173712';
+  final String _testNativeId = 'ca-app-pub-3940256099942544/2247696110';
 
   String get _bannerId => kDebugMode ? _testBannerId : _realBannerId;
-  String get _interstitialId => kDebugMode ? _testInterstitialId : _realInterstitialId;
+  String get _interstitialId =>
+      kDebugMode ? _testInterstitialId : _realInterstitialId;
+  String get _nativeId => kDebugMode ? _testNativeId : _realNativeId;
 
   static const List<String> _testDeviceIds = [];
 
@@ -176,6 +180,11 @@ class AdManager {
     if (_isPro) return const SizedBox.shrink();
     return _BannerAdWrapper(adUnitId: _bannerId);
   }
+
+  Widget getMediumNativeAdWidget() {
+    if (_isPro) return const SizedBox.shrink();
+    return _NativeAdWrapper(adUnitId: _nativeId);
+  }
 }
 
 class _BannerAdWrapper extends StatefulWidget {
@@ -199,8 +208,7 @@ class _BannerAdWrapperState extends State<_BannerAdWrapper> {
   }
 
   Future<void> _loadAd() async {
-    final size =
-        await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+    final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
       MediaQueryData.fromView(
         PlatformDispatcher.instance.views.first,
       ).size.width.truncate(),
@@ -226,8 +234,9 @@ class _BannerAdWrapperState extends State<_BannerAdWrapper> {
   void _retryLoad() {
     if (_retryAttempt >= _maxRetries || !mounted) return;
     _retryAttempt++;
-    Future.delayed(
-        Duration(seconds: 1 << _retryAttempt), () { if (mounted) _loadAd(); });
+    Future.delayed(Duration(seconds: 1 << _retryAttempt), () {
+      if (mounted) _loadAd();
+    });
   }
 
   @override
@@ -244,6 +253,76 @@ class _BannerAdWrapperState extends State<_BannerAdWrapper> {
       width: _bannerAd!.size.width.toDouble(),
       height: _bannerAd!.size.height.toDouble(),
       child: AdWidget(ad: _bannerAd!),
+    );
+  }
+}
+
+class _NativeAdWrapper extends StatefulWidget {
+  final String adUnitId;
+  const _NativeAdWrapper({required this.adUnitId});
+
+  @override
+  State<_NativeAdWrapper> createState() => _NativeAdWrapperState();
+}
+
+class _NativeAdWrapperState extends State<_NativeAdWrapper> {
+  NativeAd? _nativeAd;
+  bool _isLoaded = false;
+  int _retryAttempt = 0;
+  static const int _maxRetries = 4;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
+
+  void _loadAd() {
+    _nativeAd = NativeAd(
+      adUnitId: widget.adUnitId,
+      factoryId: 'adFactoryMedium',
+      request: const AdRequest(),
+      listener: NativeAdListener(
+        onAdLoaded: (_) {
+          _retryAttempt = 0;
+          if (mounted) setState(() => _isLoaded = true);
+        },
+        onAdFailedToLoad: (ad, error) {
+          debugPrint('NativeAd failed to load: ${error.message}');
+          ad.dispose();
+          _retryLoad();
+        },
+      ),
+      nativeTemplateStyle: NativeTemplateStyle(
+        templateType: TemplateType.medium,
+      ),
+    )..load();
+  }
+
+  void _retryLoad() {
+    if (_retryAttempt >= _maxRetries || !mounted) return;
+    _retryAttempt++;
+    Future.delayed(Duration(seconds: 1 << _retryAttempt), () {
+      if (mounted) _loadAd();
+    });
+  }
+
+  @override
+  void dispose() {
+    _nativeAd?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isLoaded || _nativeAd == null) return const SizedBox.shrink();
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: 320,
+        minHeight: 320,
+        maxHeight: 400,
+      ),
+      child: AdWidget(ad: _nativeAd!),
     );
   }
 }
