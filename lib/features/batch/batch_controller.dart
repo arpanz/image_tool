@@ -6,6 +6,7 @@ import '../../core/models/compression_result.dart';
 import '../../core/models/compression_settings.dart';
 import '../../core/models/selected_image.dart';
 import '../../core/utils/image_processor.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 // ─── Helper ────────────────────────────────────────────────────────────────────
 
@@ -155,9 +156,20 @@ class BatchNotifier extends StateNotifier<BatchState> {
       state = state.copyWith(items: List.from(updatedItems));
 
       try {
+        var itemSettings = state.settings;
+        if (itemSettings.targetSizeKB != null &&
+            itemSettings.targetSizeKB! < 0) {
+          final pct = (-itemSettings.targetSizeKB!) / 100.0;
+          itemSettings = itemSettings.copyWith(
+            width: (updatedItems[i].image.width * pct).round(),
+            height: (updatedItems[i].image.height * pct).round(),
+            clearTargetSizeKB: true,
+          );
+        }
+
         final result = await ImageProcessor.process(
           inputPath: updatedItems[i].image.path,
-          settings: state.settings,
+          settings: itemSettings,
           originalWidth: updatedItems[i].image.width,
           originalHeight: updatedItems[i].image.height,
         );
