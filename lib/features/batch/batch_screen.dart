@@ -21,24 +21,14 @@ class BatchScreen extends ConsumerStatefulWidget {
   ConsumerState<BatchScreen> createState() => _BatchScreenState();
 }
 
-class _BatchScreenState extends ConsumerState<BatchScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _fabAnim;
+class _BatchScreenState extends ConsumerState<BatchScreen> {
   final _widthCtrl = TextEditingController();
   final _heightCtrl = TextEditingController();
   final _percentCtrl = TextEditingController(text: '75');
   bool _usePercentage = false;
 
   @override
-  void initState() {
-    super.initState();
-    _fabAnim = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 300));
-  }
-
-  @override
   void dispose() {
-    _fabAnim.dispose();
     _widthCtrl.dispose();
     _heightCtrl.dispose();
     _percentCtrl.dispose();
@@ -51,60 +41,25 @@ class _BatchScreenState extends ConsumerState<BatchScreen>
       ? [const Color(0xFF6C63FF), const Color(0xFF9D97FF)]
       : [const Color(0xFF11998E), const Color(0xFF38EF7D)];
 
-  // ── Settings helpers ──────────────────────────────────────────────────────
-
-  void _applyResizeSettings() {
-    final notifier = ref.read(batchProvider.notifier);
-    final current = ref.read(batchProvider).settings;
-    if (_usePercentage) {
-      final pct = double.tryParse(_percentCtrl.text.trim()) ?? 75;
-      // Store percentage in width/height relative to each image later in processor.
-      // We encode a special flag: width=0, height=0 means "use quality only",
-      // but for percentage batch we pass a sentinel via targetSizeKB=-1.
-      // Instead, we save percent in quality field (hack-safe here because
-      // resize doesn't use quality for dimension logic).
-      notifier.updateSettings(current.copyWith(
-        width: null,
-        height: null,
-        // encode % as targetSizeKB < 0 sentinel — handled below in processAll override
-      ));
-      // Store in state via a custom field workaround:
-      // We'll save the percent TextEditingController's value and handle it in _processAll.
-    } else {
-      final w = int.tryParse(_widthCtrl.text.trim());
-      final h = int.tryParse(_heightCtrl.text.trim());
-      notifier.updateSettings(current.copyWith(
-        width: w,
-        height: h,
-      ));
-    }
-  }
-
   Future<void> _processAll() async {
     final notifier = ref.read(batchProvider.notifier);
     final state = ref.read(batchProvider);
 
-    if (_isCompress) {
-      // Settings already synced via slider
-    } else {
-      // Apply resize settings before processing
+    if (!_isCompress) {
       final current = state.settings;
       if (_usePercentage) {
         final pct = double.tryParse(_percentCtrl.text.trim()) ?? 75;
-        // For batch percentage resize we pass pct via a custom path;
-        // Override each image's dimensions using the percentage.
-        // We store pct in a dedicated field by encoding as negative targetSizeKB.
         notifier.updateSettings(current.copyWith(
           width: null,
           height: null,
-          targetSizeKB: -(pct.round()), // sentinel: negative = percent mode
+          targetSizeKB: -(pct.round()),
           clearTargetSizeKB: false,
         ));
       } else {
         final w = int.tryParse(_widthCtrl.text.trim());
         final h = int.tryParse(_heightCtrl.text.trim());
-        notifier.updateSettings(current.copyWith(
-            width: w, height: h, clearTargetSizeKB: true));
+        notifier.updateSettings(
+            current.copyWith(width: w, height: h, clearTargetSizeKB: true));
       }
     }
 
@@ -119,8 +74,6 @@ class _BatchScreenState extends ConsumerState<BatchScreen>
     }
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(batchProvider);
@@ -130,25 +83,17 @@ class _BatchScreenState extends ConsumerState<BatchScreen>
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Animate FAB in when images are added
-    if (state.items.isNotEmpty) {
-      _fabAnim.forward();
-    } else {
-      _fabAnim.reverse();
-    }
-
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title:
-            Text('Batch ${_isCompress ? "Compress" : "Resize"}'),
+        title: Text(_isCompress ? 'Batch Compress' : 'Batch Resize'),
         actions: [
           if (state.items.isNotEmpty)
             TextButton(
-              onPressed: notifier.clearAll,
+              onPressed: state.isProcessing ? null : notifier.clearAll,
               child: Text('Clear all',
                   style: TextStyle(
                       color: AppColors.error,
@@ -157,222 +102,175 @@ class _BatchScreenState extends ConsumerState<BatchScreen>
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              // ── Settings card ─────────────────────────────────────────
+              _SectionCard(
+                child: _isCompress
+                    ? _CompressSettings(
+                        settings: settings,
+                        onChanged: (s) => notifier.updateSettings(s),
+                      )
+                    : _ResizeSettings(
+                        settings: settings,
+                        widthCtrl: _widthCtrl,
+                        heightCtrl: _heightCtrl,
+                        percentCtrl: _percentCtrl,
+                        usePercentage: _usePercentage,
+                        onToggle: (v) =>
+                            setState(() => _usePercentage = v),
+                        onChanged: (s) => notifier.updateSettings(s),
+                      ),
+              ),
+              const Gap(12),
+
+              // ── Format card ──────────────────────────────────────────
+              _SectionCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Mode badge ─────────────────────────────────────────
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: _gradient),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _isCompress
-                                ? Icons.compress_rounded
-                                : Icons.photo_size_select_large_rounded,
-                            color: Colors.white,
-                            size: 14,
-                          ),
-                          const Gap(6),
-                          Text(
-                            _isCompress
-                                ? 'Compress all at once'
-                                : 'Resize all at once',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Gap(16),
-
-                    // ── Settings card ──────────────────────────────────────
-                    _SectionCard(
-                      child: _isCompress
-                          ? _CompressSettings(
-                              settings: settings,
-                              onChanged: (s) => notifier.updateSettings(s),
-                            )
-                          : _ResizeSettings(
-                              settings: settings,
-                              widthCtrl: _widthCtrl,
-                              heightCtrl: _heightCtrl,
-                              percentCtrl: _percentCtrl,
-                              usePercentage: _usePercentage,
-                              onToggle: (v) =>
-                                  setState(() => _usePercentage = v),
-                              onChanged: (s) => notifier.updateSettings(s),
-                            ),
-                    ),
+                    Text('Output Format', style: tt.labelLarge),
                     const Gap(12),
-
-                    // ── Format card ────────────────────────────────────────
-                    _SectionCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Output Format',
-                              style: tt.labelLarge),
-                          const Gap(12),
-                          Row(
-                            children:
-                                AppConstants.supportedFormats.map((f) {
-                              final sel = f == settings.format;
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.only(right: 10),
-                                child: GestureDetector(
-                                  onTap: () => notifier.updateSettings(
-                                      settings.copyWith(format: f)),
-                                  child: AnimatedContainer(
-                                    duration:
-                                        const Duration(milliseconds: 150),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: sel
-                                          ? cs.primary
-                                          : (isDark
-                                              ? AppColors.surfaceElevated
-                                              : AppColors
-                                                  .lightSurfaceElevated),
-                                      borderRadius:
-                                          BorderRadius.circular(10),
-                                    ),
-                                    child: Text(f,
-                                        style: TextStyle(
-                                          color: sel
-                                              ? Colors.white
-                                              : tt.bodySmall?.color,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
-                                        )),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Gap(20),
-
-                    // ── Image grid ─────────────────────────────────────────
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          state.items.isEmpty
-                              ? 'No images selected'
-                              : '${state.items.length} image${state.items.length > 1 ? "s" : ""} selected',
-                          style: tt.labelLarge,
-                        ),
-                        TextButton.icon(
-                          onPressed: state.isProcessing
-                              ? null
-                              : notifier.pickImages,
-                          icon: const Icon(Icons.add_photo_alternate_outlined,
-                              size: 18),
-                          label: const Text('Add more'),
-                          style: TextButton.styleFrom(
-                              foregroundColor: cs.primary),
-                        ),
-                      ],
+                      children: AppConstants.supportedFormats.map((f) {
+                        final sel = f == settings.format;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: GestureDetector(
+                            onTap: () => notifier.updateSettings(
+                                settings.copyWith(format: f)),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: sel
+                                    ? cs.primary
+                                    : (isDark
+                                        ? AppColors.surfaceElevated
+                                        : AppColors.lightSurfaceElevated),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(f,
+                                  style: TextStyle(
+                                    color: sel
+                                        ? Colors.white
+                                        : tt.bodySmall?.color,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  )),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
-                    const Gap(8),
-
-                    if (state.items.isEmpty)
-                      _EmptyPicker(
-                        gradient: _gradient,
-                        onTap: notifier.pickImages,
-                      )
-                    else
-                      _ImageGrid(
-                        items: state.items,
-                        isProcessing: state.isProcessing,
-                        gradient: _gradient,
-                        onRemove: (i) => notifier.removeItem(i),
-                      ),
-
-                    const Gap(16),
-
-                    // ── Progress bar (during processing) ───────────────────
-                    if (state.isProcessing) ...[
-                      const Gap(8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Processing ${state.doneCount + state.failedCount} of ${state.totalCount}…',
-                            style: tt.bodySmall,
-                          ),
-                          Text(
-                            '${(state.progress * 100).round()}%',
-                            style: TextStyle(
-                                color: cs.primary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13),
-                          ),
-                        ],
-                      ),
-                      const Gap(8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: state.progress,
-                          minHeight: 8,
-                          backgroundColor: isDark
-                              ? AppColors.surfaceElevated
-                              : AppColors.lightSurfaceElevated,
-                          valueColor:
-                              AlwaysStoppedAnimation(cs.primary),
-                        ),
-                      ),
-                      const Gap(16),
-                    ],
-
-                    // ── Ad banner ──────────────────────────────────────────
-                    Center(
-                        child: AdManager.instance.getBannerAdWidget()),
-                    const Gap(16),
-
-                    // ── Process button ─────────────────────────────────────
-                    if (state.items.isNotEmpty)
-                      PfButton(
-                        label: _isCompress
-                            ? 'Compress ${state.items.length} Images'
-                            : 'Resize ${state.items.length} Images',
-                        isLoading: state.isProcessing,
-                        icon: _isCompress
-                            ? Icons.compress_rounded
-                            : Icons.photo_size_select_large_rounded,
-                        onPressed: _processAll,
-                      ),
-                    const Gap(16),
                   ],
                 ),
               ),
-            ),
-          ],
+              const Gap(20),
+
+              // ── Image grid header ───────────────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    state.items.isEmpty
+                        ? 'No images selected'
+                        : '${state.items.length} image${state.items.length > 1 ? "s" : ""} selected',
+                    style: tt.labelLarge,
+                  ),
+                  TextButton.icon(
+                    onPressed:
+                        state.isProcessing ? null : notifier.pickImages,
+                    icon: const Icon(Icons.add_photo_alternate_outlined,
+                        size: 18),
+                    label: const Text('Add images'),
+                    style:
+                        TextButton.styleFrom(foregroundColor: cs.primary),
+                  ),
+                ],
+              ),
+              const Gap(8),
+
+              // ── Image grid / empty state ─────────────────────────────
+              if (state.items.isEmpty)
+                _EmptyPicker(
+                  gradient: _gradient,
+                  onTap: notifier.pickImages,
+                )
+              else
+                _ImageGrid(
+                  items: state.items,
+                  isProcessing: state.isProcessing,
+                  gradient: _gradient,
+                  onRemove: (i) => notifier.removeItem(i),
+                ),
+
+              // ── Progress bar ──────────────────────────────────────────
+              if (state.isProcessing) ...[
+                const Gap(16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Processing ${state.doneCount + state.failedCount} of ${state.totalCount}…',
+                      style: tt.bodySmall,
+                    ),
+                    Text(
+                      '${(state.progress * 100).round()}%',
+                      style: TextStyle(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13),
+                    ),
+                  ],
+                ),
+                const Gap(8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: state.progress,
+                    minHeight: 8,
+                    backgroundColor: isDark
+                        ? AppColors.surfaceElevated
+                        : AppColors.lightSurfaceElevated,
+                    valueColor: AlwaysStoppedAnimation(cs.primary),
+                  ),
+                ),
+              ],
+
+              const Gap(20),
+
+              // ── Ad ──────────────────────────────────────────────────
+              Center(child: AdManager.instance.getBannerAdWidget()),
+              const Gap(20),
+
+              // ── Process button ─────────────────────────────────────
+              if (state.items.isNotEmpty)
+                PfButton(
+                  label: _isCompress
+                      ? 'Compress ${state.items.length} Image${state.items.length > 1 ? "s" : ""}'
+                      : 'Resize ${state.items.length} Image${state.items.length > 1 ? "s" : ""}',
+                  isLoading: state.isProcessing,
+                  icon: _isCompress
+                      ? Icons.compress_rounded
+                      : Icons.photo_size_select_large_rounded,
+                  onPressed: _processAll,
+                ),
+              const Gap(16),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ─── Settings widgets ─────────────────────────────────────────────────────────
+// ─── Compress settings ───────────────────────────────────────────────────────────
 
 class _CompressSettings extends StatelessWidget {
   final CompressionSettings settings;
@@ -400,10 +298,9 @@ class _CompressSettings extends StatelessWidget {
               ),
               child: Text('${settings.quality}%',
                   style: TextStyle(
-                    color: cs.primary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  )),
+                      color: cs.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14)),
             ),
           ],
         ),
@@ -441,6 +338,8 @@ class _CompressSettings extends StatelessWidget {
   }
 }
 
+// ─── Resize settings ─────────────────────────────────────────────────────────────
+
 class _ResizeSettings extends StatelessWidget {
   final CompressionSettings settings;
   final TextEditingController widthCtrl;
@@ -463,7 +362,6 @@ class _ResizeSettings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -492,23 +390,15 @@ class _ResizeSettings extends StatelessWidget {
                         RegExp(r'[0-9.]'))
                   ],
                   decoration: const InputDecoration(
-                    labelText: 'Percentage',
-                    suffixText: '%',
-                  ),
+                      labelText: 'Percentage', suffixText: '%'),
                 ),
               ),
               const Gap(10),
-              _Preset(
-                  label: '75%',
-                  onTap: () => percentCtrl.text = '75'),
+              _Preset(label: '75%', onTap: () => percentCtrl.text = '75'),
               const Gap(6),
-              _Preset(
-                  label: '50%',
-                  onTap: () => percentCtrl.text = '50'),
+              _Preset(label: '50%', onTap: () => percentCtrl.text = '50'),
               const Gap(6),
-              _Preset(
-                  label: '25%',
-                  onTap: () => percentCtrl.text = '25'),
+              _Preset(label: '25%', onTap: () => percentCtrl.text = '25'),
             ],
           ),
         ] else ...[
@@ -525,9 +415,7 @@ class _ResizeSettings extends StatelessWidget {
                     FilteringTextInputFormatter.digitsOnly
                   ],
                   decoration: const InputDecoration(
-                    labelText: 'Width',
-                    suffixText: 'px',
-                  ),
+                      labelText: 'Width', suffixText: 'px'),
                 ),
               ),
               const Gap(12),
@@ -539,9 +427,7 @@ class _ResizeSettings extends StatelessWidget {
                     FilteringTextInputFormatter.digitsOnly
                   ],
                   decoration: const InputDecoration(
-                    labelText: 'Height',
-                    suffixText: 'px',
-                  ),
+                      labelText: 'Height', suffixText: 'px'),
                 ),
               ),
             ],
@@ -552,13 +438,11 @@ class _ResizeSettings extends StatelessWidget {
           children: [
             Switch(
               value: settings.keepAspectRatio,
-              onChanged: (_) => onChanged(
-                  settings.copyWith(
-                      keepAspectRatio: !settings.keepAspectRatio)),
+              onChanged: (_) => onChanged(settings.copyWith(
+                  keepAspectRatio: !settings.keepAspectRatio)),
             ),
             const Gap(8),
-            Text('Keep aspect ratio',
-                style: tt.bodyMedium),
+            Text('Keep aspect ratio', style: tt.bodyMedium),
           ],
         ),
       ],
@@ -569,8 +453,7 @@ class _ResizeSettings extends StatelessWidget {
 class _SegmentPill extends StatelessWidget {
   final bool selected;
   final ValueChanged<bool> onChanged;
-  const _SegmentPill(
-      {required this.selected, required this.onChanged});
+  const _SegmentPill({required this.selected, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -656,7 +539,7 @@ class _Preset extends StatelessWidget {
   }
 }
 
-// ─── Empty picker ─────────────────────────────────────────────────────────────
+// ─── Empty picker ────────────────────────────────────────────────────────────
 
 class _EmptyPicker extends StatefulWidget {
   final List<Color> gradient;
@@ -673,11 +556,6 @@ class _EmptyPickerState extends State<_EmptyPicker> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor =
-        isDark ? AppColors.surface : AppColors.lightSurface;
-    final borderColor =
-        widget.gradient[0].withOpacity(_pressed ? 0.7 : 0.3);
-
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
@@ -687,42 +565,41 @@ class _EmptyPickerState extends State<_EmptyPicker> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        height: 180,
+        height: 160,
         decoration: BoxDecoration(
           color: _pressed
               ? widget.gradient[0].withOpacity(0.06)
-              : surfaceColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: borderColor, width: 1.5),
+              : (isDark ? AppColors.surface : AppColors.lightSurface),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: widget.gradient[0]
+                .withOpacity(_pressed ? 0.7 : 0.3),
+            width: 1.5,
+          ),
         ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 64,
-                height: 64,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: widget.gradient,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(colors: widget.gradient,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(Icons.photo_library_outlined,
-                    size: 32, color: Colors.white),
+                    size: 26, color: Colors.white),
               ),
-              const Gap(16),
+              const Gap(12),
               const Text('Tap to select images',
                   style: TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w600)),
-              const Gap(6),
-              Text(
-                'You can pick multiple images at once',
-                style:
-                    Theme.of(context).textTheme.bodySmall,
-              ),
+                      fontSize: 14, fontWeight: FontWeight.w600)),
+              const Gap(4),
+              Text('Pick multiple images at once',
+                  style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
         ),
@@ -731,7 +608,7 @@ class _EmptyPickerState extends State<_EmptyPicker> {
   }
 }
 
-// ─── Image grid ───────────────────────────────────────────────────────────────
+// ─── Image grid ──────────────────────────────────────────────────────────────
 
 class _ImageGrid extends StatelessWidget {
   final List<BatchItem> items;
@@ -758,15 +635,12 @@ class _ImageGrid extends StatelessWidget {
         childAspectRatio: 1,
       ),
       itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return _GridTile(
-          item: item,
-          gradient: gradient,
-          canRemove: !isProcessing,
-          onRemove: () => onRemove(index),
-        );
-      },
+      itemBuilder: (context, index) => _GridTile(
+        item: items[index],
+        gradient: gradient,
+        canRemove: !isProcessing,
+        onRemove: () => onRemove(index),
+      ),
     );
   }
 }
@@ -790,7 +664,6 @@ class _GridTile extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Thumbnail
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Image.file(
@@ -803,18 +676,14 @@ class _GridTile extends StatelessWidget {
             ),
           ),
         ),
-
-        // Status overlay
         if (status != BatchItemStatus.pending)
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Container(
               color: _overlayColor(status),
-              child: Center(child: _statusIcon(status, gradient)),
+              child: Center(child: _statusIcon(status)),
             ),
           ),
-
-        // Size badge (bottom left)
         Positioned(
           bottom: 4,
           left: 4,
@@ -834,8 +703,6 @@ class _GridTile extends StatelessWidget {
             ),
           ),
         ),
-
-        // Remove button
         if (canRemove && status == BatchItemStatus.pending)
           Positioned(
             top: 4,
@@ -853,8 +720,6 @@ class _GridTile extends StatelessWidget {
               ),
             ),
           ),
-
-        // Saved badge after done
         if (status == BatchItemStatus.done && item.result != null)
           Positioned(
             bottom: 4,
@@ -892,30 +757,28 @@ class _GridTile extends StatelessWidget {
     }
   }
 
-  Widget _statusIcon(BatchItemStatus s, List<Color> gradient) {
+  Widget _statusIcon(BatchItemStatus s) {
     switch (s) {
       case BatchItemStatus.processing:
         return SizedBox(
-          width: 28,
-          height: 28,
+          width: 26,
+          height: 26,
           child: CircularProgressIndicator(
-            color: gradient[1],
-            strokeWidth: 2.5,
-          ),
+              color: gradient[1], strokeWidth: 2.5),
         );
       case BatchItemStatus.done:
         return const Icon(Icons.check_circle_rounded,
-            color: Colors.white, size: 32);
+            color: Colors.white, size: 30);
       case BatchItemStatus.failed:
         return const Icon(Icons.error_rounded,
-            color: Colors.white, size: 32);
+            color: Colors.white, size: 30);
       default:
         return const SizedBox();
     }
   }
 }
 
-// ─── Section card ─────────────────────────────────────────────────────────────
+// ─── Section card ────────────────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
   final Widget child;

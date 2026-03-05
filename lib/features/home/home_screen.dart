@@ -4,8 +4,7 @@ import 'package:gap/gap.dart';
 import '../../core/providers/theme_provider.dart';
 import '../../core/utils/ad_manager.dart';
 import '../../features/premium/paywall_screen.dart';
-import '../batch/batch_screen.dart';
-import '../picker/picker_screen.dart';
+import '../mode_entry/mode_entry_screen.dart';
 
 enum ImageMode { compress, resize }
 
@@ -40,7 +39,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Top bar ──────────────────────────────────────────────────
+              // ── Top bar ─────────────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -112,9 +111,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                       const Gap(10),
+                      // Theme toggle
                       GestureDetector(
-                        onTap: () => ref.read(themeProvider.notifier).state =
-                            !isDark,
+                        onTap: () =>
+                            ref.read(themeProvider.notifier).state =
+                                !isDark,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
                           width: 52,
@@ -153,30 +154,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ],
               ),
-              const Gap(36),
 
-              // ── Single-image section label ─────────────────────────────
-              _SectionLabel(
-                icon: Icons.image_rounded,
-                label: 'Single Image',
-              ),
-              const Gap(12),
+              const Gap(48),
 
+              // ── Mode cards ─────────────────────────────────────────────
               _ModeCard(
                 icon: Icons.compress_rounded,
                 title: 'Compress',
-                subtitle: 'Reduce file size while keeping quality',
+                subtitle: 'Reduce file size · Single or batch',
                 gradient: [
                   const Color(0xFF6C63FF),
                   const Color(0xFF9D97FF)
                 ],
                 onTap: () => _navigate(context, ImageMode.compress),
               ),
-              const Gap(12),
+              const Gap(16),
               _ModeCard(
                 icon: Icons.photo_size_select_large_rounded,
                 title: 'Resize',
-                subtitle: 'Change dimensions by pixels or percentage',
+                subtitle: 'Change dimensions · Single or batch',
                 gradient: [
                   const Color(0xFF11998E),
                   const Color(0xFF38EF7D)
@@ -184,47 +180,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onTap: () => _navigate(context, ImageMode.resize),
               ),
 
-              const Gap(24),
-
-              // ── Batch section label ───────────────────────────────────
-              _SectionLabel(
-                icon: Icons.photo_library_rounded,
-                label: 'Batch Processing',
-                badge: 'NEW',
-              ),
-              const Gap(12),
-
-              _ModeCard(
-                icon: Icons.layers_rounded,
-                title: 'Batch Compress',
-                subtitle: 'Compress multiple images at the same time',
-                gradient: [
-                  const Color(0xFFE040FB),
-                  const Color(0xFFFF80AB)
-                ],
-                onTap: () => _navigateBatch(context, ImageMode.compress),
-              ),
-              const Gap(12),
-              _ModeCard(
-                icon: Icons.grid_view_rounded,
-                title: 'Batch Resize',
-                subtitle:
-                    'Resize multiple images with the same settings',
-                gradient: [
-                  const Color(0xFFFF6D00),
-                  const Color(0xFFFFAB40)
-                ],
-                onTap: () => _navigateBatch(context, ImageMode.resize),
-              ),
-
               const Gap(16),
 
-              // ── Ad ────────────────────────────────────────────────────
+              // ── Ad ──────────────────────────────────────────────────
               AdManager.instance.getMediumNativeAdWidget(),
 
               const Gap(16),
 
-              // ── Footer ────────────────────────────────────────────────
+              // ── Footer ───────────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -237,8 +200,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const Gap(6),
                   Text(
                     'Fully offline \u00b7 No data leaves your device',
-                    style:
-                        Theme.of(context).textTheme.bodySmall,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),
@@ -252,63 +214,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _navigate(BuildContext context, ImageMode mode) {
     Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => PickerScreen(mode: mode)));
-  }
-
-  void _navigateBatch(BuildContext context, ImageMode mode) {
-    Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => BatchScreen(mode: mode)));
-  }
-}
-
-// ─── Section label ────────────────────────────────────────────────────────────
-
-class _SectionLabel extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String? badge;
-  const _SectionLabel(
-      {required this.icon, required this.label, this.badge});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon,
-            size: 16,
-            color: Theme.of(context).textTheme.bodySmall?.color),
-        const Gap(6),
-        Text(label,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w700)),
-        if (badge != null) ...[
-          const Gap(8),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                  colors: [Color(0xFF6C63FF), Color(0xFF9D97FF)]),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              badge!,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8),
-            ),
-          ),
-        ],
-      ],
+      MaterialPageRoute(
+          builder: (_) => ModeEntryScreen(mode: mode)),
     );
   }
 }
 
-// ─── Mode card ────────────────────────────────────────────────────────────────
+// ─── Mode card ──────────────────────────────────────────────────────────────
 
 class _ModeCard extends StatefulWidget {
   final IconData icon;
@@ -347,7 +259,7 @@ class _ModeCardState extends State<_ModeCard> {
         duration: const Duration(milliseconds: 120),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: widget.gradient,
@@ -367,16 +279,16 @@ class _ModeCardState extends State<_ModeCard> {
           child: Row(
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(widget.icon,
-                    color: Colors.white, size: 28),
+                    color: Colors.white, size: 30),
               ),
-              const Gap(16),
+              const Gap(20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,20 +296,20 @@ class _ModeCardState extends State<_ModeCard> {
                     Text(widget.title,
                         style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
+                            fontSize: 22,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.3)),
-                    const Gap(3),
+                    const Gap(4),
                     Text(widget.subtitle,
                         style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 12.5,
+                            color: Colors.white.withOpacity(0.85),
+                            fontSize: 13,
                             fontWeight: FontWeight.w400)),
                   ],
                 ),
               ),
               Icon(Icons.arrow_forward_ios_rounded,
-                  color: Colors.white.withOpacity(0.7), size: 16),
+                  color: Colors.white.withOpacity(0.7), size: 18),
             ],
           ),
         ),
