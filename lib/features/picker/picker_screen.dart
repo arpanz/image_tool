@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/ad_manager.dart';
 import '../editor/editor_screen.dart';
 import '../home/home_screen.dart';
 import 'picker_controller.dart';
@@ -29,7 +30,8 @@ class PickerScreen extends ConsumerWidget {
             content: Text(next.message),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -39,10 +41,12 @@ class PickerScreen extends ConsumerWidget {
     final modeGradient = isCompress
         ? [const Color(0xFF6C63FF), const Color(0xFF9D97FF)]
         : [const Color(0xFF11998E), const Color(0xFF38EF7D)];
-    final modeIcon =
-        isCompress ? Icons.compress_rounded : Icons.photo_size_select_large_rounded;
+    final modeIcon = isCompress
+        ? Icons.compress_rounded
+        : Icons.photo_size_select_large_rounded;
     final modeTitle = isCompress ? 'Compress' : 'Resize';
-    final modeSubtitle = isCompress ? 'Reduce file size' : 'Change dimensions';
+    final modeSubtitle =
+        isCompress ? 'Reduce file size' : 'Change dimensions';
 
     return Scaffold(
       appBar: AppBar(
@@ -60,7 +64,8 @@ class PickerScreen extends ConsumerWidget {
             children: [
               // Mode badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: modeGradient),
                   borderRadius: BorderRadius.circular(30),
@@ -84,8 +89,10 @@ class PickerScreen extends ConsumerWidget {
               const Gap(16),
               Text('Pick an image', style: tt.headlineMedium),
               const Gap(6),
-              Text('JPG · PNG · WEBP supported', style: tt.bodyMedium),
+              Text('JPG \u00b7 PNG \u00b7 WebP supported',
+                  style: tt.bodyMedium),
               const Gap(32),
+
               Expanded(
                 child: _UploadZone(
                   isLoading: state is PickerLoading,
@@ -93,18 +100,27 @@ class PickerScreen extends ConsumerWidget {
                   onTap: () => notifier.pickImage(),
                 ),
               ),
-              const Gap(24),
+
+              const Gap(16),
+
+              // Banner ad
+              Center(child: AdManager.instance.getBannerAdWidget()),
+
+              const Gap(12),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.lock_outline_rounded, size: 13, color: tt.bodySmall?.color),
+                  Icon(Icons.lock_outline_rounded,
+                      size: 13, color: tt.bodySmall?.color),
                   const Gap(6),
                   Text(
-                    'Fully offline · No data leaves your device',
+                    'Fully offline \u00b7 No data leaves your device',
                     style: tt.bodySmall,
                   ),
                 ],
               ),
+              const Gap(4),
             ],
           ),
         ),
@@ -134,8 +150,10 @@ class _UploadZoneState extends State<_UploadZone> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? AppColors.surface : AppColors.lightSurface;
-    final borderColor = widget.gradient[0].withOpacity(_hovered ? 0.7 : 0.3);
+    final surfaceColor =
+        isDark ? AppColors.surface : AppColors.lightSurface;
+    final borderColor =
+        widget.gradient[0].withOpacity(_hovered ? 0.7 : 0.3);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _hovered = true),
@@ -147,7 +165,9 @@ class _UploadZoneState extends State<_UploadZone> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: _hovered ? widget.gradient[0].withOpacity(0.06) : surfaceColor,
+          color: _hovered
+              ? widget.gradient[0].withOpacity(0.06)
+              : surfaceColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: borderColor, width: 1.5),
           boxShadow: [
@@ -174,7 +194,8 @@ class _UploadZoneState extends State<_UploadZone> {
                       ),
                     ),
                     const Gap(16),
-                    Text('Loading image...', style: Theme.of(context).textTheme.bodyMedium),
+                    Text('Reading image\u2026',
+                        style: Theme.of(context).textTheme.bodyMedium),
                   ],
                 )
               : Column(
@@ -200,10 +221,15 @@ class _UploadZoneState extends State<_UploadZone> {
                     const Gap(20),
                     Text(
                       'Tap to select an image',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface,
                           ),
                     ),
                     const Gap(8),

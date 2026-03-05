@@ -8,6 +8,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/models/compression_settings.dart';
 import '../../core/models/selected_image.dart';
 import '../../core/utils/image_processor.dart';
+import '../../core/utils/ad_manager.dart';
 import '../../core/widgets/pf_button.dart';
 import '../home/home_screen.dart';
 import '../result/result_screen.dart';
@@ -67,11 +68,18 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
     final result = await notifier.compress(widget.image);
     if (result != null && mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) =>
-              ResultScreen(result: result, mode: widget.mode),
-        ),
+      // Show interstitial for free users, then navigate to result
+      AdManager.instance.showInterstitial(
+        context,
+        onAdDismissed: () {
+          if (mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ResultScreen(result: result, mode: widget.mode),
+              ),
+            );
+          }
+        },
       );
     }
   }
@@ -166,7 +174,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                             .setQuality(v.round()),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 4),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -243,8 +252,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           _DimensionPreview(
                             originalW: widget.image.width,
                             originalH: widget.image.height,
-                            pct:
-                                double.tryParse(_percentCtrl.text) ?? 100,
+                            pct: double.tryParse(_percentCtrl.text) ??
+                                100,
                           ),
                         ],
                       ] else ...[
@@ -292,8 +301,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           _PxDimensionPreview(
                             originalW: widget.image.width,
                             originalH: widget.image.height,
-                            targetW: int.tryParse(_widthCtrl.text),
-                            targetH: int.tryParse(_heightCtrl.text),
+                            targetW:
+                                int.tryParse(_widthCtrl.text),
+                            targetH:
+                                int.tryParse(_heightCtrl.text),
                             keepAspect: settings.keepAspectRatio,
                           ),
                         ],
@@ -308,7 +319,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                 .toggleAspectRatio(),
                           ),
                           const Gap(8),
-                          Text('Keep aspect ratio', style: tt.bodyMedium),
+                          Text('Keep aspect ratio',
+                              style: tt.bodyMedium),
                         ],
                       ),
                     ],
@@ -348,13 +360,18 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                     const Gap(12),
                     _FormatSelector(
                       current: settings.format,
-                      onChanged: (f) =>
-                          ref.read(editorProvider.notifier).setFormat(f),
+                      onChanged: (f) => ref
+                          .read(editorProvider.notifier)
+                          .setFormat(f),
                     ),
                   ],
                 ),
               ),
-              const Gap(28),
+              const Gap(20),
+
+              // Banner ad between settings and the action button
+              Center(child: AdManager.instance.getBannerAdWidget()),
+              const Gap(16),
 
               PfButton(
                 label: isCompress ? 'Compress Image' : 'Resize Image',
@@ -380,7 +397,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   }
 }
 
-// ---- Widgets ----------------------------------------------------------------
+// ── Widgets ──────────────────────────────────────────────────────────────────
 
 class _ImagePreview extends StatelessWidget {
   final String path;
@@ -482,7 +499,8 @@ class _SectionLabel extends StatelessWidget {
 class _SegmentedToggle extends StatelessWidget {
   final bool selected;
   final ValueChanged<bool> onChanged;
-  const _SegmentedToggle({required this.selected, required this.onChanged});
+  const _SegmentedToggle(
+      {required this.selected, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -499,9 +517,13 @@ class _SegmentedToggle extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _ToggleTab(
-              label: 'px', active: !selected, onTap: () => onChanged(false)),
+              label: 'px',
+              active: !selected,
+              onTap: () => onChanged(false)),
           _ToggleTab(
-              label: '%', active: selected, onTap: () => onChanged(true)),
+              label: '%',
+              active: selected,
+              onTap: () => onChanged(true)),
         ],
       ),
     );
@@ -522,7 +544,8 @@ class _ToggleTab extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: active ? cs.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(7),
@@ -553,7 +576,8 @@ class _PercentPreset extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isDark
               ? AppColors.surfaceElevated
@@ -561,8 +585,8 @@ class _PercentPreset extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text('$percent%',
-            style:
-                const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            style: const TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600)),
       ),
     );
   }
@@ -639,7 +663,8 @@ class _PreviewChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),
@@ -660,8 +685,6 @@ class _PreviewChip extends StatelessWidget {
   }
 }
 
-// ---- Fit Mode ---------------------------------------------------------------
-
 class _FitModeOption {
   final ResizeFitMode mode;
   final String label;
@@ -677,7 +700,8 @@ class _FitModeOption {
 class _FitModeSelector extends StatelessWidget {
   final ResizeFitMode current;
   final ValueChanged<ResizeFitMode> onChanged;
-  const _FitModeSelector({required this.current, required this.onChanged});
+  const _FitModeSelector(
+      {required this.current, required this.onChanged});
 
   static const _modes = [
     _FitModeOption(
@@ -719,8 +743,8 @@ class _FitModeSelector extends StatelessWidget {
           onTap: () => onChanged(m.mode),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
                   ? cs.primary.withOpacity(0.12)
@@ -729,7 +753,8 @@ class _FitModeSelector extends StatelessWidget {
                       : AppColors.lightSurfaceElevated),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isSelected ? cs.primary : Colors.transparent,
+                color:
+                    isSelected ? cs.primary : Colors.transparent,
                 width: 1.5,
               ),
             ),
@@ -739,7 +764,10 @@ class _FitModeSelector extends StatelessWidget {
                     size: 18,
                     color: isSelected
                         ? cs.primary
-                        : Theme.of(context).textTheme.bodySmall?.color),
+                        : Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.color),
                 const Gap(8),
                 Expanded(
                   child: Column(
@@ -779,7 +807,8 @@ class _FitModeSelector extends StatelessWidget {
 class _FormatSelector extends StatelessWidget {
   final String current;
   final ValueChanged<String> onChanged;
-  const _FormatSelector({required this.current, required this.onChanged});
+  const _FormatSelector(
+      {required this.current, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -794,8 +823,8 @@ class _FormatSelector extends StatelessWidget {
             onTap: () => onChanged(f),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 color: isSelected
                     ? cs.primary
@@ -808,7 +837,10 @@ class _FormatSelector extends StatelessWidget {
                   style: TextStyle(
                     color: isSelected
                         ? Colors.white
-                        : Theme.of(context).textTheme.bodySmall?.color,
+                        : Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.color,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   )),

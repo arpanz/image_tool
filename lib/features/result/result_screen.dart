@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/compression_result.dart';
 import '../../core/utils/image_processor.dart';
+import '../../core/utils/ad_manager.dart';
 import '../../core/widgets/pf_button.dart';
 import '../home/home_screen.dart';
 import '../picker/picker_controller.dart';
@@ -27,17 +28,19 @@ class ResultScreen extends ConsumerWidget {
       final dir = await getExternalStorageDirectory() ??
           await getApplicationDocumentsDirectory();
       final dot = result.outputPath.lastIndexOf('.');
-      final ext =
-          dot >= 0 ? result.outputPath.substring(dot).toLowerCase() : '.jpg';
-      await File(result.outputPath)
-          .copy('${dir.path}/PixelForge_${DateTime.now().millisecondsSinceEpoch}$ext');
+      final ext = dot >= 0
+          ? result.outputPath.substring(dot).toLowerCase()
+          : '.jpg';
+      await File(result.outputPath).copy(
+          '${dir.path}/PixelForge_${DateTime.now().millisecondsSinceEpoch}$ext');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Saved to device!'),
+            content: const Text('Image saved to device!'),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -48,7 +51,8 @@ class ResultScreen extends ConsumerWidget {
             content: Text('Save failed: $e'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -73,7 +77,7 @@ class ResultScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Done!'),
+        title: Text(isResize ? 'Resized!' : 'Compressed!'),
         actions: [
           TextButton(
             onPressed: () {
@@ -83,8 +87,8 @@ class ResultScreen extends ConsumerWidget {
             },
             child: Text(
               'New Image',
-              style:
-                  TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: cs.primary, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -95,35 +99,54 @@ class ResultScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ---- Success Icon ----
+              // Success icon
               Container(
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
+                  gradient: LinearGradient(
+                    colors: isResize
+                        ? [const Color(0xFF11998E), const Color(0xFF38EF7D)]
+                        : [const Color(0xFF6C63FF), const Color(0xFF9D97FF)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF4CAF50).withOpacity(0.3),
-                      blurRadius: 16,
+                      color: (isResize
+                              ? const Color(0xFF11998E)
+                              : const Color(0xFF6C63FF))
+                          .withOpacity(0.35),
+                      blurRadius: 20,
                       offset: const Offset(0, 6),
                     ),
                   ],
                 ),
-                child: const Icon(Icons.check_rounded,
-                    size: 40, color: Colors.white),
+                child: Icon(
+                  isResize
+                      ? Icons.photo_size_select_large_rounded
+                      : Icons.compress_rounded,
+                  size: 34,
+                  color: Colors.white,
+                ),
               ),
               const Gap(14),
-              Text('All done!', style: tt.headlineMedium),
+              Text(
+                isResize ? 'Resize complete!' : 'Compression done!',
+                style: tt.headlineMedium,
+              ),
               const Gap(4),
-              Text('Your image has been processed.', style: tt.bodyMedium),
+              Text(
+                isResize
+                    ? 'Your image has been resized successfully.'
+                    : 'Your image is ready to save or share.',
+                style: tt.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
               const Gap(24),
 
-              // ---- Image Preview ----
+              // Image preview
               GestureDetector(
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
@@ -154,7 +177,6 @@ class ResultScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    // Tap-to-expand hint
                     Positioned(
                       top: 10,
                       right: 10,
@@ -168,7 +190,6 @@ class ResultScreen extends ConsumerWidget {
                             size: 18, color: Colors.white),
                       ),
                     ),
-                    // Dimension badge (resize only)
                     if (isResize && result.outWidth > 0)
                       Positioned(
                         bottom: 10,
@@ -190,7 +211,6 @@ class ResultScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-                    // File size badge
                     Positioned(
                       bottom: 10,
                       right: 10,
@@ -216,7 +236,7 @@ class ResultScreen extends ConsumerWidget {
               ),
               const Gap(20),
 
-              // ---- Stats Card ----
+              // Stats card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -236,7 +256,7 @@ class ResultScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     _StatRow(
-                      label: 'Original',
+                      label: 'Original size',
                       value: formatBytes(result.originalSize),
                       valueColor: tt.bodyMedium?.color ?? Colors.grey,
                     ),
@@ -246,7 +266,6 @@ class ResultScreen extends ConsumerWidget {
                       value: formatBytes(result.newSize),
                       valueColor: cs.primary,
                     ),
-                    // Show Saved % only for compress mode
                     if (!isResize) ...[
                       Divider(color: dividerColor, height: 24),
                       _StatRow(
@@ -262,11 +281,15 @@ class ResultScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              const Gap(24),
+              const Gap(20),
 
-              // ---- Actions ----
+              // Ad between stats and actions (free users only)
+              Center(child: AdManager.instance.getBannerAdWidget()),
+              const Gap(16),
+
+              // Actions
               PfButton(
-                label: 'Share',
+                label: 'Share Image',
                 icon: Icons.share_outlined,
                 onPressed: _share,
               ),
@@ -274,8 +297,9 @@ class ResultScreen extends ConsumerWidget {
               PfButton(
                 label: 'Save to Device',
                 icon: Icons.download_outlined,
-                backgroundColor:
-                    isDark ? AppColors.surface : AppColors.lightSurfaceElevated,
+                backgroundColor: isDark
+                    ? AppColors.surface
+                    : AppColors.lightSurfaceElevated,
                 onPressed: () => _saveToDevice(context),
               ),
               const Gap(8),
