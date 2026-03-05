@@ -25,14 +25,21 @@ class ResultScreen extends ConsumerWidget {
       final extension =
           dot >= 0 ? result.outputPath.substring(dot).toLowerCase() : '.jpg';
       final savePath =
+<<<<<<< HEAD
           '${dir.path}/PixelForge_${DateTime.now().millisecondsSinceEpoch}$extension';
       final srcFile = File(result.outputPath);
       await srcFile.copy(savePath);
+=======
+          '${dir.path}/PixelForge_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      await File(result.outputPath).copy(savePath);
+>>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Saved to: $savePath'),
+            content: const Text('Saved to device!'),
             backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -42,6 +49,8 @@ class ResultScreen extends ConsumerWidget {
           SnackBar(
             content: Text('Save failed: $e'),
             backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -54,10 +63,19 @@ class ResultScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+<<<<<<< HEAD
+=======
+    final saved = result.savedPercent;
+    final savedPositive = saved >= 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+>>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Result'),
         automaticallyImplyLeading: false,
+<<<<<<< HEAD
       ),
       body: Container(
         decoration: const BoxDecoration(gradient: AppGradients.scaffold),
@@ -119,6 +137,141 @@ class ResultScreen extends ConsumerWidget {
                 ),
               ],
             ),
+=======
+        title: const Text('Done!'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              ref.read(pickerProvider.notifier).reset();
+              ref.read(editorProvider.notifier).reset();
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: Text(
+              'New Image',
+              style: TextStyle(
+                color: cs.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Spacer(),
+
+              // ---- Success Icon ----
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4CAF50).withOpacity(0.35),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  size: 48,
+                  color: Colors.white,
+                ),
+              ),
+              const Gap(20),
+              Text(
+                'All done!',
+                style: tt.headlineMedium,
+              ),
+              const Gap(6),
+              Text(
+                'Your image has been processed.',
+                style: tt.bodyMedium,
+              ),
+
+              const Spacer(),
+
+              // ---- Stats Card ----
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surface : AppColors.lightSurface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark
+                          ? Colors.black.withOpacity(0.2)
+                          : Colors.black.withOpacity(0.05),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _StatRow(
+                      label: 'Original',
+                      value: formatBytes(result.originalSize),
+                      valueColor: tt.bodyMedium?.color ?? Colors.grey,
+                    ),
+                    Divider(
+                      color: isDark
+                          ? AppColors.surfaceElevated
+                          : AppColors.lightSurfaceElevated,
+                      height: 24,
+                    ),
+                    _StatRow(
+                      label: 'New size',
+                      value: formatBytes(result.newSize),
+                      valueColor: cs.primary,
+                    ),
+                    Divider(
+                      color: isDark
+                          ? AppColors.surfaceElevated
+                          : AppColors.lightSurfaceElevated,
+                      height: 24,
+                    ),
+                    _StatRow(
+                      label: 'Saved',
+                      value: savedPositive
+                          ? '-${result.savedPercent.toStringAsFixed(1)}%'
+                          : '+${(-result.savedPercent).toStringAsFixed(1)}%',
+                      valueColor: savedPositive ? AppColors.success : AppColors.error,
+                    ),
+                  ],
+                ),
+              ),
+
+              const Spacer(),
+
+              // ---- Actions ----
+              PfButton(
+                label: 'Share',
+                icon: Icons.share_outlined,
+                onPressed: _share,
+              ),
+              const Gap(12),
+              PfButton(
+                label: 'Save to Device',
+                icon: Icons.download_outlined,
+                backgroundColor: isDark ? AppColors.surface : AppColors.lightSurfaceElevated,
+                onPressed: () => _saveToDevice(context),
+              ),
+              const Gap(8),
+            ],
+>>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
           ),
         ),
       ),

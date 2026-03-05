@@ -10,18 +10,4 @@ class SelectedImage {
     required this.width,
     required this.height,
   });
-
-  SelectedImage copyWith({
-    String? path,
-    int? originalSize,
-    int? width,
-    int? height,
-  }) {
-    return SelectedImage(
-      path: path ?? this.path,
-      originalSize: originalSize ?? this.originalSize,
-      width: width ?? this.width,
-      height: height ?? this.height,
-    );
-  }
 }
