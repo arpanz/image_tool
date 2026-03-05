@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import '../../core/theme/app_theme.dart';
+
 import '../../core/constants/app_constants.dart';
-import '../../core/models/selected_image.dart';
+import '../../core/theme/app_theme.dart';
 import '../editor/editor_screen.dart';
 import 'picker_controller.dart';
 
@@ -35,34 +35,66 @@ class PickerScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConstants.appName),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Compress & Resize',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const Gap(4),
-              Text(
-                'Offline-first. Fast. No quality compromise.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const Gap(40),
-              Expanded(
-                child: _UploadZone(
-                  isLoading: state is PickerLoading,
-                  onTap: () => notifier.pickImage(),
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppGradients.scaffold),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface.withOpacity(0.76),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Compress with Control',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const Gap(6),
+                      Text(
+                        'Pick an image to tune quality, dimensions and export format in one flow.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const Gap(14),
+                      Row(
+                        children: const [
+                          _InfoChip(
+                              label: 'On-device only',
+                              icon: Icons.lock_outline),
+                          Gap(8),
+                          _InfoChip(
+                              label: 'JPG / PNG / WEBP',
+                              icon: Icons.image_outlined),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Gap(24),
-              _BottomHint(),
-            ],
+                const Gap(20),
+                Expanded(
+                  child: _UploadZone(
+                    isLoading: state is PickerLoading,
+                    onTap: () => notifier.pickImage(),
+                  ),
+                ),
+                const Gap(16),
+                Center(
+                  child: Text(
+                    'No files are uploaded anywhere.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -78,66 +110,69 @@ class _UploadZone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isLoading ? null : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isLoading
-                ? AppColors.primary.withOpacity(0.6)
-                : AppColors.primary.withOpacity(0.3),
-            width: 1.5,
-            style: BorderStyle.none, // we draw dashes manually below
-          ),
-        ),
-        child: CustomPaint(
-          painter: _DashedBorderPainter(
-            color: isLoading
-                ? AppColors.primary
-                : AppColors.primary.withOpacity(0.35),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLoading ? null : onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppColors.surface.withOpacity(0.78),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isLoading ? AppColors.primary : AppColors.border,
+              width: 1.6,
+            ),
           ),
           child: Center(
-            child: isLoading
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(
-                        color: AppColors.primary,
-                        strokeWidth: 2.5,
-                      ),
-                      const Gap(16),
-                      Text(
-                        'Loading image...',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.add_photo_alternate_outlined,
-                        size: 64,
-                        color: AppColors.primary,
-                      ),
-                      const Gap(16),
-                      Text(
-                        'Tap to select image',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(fontSize: 16),
-                      ),
-                      const Gap(8),
-                      Text(
-                        'JPG · PNG · WEBP supported',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: isLoading
+                  ? Column(
+                      key: const ValueKey('loading'),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(
+                          color: AppColors.primary,
+                          strokeWidth: 2.8,
+                        ),
+                        const Gap(16),
+                        Text(
+                          'Loading image...',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ],
+                    )
+                  : Column(
+                      key: const ValueKey('idle'),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 78,
+                          height: 78,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(18),
+                            gradient: AppGradients.button,
+                          ),
+                          child: const Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 38,
+                            color: AppColors.background,
+                          ),
+                        ),
+                        const Gap(16),
+                        Text(
+                          'Tap to select image',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const Gap(6),
+                        Text(
+                          'Best quality in, optimized image out.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+            ),
           ),
         ),
       ),
@@ -145,54 +180,32 @@ class _UploadZone extends StatelessWidget {
   }
 }
 
-class _DashedBorderPainter extends CustomPainter {
-  final Color color;
-  _DashedBorderPainter({required this.color});
+class _InfoChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
+  const _InfoChip({required this.label, required this.icon});
 
-    const dashWidth = 8.0;
-    const dashSpace = 6.0;
-    const radius = Radius.circular(16);
-    final rect = RRect.fromLTRBR(0, 0, size.width, size.height, radius);
-    final path = Path()..addRRect(rect);
-
-    final metrics = path.computeMetrics();
-    for (final m in metrics) {
-      double dist = 0;
-      while (dist < m.length) {
-        final end = (dist + dashWidth).clamp(0, m.length);
-        canvas.drawPath(
-          m.extractPath(dist, end as double),
-          paint,
-        );
-        dist += dashWidth + dashSpace;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedBorderPainter old) => old.color != color;
-}
-
-class _BottomHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.lock_outline, size: 14, color: AppColors.textSecondary),
-        const Gap(6),
-        Text(
-          'Fully offline • No data leaves your device',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.primary),
+          const Gap(6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
     );
   }
 }
