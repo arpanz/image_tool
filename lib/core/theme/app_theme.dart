@@ -2,32 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-<<<<<<< HEAD
-  static const background = Color(0xFF0B1118);
-  static const surface = Color(0xFF121B24);
-  static const surfaceAlt = Color(0xFF1A2633);
-  static const primary = Color(0xFF12D6A0);
-  static const secondary = Color(0xFF51C9FF);
-  static const success = Color(0xFF29E19F);
-  static const textPrimary = Color(0xFFFFFFFF);
-  static const textSecondary = Color(0xFF9AB1C6);
-  static const border = Color(0xFF244055);
-  static const error = Color(0xFFFF6B6B);
-}
-
-class AppGradients {
-  static const scaffold = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF081018), Color(0xFF102434), Color(0xFF0A141D)],
-  );
-
-  static const button = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-    colors: [AppColors.primary, AppColors.secondary],
-  );
-=======
   // Dark theme
   static const background = Color(0xFF0F0F0F);
   static const surface = Color(0xFF1A1A1A);
@@ -46,7 +20,6 @@ class AppGradients {
   static const lightPrimary = Color(0xFF6C63FF);
   static const lightTextPrimary = Color(0xFF1A1A2E);
   static const lightTextSecondary = Color(0xFF7B7B9D);
->>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
 }
 
 class AppTheme {
@@ -55,10 +28,11 @@ class AppTheme {
     return base.copyWith(
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: const ColorScheme.dark(
+        background: AppColors.background,
         surface: AppColors.surface,
         primary: AppColors.primary,
-        secondary: AppColors.secondary,
         error: AppColors.error,
+        onBackground: AppColors.textPrimary,
         onSurface: AppColors.textPrimary,
         onPrimary: AppColors.textPrimary,
       ),
@@ -66,23 +40,13 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-<<<<<<< HEAD
-        titleTextStyle: GoogleFonts.spaceGrotesk(
-          fontSize: 22,
-=======
         titleTextStyle: GoogleFonts.inter(
           fontSize: 20,
->>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
-<<<<<<< HEAD
-      textTheme: GoogleFonts.manropeTextTheme(base.textTheme).copyWith(
-        headlineMedium: GoogleFonts.spaceGrotesk(
-          fontSize: 24,
-=======
       textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
         headlineLarge: GoogleFonts.inter(
           fontSize: 28,
@@ -92,35 +56,22 @@ class AppTheme {
         ),
         headlineMedium: GoogleFonts.inter(
           fontSize: 22,
->>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
-        titleMedium: GoogleFonts.spaceGrotesk(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        ),
-        bodyMedium: GoogleFonts.manrope(
+        bodyMedium: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: AppColors.textSecondary,
         ),
-        bodySmall: GoogleFonts.manrope(
+        bodySmall: GoogleFonts.inter(
           fontSize: 12,
           color: AppColors.textSecondary,
         ),
-<<<<<<< HEAD
-        labelLarge: GoogleFonts.spaceGrotesk(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          color: AppColors.background,
-=======
         labelLarge: GoogleFonts.inter(
           fontSize: 15,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
->>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -128,14 +79,6 @@ class AppTheme {
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-<<<<<<< HEAD
-            borderRadius: BorderRadius.circular(14),
-          ),
-          minimumSize: const Size(double.infinity, 56),
-          textStyle: GoogleFonts.spaceGrotesk(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-=======
             borderRadius: BorderRadius.circular(12),
           ),
           minimumSize: const Size(double.infinity, 52),
@@ -143,51 +86,32 @@ class AppTheme {
           textStyle: GoogleFonts.inter(
             fontSize: 15,
             fontWeight: FontWeight.w600,
->>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
           ),
         ),
       ),
       sliderTheme: const SliderThemeData(
         activeTrackColor: AppColors.primary,
-<<<<<<< HEAD
-        thumbColor: AppColors.secondary,
-        inactiveTrackColor: AppColors.surfaceAlt,
-        overlayColor: Color(0x3312D6A0),
-=======
         thumbColor: AppColors.primary,
         inactiveTrackColor: AppColors.surfaceElevated,
         overlayColor: Color(0x226C63FF),
         trackHeight: 4,
->>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface,
         border: OutlineInputBorder(
-<<<<<<< HEAD
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-=======
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
->>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        labelStyle: GoogleFonts.manrope(
+        labelStyle: GoogleFonts.inter(
           color: AppColors.textSecondary,
           fontSize: 14,
         ),
-        hintStyle: GoogleFonts.manrope(
+        hintStyle: GoogleFonts.inter(
           color: AppColors.textSecondary,
           fontSize: 14,
         ),
@@ -196,10 +120,6 @@ class AppTheme {
         color: AppColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-<<<<<<< HEAD
-          borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: AppColors.border),
-=======
           borderRadius: BorderRadius.circular(16),
         ),
       ),
@@ -211,7 +131,6 @@ class AppTheme {
           (s) => s.contains(MaterialState.selected)
               ? AppColors.primary.withOpacity(0.4)
               : AppColors.surfaceElevated,
->>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
         ),
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
@@ -219,13 +138,8 @@ class AppTheme {
           filled: true,
           fillColor: AppColors.surface,
           border: OutlineInputBorder(
-<<<<<<< HEAD
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.border),
-=======
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none,
->>>>>>> fe6d353a2e22cfe0b7e5778b3154e47f427773b4
           ),
         ),
       ),
