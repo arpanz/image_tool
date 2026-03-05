@@ -14,6 +14,8 @@ import '../home/home_screen.dart';
 import '../result/result_screen.dart';
 import 'editor_controller.dart';
 
+enum _DimUnit { px, percent, cm, mm }
+
 class EditorScreen extends ConsumerStatefulWidget {
   final SelectedImage image;
   final ImageMode mode;
@@ -28,7 +30,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   late final TextEditingController _heightCtrl;
   late final TextEditingController _percentCtrl;
   late final TextEditingController _targetSizeCtrl;
-  bool _usePercentage = false;
+  late final TextEditingController _dpiCtrl;
+  _DimUnit _dimUnit = _DimUnit.px;
   bool _useTargetSize = false;
 
   @override
@@ -38,6 +41,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     _heightCtrl = TextEditingController();
     _percentCtrl = TextEditingController(text: '75');
     _targetSizeCtrl = TextEditingController();
+    _dpiCtrl = TextEditingController(text: '72');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(editorProvider.notifier).reset();
     });
@@ -49,6 +53,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     _heightCtrl.dispose();
     _percentCtrl.dispose();
     _targetSizeCtrl.dispose();
+    _dpiCtrl.dispose();
     super.dispose();
   }
 
@@ -64,17 +69,30 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     }
 
     if (widget.mode == ImageMode.resize) {
-      if (_usePercentage) {
-        final pct = double.tryParse(_percentCtrl.text.trim());
-        if (pct != null && pct > 0) {
-          notifier.setWidth((widget.image.width * pct / 100).round());
-          notifier.setHeight((widget.image.height * pct / 100).round());
-        }
-      } else {
-        final w = int.tryParse(_widthCtrl.text.trim());
-        final h = int.tryParse(_heightCtrl.text.trim());
-        if (w != null) notifier.setWidth(w);
-        if (h != null) notifier.setHeight(h);
+      switch (_dimUnit) {
+        case _DimUnit.percent:
+          final pct = double.tryParse(_percentCtrl.text.trim());
+          if (pct != null && pct > 0) {
+            notifier.setWidth((widget.image.width * pct / 100).round());
+            notifier.setHeight((widget.image.height * pct / 100).round());
+          }
+        case _DimUnit.px:
+          final w = int.tryParse(_widthCtrl.text.trim());
+          final h = int.tryParse(_heightCtrl.text.trim());
+          if (w != null) notifier.setWidth(w);
+          if (h != null) notifier.setHeight(h);
+        case _DimUnit.cm:
+          final dpi = double.tryParse(_dpiCtrl.text.trim()) ?? 72;
+          final wCm = double.tryParse(_widthCtrl.text.trim());
+          final hCm = double.tryParse(_heightCtrl.text.trim());
+          if (wCm != null) notifier.setWidth((wCm / 2.54 * dpi).round());
+          if (hCm != null) notifier.setHeight((hCm / 2.54 * dpi).round());
+        case _DimUnit.mm:
+          final dpi = double.tryParse(_dpiCtrl.text.trim()) ?? 72;
+          final wMm = double.tryParse(_widthCtrl.text.trim());
+          final hMm = double.tryParse(_heightCtrl.text.trim());
+          if (wMm != null) notifier.setWidth((wMm / 25.4 * dpi).round());
+          if (hMm != null) notifier.setHeight((hMm / 25.4 * dpi).round());
       }
     }
 
@@ -286,15 +304,20 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const _SectionLabel('Dimensions'),
-                          _SegmentedToggle(
-                            selected: _usePercentage,
-                            onChanged: (v) =>
-                                setState(() => _usePercentage = v),
+                          _UnitSelector(
+                            current: _dimUnit,
+                            onChanged: (u) {
+                              setState(() {
+                                _dimUnit = u;
+                                _widthCtrl.clear();
+                                _heightCtrl.clear();
+                              });
+                            },
                           ),
                         ],
                       ),
                       const Gap(16),
-                      if (_usePercentage) ...[
+                      if (_dimUnit == _DimUnit.percent) ...[
                         Text(
                           'Scale to ${_percentCtrl.text.isNotEmpty ? _percentCtrl.text : "?"}% of original',
                           style: tt.bodySmall,
@@ -345,22 +368,72 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           ),
                         ],
                       ] else ...[
-                        Text('Enter width, height, or both',
-                            style: tt.bodySmall),
+                        if (_dimUnit == _DimUnit.cm ||
+                            _dimUnit == _DimUnit.mm) ...[
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _dpiCtrl,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  decoration: const InputDecoration(
+                                    labelText: 'DPI / PPI',
+                                    hintText: '72',
+                                    helperText: 'Print: 300  Screen: 72',
+                                  ),
+                                  onChanged: (_) => setState(() {}),
+                                ),
+                              ),
+                              const Gap(8),
+                              _DpiPreset(
+                                  label: '72',
+                                  onTap: () =>
+                                      setState(() => _dpiCtrl.text = '72')),
+                              const Gap(4),
+                              _DpiPreset(
+                                  label: '150',
+                                  onTap: () =>
+                                      setState(() => _dpiCtrl.text = '150')),
+                              const Gap(4),
+                              _DpiPreset(
+                                  label: '300',
+                                  onTap: () =>
+                                      setState(() => _dpiCtrl.text = '300')),
+                            ],
+                          ),
+                          const Gap(12),
+                        ],
+                        Text(
+                          _dimUnit == _DimUnit.px
+                              ? 'Enter width, height, or both'
+                              : 'Enter dimensions in ${_dimUnit == _DimUnit.cm ? 'centimeters' : 'millimeters'}',
+                          style: tt.bodySmall,
+                        ),
                         const Gap(10),
                         Row(
                           children: [
                             Expanded(
                               child: TextField(
                                 controller: _widthCtrl,
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly
-                                ],
+                                keyboardType: _dimUnit == _DimUnit.px
+                                    ? TextInputType.number
+                                    : const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                inputFormatters: _dimUnit == _DimUnit.px
+                                    ? [FilteringTextInputFormatter.digitsOnly]
+                                    : [
+                                        FilteringTextInputFormatter.allow(
+                                            RegExp(r'[0-9.]'))
+                                      ],
                                 decoration: InputDecoration(
                                   labelText: 'Width',
-                                  suffixText: 'px',
-                                  hintText: '${widget.image.width}',
+                                  suffixText: _dimUnitLabel(_dimUnit),
+                                  hintText: _dimUnit == _DimUnit.px
+                                      ? '${widget.image.width}'
+                                      : null,
                                 ),
                                 onChanged: (_) => setState(() {}),
                               ),
@@ -369,14 +442,22 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                             Expanded(
                               child: TextField(
                                 controller: _heightCtrl,
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly
-                                ],
+                                keyboardType: _dimUnit == _DimUnit.px
+                                    ? TextInputType.number
+                                    : const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                inputFormatters: _dimUnit == _DimUnit.px
+                                    ? [FilteringTextInputFormatter.digitsOnly]
+                                    : [
+                                        FilteringTextInputFormatter.allow(
+                                            RegExp(r'[0-9.]'))
+                                      ],
                                 decoration: InputDecoration(
                                   labelText: 'Height',
-                                  suffixText: 'px',
-                                  hintText: '${widget.image.height}',
+                                  suffixText: _dimUnitLabel(_dimUnit),
+                                  hintText: _dimUnit == _DimUnit.px
+                                      ? '${widget.image.height}'
+                                      : null,
                                 ),
                                 onChanged: (_) => setState(() {}),
                               ),
@@ -386,11 +467,13 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         if (_widthCtrl.text.isNotEmpty ||
                             _heightCtrl.text.isNotEmpty) ...[
                           const Gap(12),
-                          _PxDimensionPreview(
+                          _PhysicalDimensionPreview(
                             originalW: widget.image.width,
                             originalH: widget.image.height,
-                            targetW: int.tryParse(_widthCtrl.text),
-                            targetH: int.tryParse(_heightCtrl.text),
+                            widthText: _widthCtrl.text,
+                            heightText: _heightCtrl.text,
+                            unit: _dimUnit,
+                            dpi: double.tryParse(_dpiCtrl.text) ?? 72,
                             keepAspect: settings.keepAspectRatio,
                           ),
                         ],
@@ -477,6 +560,19 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     if (q >= 60) return 'Balanced quality and size';
     if (q >= 35) return 'Smaller file \u00b7 Some quality loss';
     return 'Maximum compression \u00b7 Visible quality loss';
+  }
+
+  String _dimUnitLabel(_DimUnit u) {
+    switch (u) {
+      case _DimUnit.px:
+        return 'px';
+      case _DimUnit.percent:
+        return '%';
+      case _DimUnit.cm:
+        return 'cm';
+      case _DimUnit.mm:
+        return 'mm';
+    }
   }
 }
 
@@ -573,10 +669,10 @@ class _SectionLabel extends StatelessWidget {
       Text(text, style: Theme.of(context).textTheme.labelLarge);
 }
 
-class _SegmentedToggle extends StatelessWidget {
-  final bool selected;
-  final ValueChanged<bool> onChanged;
-  const _SegmentedToggle({required this.selected, required this.onChanged});
+class _UnitSelector extends StatelessWidget {
+  final _DimUnit current;
+  final ValueChanged<_DimUnit> onChanged;
+  const _UnitSelector({required this.current, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -590,12 +686,19 @@ class _SegmentedToggle extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          _ToggleTab(
-              label: 'px', active: !selected, onTap: () => onChanged(false)),
-          _ToggleTab(
-              label: '%', active: selected, onTap: () => onChanged(true)),
-        ],
+        children: _DimUnit.values.map((u) {
+          final label = switch (u) {
+            _DimUnit.px => 'px',
+            _DimUnit.percent => '%',
+            _DimUnit.cm => 'cm',
+            _DimUnit.mm => 'mm',
+          };
+          return _ToggleTab(
+            label: label,
+            active: current == u,
+            onTap: () => onChanged(u),
+          );
+        }).toList(),
       ),
     );
   }
@@ -660,6 +763,31 @@ class _PercentPreset extends StatelessWidget {
   }
 }
 
+class _DpiPreset extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _DpiPreset({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark
+              ? AppColors.surfaceElevated
+              : AppColors.lightSurfaceElevated,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+}
+
 class _SizePresetChip extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -700,23 +828,45 @@ class _DimensionPreview extends StatelessWidget {
   }
 }
 
-class _PxDimensionPreview extends StatelessWidget {
+class _PhysicalDimensionPreview extends StatelessWidget {
   final int originalW;
   final int originalH;
-  final int? targetW;
-  final int? targetH;
+  final String widthText;
+  final String heightText;
+  final _DimUnit unit;
+  final double dpi;
   final bool keepAspect;
 
-  const _PxDimensionPreview({
+  const _PhysicalDimensionPreview({
     required this.originalW,
     required this.originalH,
-    required this.targetW,
-    required this.targetH,
+    required this.widthText,
+    required this.heightText,
+    required this.unit,
+    required this.dpi,
     required this.keepAspect,
   });
 
+  int? _toPx(String text) {
+    final v = double.tryParse(text);
+    if (v == null || v <= 0) return null;
+    switch (unit) {
+      case _DimUnit.px:
+        return v.round();
+      case _DimUnit.cm:
+        return (v / 2.54 * dpi).round();
+      case _DimUnit.mm:
+        return (v / 25.4 * dpi).round();
+      case _DimUnit.percent:
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    int? targetW = widthText.isNotEmpty ? _toPx(widthText) : null;
+    int? targetH = heightText.isNotEmpty ? _toPx(heightText) : null;
+
     int resolvedW = targetW ?? originalW;
     int resolvedH = targetH ?? originalH;
 
@@ -735,9 +885,11 @@ class _PxDimensionPreview extends StatelessWidget {
     }
 
     final cs = Theme.of(context).colorScheme;
+    final unitLabel =
+        unit == _DimUnit.px ? '' : ' (${resolvedW}\u00d7${resolvedH} px)';
     return _PreviewChip(
         text:
-            '${originalW}\u00d7${originalH}  \u2192  ${resolvedW}\u00d7${resolvedH}',
+            '${originalW}\u00d7${originalH}  \u2192  ${resolvedW}\u00d7${resolvedH}$unitLabel',
         color: cs.primary);
   }
 }
