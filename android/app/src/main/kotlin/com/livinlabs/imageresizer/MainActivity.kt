@@ -1,4 +1,4 @@
-package com.example.image_tool
+package com.livinlabs.imageresizer
 
 import io.flutter.embedding.android.FlutterActivity
 
