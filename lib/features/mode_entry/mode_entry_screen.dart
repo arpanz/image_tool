@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:pixel_forge/features/editor/editor_screen.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
 import '../batch/batch_screen.dart';
@@ -88,7 +89,6 @@ class _ModeEntryScreenState extends ConsumerState<ModeEntryScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // ── Header ────────────────────────────────────────────────
               Row(
                 children: [
@@ -154,8 +154,7 @@ class _ModeEntryScreenState extends ConsumerState<ModeEntryScreen>
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeInCubic,
                   transitionBuilder: (child, anim) {
-                    final isIncoming =
-                        child.key == ValueKey(_tab);
+                    final isIncoming = child.key == ValueKey(_tab);
                     final offset = isIncoming
                         ? (_tab == _EntryTab.batch
                             ? const Offset(1, 0)
@@ -168,8 +167,7 @@ class _ModeEntryScreenState extends ConsumerState<ModeEntryScreen>
                         begin: offset,
                         end: Offset.zero,
                       ).animate(anim),
-                      child: FadeTransition(
-                          opacity: anim, child: child),
+                      child: FadeTransition(opacity: anim, child: child),
                     );
                   },
                   child: _tab == _EntryTab.single
@@ -210,9 +208,8 @@ class _TabToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.surface : AppColors.lightSurface;
-    final border = isDark
-        ? AppColors.surfaceElevated
-        : AppColors.lightSurfaceElevated;
+    final border =
+        isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated;
 
     return Container(
       height: 46,
@@ -265,10 +262,7 @@ class _TabToggle extends StatelessWidget {
                       style: TextStyle(
                         color: selected == _EntryTab.single
                             ? Colors.white
-                            : Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.color,
+                            : Theme.of(context).textTheme.bodySmall?.color,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -290,10 +284,7 @@ class _TabToggle extends StatelessWidget {
                           style: TextStyle(
                             color: selected == _EntryTab.batch
                                 ? Colors.white
-                                : Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.color,
+                                : Theme.of(context).textTheme.bodySmall?.color,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -302,16 +293,13 @@ class _TabToggle extends StatelessWidget {
                         const Gap(6),
                         AnimatedOpacity(
                           duration: const Duration(milliseconds: 200),
-                          opacity:
-                              selected == _EntryTab.batch ? 0 : 1,
+                          opacity: selected == _EntryTab.batch ? 0 : 1,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                  colors: gradient),
-                              borderRadius:
-                                  BorderRadius.circular(20),
+                              gradient: LinearGradient(colors: gradient),
+                              borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
                               'NEW',
@@ -359,8 +347,7 @@ class _SingleContent extends ConsumerWidget {
       if (next is PickerLoaded) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) =>
-                EditorScreen(image: next.image, mode: mode),
+            builder: (_) => EditorScreen(image: next.image, mode: mode),
           ),
         );
       } else if (next is PickerError) {
@@ -369,8 +356,8 @@ class _SingleContent extends ConsumerWidget {
             content: Text(next.message),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -422,7 +409,8 @@ class _BatchContent extends StatelessWidget {
             isLoading: false,
             gradient: gradient,
             icon: Icons.photo_library_outlined,
-            primaryLabel: 'Tap to start batch ${isCompress ? "compression" : "resize"}',
+            primaryLabel:
+                'Tap to start batch ${isCompress ? "compression" : "resize"}',
             secondaryLabel: 'Select multiple images at once',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
@@ -513,10 +501,8 @@ class _PickZoneState extends State<_PickZone>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor =
-        isDark ? AppColors.surface : AppColors.lightSurface;
-    final borderColor =
-        widget.gradient[0].withOpacity(_pressed ? 0.75 : 0.3);
+    final surfaceColor = isDark ? AppColors.surface : AppColors.lightSurface;
+    final borderColor = widget.gradient[0].withOpacity(_pressed ? 0.75 : 0.3);
     final tt = Theme.of(context).textTheme;
 
     return GestureDetector(
@@ -529,9 +515,7 @@ class _PickZoneState extends State<_PickZone>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: _pressed
-              ? widget.gradient[0].withOpacity(0.07)
-              : surfaceColor,
+          color: _pressed ? widget.gradient[0].withOpacity(0.07) : surfaceColor,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: borderColor, width: 1.5),
           boxShadow: [
@@ -558,8 +542,7 @@ class _PickZoneState extends State<_PickZone>
                       ),
                     ),
                     const Gap(16),
-                    Text('Reading image…',
-                        style: tt.bodyMedium),
+                    Text('Reading image…', style: tt.bodyMedium),
                   ],
                 )
               : Column(
@@ -584,15 +567,13 @@ class _PickZoneState extends State<_PickZone>
                           borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
-                              color: widget.gradient[0]
-                                  .withOpacity(0.4),
+                              color: widget.gradient[0].withOpacity(0.4),
                               blurRadius: 20,
                               offset: const Offset(0, 6),
                             ),
                           ],
                         ),
-                        child: Icon(widget.icon,
-                            size: 40, color: Colors.white),
+                        child: Icon(widget.icon, size: 40, color: Colors.white),
                       ),
                     ),
                     const Gap(22),
@@ -633,12 +614,9 @@ class _InfoChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.surface
-            : AppColors.lightSurface,
+        color: isDark ? AppColors.surface : AppColors.lightSurface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: gradient[0].withOpacity(0.25),
@@ -673,8 +651,7 @@ class _PrivacyNote extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.lock_outline_rounded,
-            size: 12, color: tt.bodySmall?.color),
+        Icon(Icons.lock_outline_rounded, size: 12, color: tt.bodySmall?.color),
         const Gap(5),
         Text(
           'Fully offline · No data leaves your device',

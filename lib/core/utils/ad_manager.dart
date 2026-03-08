@@ -30,9 +30,9 @@ class AdManager {
   int _paywallThreshold = 3;
 
   // Ad unit IDs
-  final String _realBannerId = 'ca-app-pub-4397005408366648/3614410900';
-  final String _realInterstitialId = 'ca-app-pub-4397005408366648/8916523251';
-  final String _realNativeId = 'ca-app-pub-4397005408366648/5765432100';
+  final String _realBannerId = 'ca-app-pub-4397005408366648/4695380015';
+  final String _realInterstitialId = 'ca-app-pub-4397005408366648/5186334601';
+  final String _realNativeId = 'ca-app-pub-4397005408366648/4850604320';
 
   final String _testBannerId = 'ca-app-pub-3940256099942544/6300978111';
   final String _testInterstitialId = 'ca-app-pub-3940256099942544/1033173712';
