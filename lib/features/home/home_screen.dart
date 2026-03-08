@@ -46,7 +46,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Pixel Forge', style: tt.headlineLarge),
+                      Text('Image Resizer', style: tt.headlineLarge),
                       const Gap(4),
                       Text('What do you want to do?',
                           style: tt.bodyMedium),
