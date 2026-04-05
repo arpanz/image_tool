@@ -8,12 +8,13 @@ import '../../core/theme/app_theme.dart';
 import '../../core/models/compression_result.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/utils/ad_manager.dart';
+import '../../core/utils/app_review_service.dart';
 import '../../core/widgets/pf_button.dart';
 import '../home/home_screen.dart';
 import '../picker/picker_controller.dart';
 import '../editor/editor_controller.dart';
 
-class ResultScreen extends ConsumerWidget {
+class ResultScreen extends ConsumerStatefulWidget {
   final CompressionResult result;
   final ImageMode mode;
 
@@ -23,14 +24,29 @@ class ResultScreen extends ConsumerWidget {
     required this.mode,
   });
 
+  @override
+  ConsumerState<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends ConsumerState<ResultScreen> {
+  CompressionResult get result => widget.result;
+  ImageMode get mode => widget.mode;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppReviewService.registerSuccessfulAction();
+    });
+  }
+
   Future<void> _saveToDevice(BuildContext context) async {
     try {
       final dir = await getExternalStorageDirectory() ??
           await getApplicationDocumentsDirectory();
       final dot = result.outputPath.lastIndexOf('.');
-      final ext = dot >= 0
-          ? result.outputPath.substring(dot).toLowerCase()
-          : '.jpg';
+      final ext =
+          dot >= 0 ? result.outputPath.substring(dot).toLowerCase() : '.jpg';
       await File(result.outputPath).copy(
           '${dir.path}/PixelForge_${DateTime.now().millisecondsSinceEpoch}$ext');
       if (context.mounted) {
@@ -39,8 +55,8 @@ class ResultScreen extends ConsumerWidget {
             content: const Text('Image saved to device!'),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -51,8 +67,8 @@ class ResultScreen extends ConsumerWidget {
             content: Text('Save failed: $e'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -64,7 +80,7 @@ class ResultScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final isResize = mode == ImageMode.resize;
     final savedPositive = result.savedPercent >= 0;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -87,8 +103,7 @@ class ResultScreen extends ConsumerWidget {
             },
             child: Text(
               'New Image',
-              style: TextStyle(
-                  color: cs.primary, fontWeight: FontWeight.w600),
+              style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -150,8 +165,7 @@ class ResultScreen extends ConsumerWidget {
               GestureDetector(
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) =>
-                        _FullscreenViewer(path: result.outputPath),
+                    builder: (_) => _FullscreenViewer(path: result.outputPath),
                   ),
                 ),
                 child: Stack(
@@ -171,8 +185,7 @@ class ResultScreen extends ConsumerWidget {
                           ),
                           child: Center(
                             child: Icon(Icons.broken_image_outlined,
-                                size: 48,
-                                color: tt.bodySmall?.color),
+                                size: 48, color: tt.bodySmall?.color),
                           ),
                         ),
                       ),
@@ -273,9 +286,8 @@ class ResultScreen extends ConsumerWidget {
                         value: savedPositive
                             ? '-${result.savedPercent.toStringAsFixed(1)}%'
                             : '+${(-result.savedPercent).toStringAsFixed(1)}%',
-                        valueColor: savedPositive
-                            ? AppColors.success
-                            : AppColors.error,
+                        valueColor:
+                            savedPositive ? AppColors.success : AppColors.error,
                       ),
                     ],
                   ],
@@ -297,9 +309,8 @@ class ResultScreen extends ConsumerWidget {
               PfButton(
                 label: 'Save to Device',
                 icon: Icons.download_outlined,
-                backgroundColor: isDark
-                    ? AppColors.surface
-                    : AppColors.lightSurfaceElevated,
+                backgroundColor:
+                    isDark ? AppColors.surface : AppColors.lightSurfaceElevated,
                 onPressed: () => _saveToDevice(context),
               ),
               const Gap(8),
@@ -317,9 +328,7 @@ class _StatRow extends StatelessWidget {
   final Color valueColor;
 
   const _StatRow(
-      {required this.label,
-      required this.value,
-      required this.valueColor});
+      {required this.label, required this.value, required this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -330,9 +339,7 @@ class _StatRow extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-              color: valueColor,
-              fontSize: 16,
-              fontWeight: FontWeight.w700),
+              color: valueColor, fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -350,8 +357,7 @@ class _FullscreenViewer extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Preview',
-            style: TextStyle(color: Colors.white)),
+        title: const Text('Preview', style: TextStyle(color: Colors.white)),
       ),
       body: InteractiveViewer(
         minScale: 0.5,

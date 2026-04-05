@@ -6,29 +6,48 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
+import '../../core/utils/app_review_service.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/widgets/pf_button.dart';
 import '../home/home_screen.dart';
 import 'batch_controller.dart';
 
-class BatchResultScreen extends ConsumerWidget {
+class BatchResultScreen extends ConsumerStatefulWidget {
   final ImageMode mode;
   const BatchResultScreen({super.key, required this.mode});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(batchProvider);
-    final done = state.items
-        .where((i) => i.status == BatchItemStatus.done)
-        .toList();
-    final failed = state.items
-        .where((i) => i.status == BatchItemStatus.failed)
-        .toList();
+  ConsumerState<BatchResultScreen> createState() => _BatchResultScreenState();
+}
 
-    final totalOriginal = done.fold<int>(
-        0, (sum, i) => sum + i.image.originalSize);
-    final totalNew = done.fold<int>(
-        0, (sum, i) => sum + (i.result?.newSize ?? 0));
+class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
+  ImageMode get mode => widget.mode;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = ref.read(batchProvider);
+      final hasSuccess =
+          state.items.any((i) => i.status == BatchItemStatus.done);
+      if (hasSuccess) {
+        AppReviewService.registerSuccessfulAction();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(batchProvider);
+    final done =
+        state.items.where((i) => i.status == BatchItemStatus.done).toList();
+    final failed =
+        state.items.where((i) => i.status == BatchItemStatus.failed).toList();
+
+    final totalOriginal =
+        done.fold<int>(0, (sum, i) => sum + i.image.originalSize);
+    final totalNew =
+        done.fold<int>(0, (sum, i) => sum + (i.result?.newSize ?? 0));
     final savedPercent = totalOriginal > 0
         ? ((totalOriginal - totalNew) / totalOriginal * 100)
         : 0.0;
@@ -37,9 +56,8 @@ class BatchResultScreen extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final cardColor = isDark ? AppColors.surface : AppColors.lightSurface;
-    final divColor = isDark
-        ? AppColors.surfaceElevated
-        : AppColors.lightSurfaceElevated;
+    final divColor =
+        isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated;
     final isCompress = mode == ImageMode.compress;
 
     return Scaffold(
@@ -53,8 +71,8 @@ class BatchResultScreen extends ConsumerWidget {
               Navigator.of(context).popUntil((r) => r.isFirst);
             },
             child: Text('New Batch',
-                style: TextStyle(
-                    color: cs.primary, fontWeight: FontWeight.w600)),
+                style:
+                    TextStyle(color: cs.primary, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -239,8 +257,8 @@ class BatchResultScreen extends ConsumerWidget {
           content: Text('$saved images saved to device!'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ));
       }
     } on Exception catch (e) {
@@ -260,9 +278,7 @@ class _StatRow extends StatelessWidget {
   final String value;
   final Color valueColor;
   const _StatRow(
-      {required this.label,
-      required this.value,
-      required this.valueColor});
+      {required this.label, required this.value, required this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -272,9 +288,7 @@ class _StatRow extends StatelessWidget {
         Text(label, style: Theme.of(context).textTheme.bodyMedium),
         Text(value,
             style: TextStyle(
-                color: valueColor,
-                fontSize: 16,
-                fontWeight: FontWeight.w700)),
+                color: valueColor, fontSize: 16, fontWeight: FontWeight.w700)),
       ],
     );
   }
@@ -322,12 +336,11 @@ class _ResultGrid extends StatelessWidget {
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.65),
-                  borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(10)),
+                  borderRadius:
+                      const BorderRadius.vertical(bottom: Radius.circular(10)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

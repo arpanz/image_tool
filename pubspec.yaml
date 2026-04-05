@@ -23,6 +23,8 @@ dependencies:
   flutter_launcher_icons: ^0.14.4
   flutter_native_splash: ^2.4.7
   change_app_package_name: ^1.5.0
+  in_app_update: ^4.2.5
+  in_app_review: ^2.0.11
 
 assets:
   - assets/icon.png

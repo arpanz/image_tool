@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../../core/providers/theme_provider.dart';
 import '../../core/utils/ad_manager.dart';
+import '../../core/utils/app_update_service.dart';
 import '../../features/premium/paywall_screen.dart';
 import '../mode_entry/mode_entry_screen.dart';
 
@@ -24,6 +25,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         MaterialPageRoute(builder: (_) => const PaywallScreen()),
       );
     };
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      AppUpdateService.checkForUpdatesOnLaunch(context);
+    });
   }
 
   @override
@@ -48,8 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       Text('Image Resizer', style: tt.headlineLarge),
                       const Gap(4),
-                      Text('What do you want to do?',
-                          style: tt.bodyMedium),
+                      Text('What do you want to do?', style: tt.bodyMedium),
                     ],
                   ),
                   Row(
@@ -90,10 +94,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [
-                              Color(0xFF4ADE80),
-                              Color(0xFF22C55E)
-                            ]),
+                            gradient: const LinearGradient(
+                                colors: [Color(0xFF4ADE80), Color(0xFF22C55E)]),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Row(
@@ -114,8 +116,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       // Theme toggle
                       GestureDetector(
                         onTap: () =>
-                            ref.read(themeProvider.notifier).state =
-                                !isDark,
+                            ref.read(themeProvider.notifier).state = !isDark,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
                           width: 52,
@@ -137,8 +138,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ? Alignment.centerRight
                                 : Alignment.centerLeft,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 3),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 3),
                               child: Icon(
                                 isDark
                                     ? Icons.dark_mode_rounded
@@ -162,10 +163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 icon: Icons.compress_rounded,
                 title: 'Compress',
                 subtitle: 'Reduce file size · Single or batch',
-                gradient: [
-                  const Color(0xFF6C63FF),
-                  const Color(0xFF9D97FF)
-                ],
+                gradient: [const Color(0xFF6C63FF), const Color(0xFF9D97FF)],
                 onTap: () => _navigate(context, ImageMode.compress),
               ),
               const Gap(16),
@@ -173,10 +171,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 icon: Icons.photo_size_select_large_rounded,
                 title: 'Resize',
                 subtitle: 'Change dimensions · Single or batch',
-                gradient: [
-                  const Color(0xFF11998E),
-                  const Color(0xFF38EF7D)
-                ],
+                gradient: [const Color(0xFF11998E), const Color(0xFF38EF7D)],
                 onTap: () => _navigate(context, ImageMode.resize),
               ),
 
@@ -193,10 +188,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Icon(Icons.lock_outline_rounded,
                       size: 13,
-                      color: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.color),
+                      color: Theme.of(context).textTheme.bodySmall?.color),
                   const Gap(6),
                   Text(
                     'Fully offline \u00b7 No data leaves your device',
@@ -214,8 +206,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _navigate(BuildContext context, ImageMode mode) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-          builder: (_) => ModeEntryScreen(mode: mode)),
+      MaterialPageRoute(builder: (_) => ModeEntryScreen(mode: mode)),
     );
   }
 }
@@ -269,8 +260,7 @@ class _ModeCardState extends State<_ModeCard> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: widget.gradient[0]
-                    .withOpacity(isDark ? 0.35 : 0.25),
+                color: widget.gradient[0].withOpacity(isDark ? 0.35 : 0.25),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -285,8 +275,7 @@ class _ModeCardState extends State<_ModeCard> {
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(widget.icon,
-                    color: Colors.white, size: 30),
+                child: Icon(widget.icon, color: Colors.white, size: 30),
               ),
               const Gap(20),
               Expanded(
