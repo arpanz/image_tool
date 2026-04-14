@@ -38,7 +38,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final gridHeight = MediaQuery.of(context).size.width - 24;
 
     final tiles = <_ModeGridTileData>[
       _ModeGridTileData(
@@ -83,9 +82,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: Text('Pixel Forge', style: tt.headlineLarge),
+                    child: Text(
+                      'Pixel Forge',
+                      style: tt.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                        color: cs.onSurface,
+                      ),
+                    ),
                   ),
                   if (!AdManager.instance.isPro)
                     _ProBadge(
@@ -97,39 +104,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     )
                   else
                     _ActiveProBadge(),
-                  const Gap(6),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  const Gap(8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest,
+                      shape: BoxShape.circle,
                     ),
-                    icon: const Icon(Icons.settings_outlined),
-                    iconSize: 22,
-                    color: cs.onSurfaceVariant,
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(),
+                    child: IconButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const SettingsScreen()),
+                      ),
+                      icon: const Icon(Icons.settings_rounded),
+                      iconSize: 24,
+                      color: cs.onSurfaceVariant,
+                      padding: const EdgeInsets.all(12),
+                      constraints: const BoxConstraints(),
+                    ),
                   ),
                 ],
               ),
-              const Gap(4),
+              const Gap(8),
               Text(
-                'Simple tools for everyday image edits',
-                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-              ),
-              const Gap(16),
-              SizedBox(
-                height: gridHeight,
-                child: GridView.builder(
-                  itemCount: tiles.length,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.03,
-                  ),
-                  itemBuilder: (context, index) =>
-                      _ModeGridTile(data: tiles[index]),
+                'What would you like to edit today?',
+                style: tt.titleMedium?.copyWith(
+                  color: cs.onSurfaceVariant.withOpacity(0.8),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.1,
                 ),
+              ),
+              const Gap(24),
+              GridView.builder(
+                shrinkWrap: true,
+                itemCount: tiles.length,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.95,
+                ),
+                itemBuilder: (context, index) =>
+                    _ModeGridTile(data: tiles[index]),
               ),
               const Gap(16),
               AdManager.instance.getMediumNativeAdWidget(),
@@ -173,47 +189,62 @@ class _ModeGridTile extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: data.onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withOpacity(0.32),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: cs.outlineVariant.withOpacity(0.35),
+    return Container(
+      decoration: BoxDecoration(
+        color: data.accentColor.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: data.accentColor.withOpacity(0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: data.onTap,
+          splashColor: Colors.white.withOpacity(0.15),
+          highlightColor: Colors.white.withOpacity(0.05),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    data.icon,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  data.title,
+                  style: tt.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: Colors.white,
+                  ),
+                ),
+                const Gap(4),
+                Text(
+                  data.subtitle,
+                  style: tt.bodySmall?.copyWith(
+                    color: Colors.white.withOpacity(0.75),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: data.accentColor.withOpacity(0.13),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  data.icon,
-                  color: data.accentColor,
-                  size: 22,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                data.title,
-                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const Gap(4),
-              Text(
-                data.subtitle,
-                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-              ),
-            ],
           ),
         ),
       ),
@@ -232,24 +263,33 @@ class _ProBadge extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFD700).withOpacity(0.12),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: const Color(0xFFFFD700).withOpacity(0.35),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFD700), Color(0xFFF5B041)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFD700).withOpacity(0.25),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.workspace_premium_rounded,
-                size: 13, color: Color(0xFFFFD700)),
-            Gap(5),
+                size: 14, color: Color(0xFF6B4C0A)),
+            Gap(4),
             Text(
-              'Pro',
+              'PRO',
               style: TextStyle(
-                color: Color(0xFFFFD700),
+                color: Color(0xFF6B4C0A),
                 fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
               ),
             ),
           ],
@@ -265,21 +305,22 @@ class _ActiveProBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: AppColors.compress.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.compress.withOpacity(0.3)),
+        color: AppColors.compress.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.compress.withOpacity(0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_circle_rounded, size: 13, color: AppColors.compress),
-          const Gap(5),
+          Icon(Icons.check_circle_rounded, size: 14, color: AppColors.compress),
+          const Gap(4),
           Text(
-            'Pro',
+            'PRO',
             style: TextStyle(
               color: AppColors.compress,
               fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
             ),
           ),
         ],
