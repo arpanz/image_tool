@@ -45,34 +45,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             // ── Top bar ───────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(22, 18, 16, 0),
+              padding: const EdgeInsets.fromLTRB(22, 20, 14, 0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Pixel Forge', style: tt.headlineLarge),
-                        const Gap(3),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.lock_outline_rounded,
-                              size: 11,
-                              color: cs.onSurfaceVariant,
-                            ),
-                            const Gap(4),
-                            Text(
-                              'Offline · No data leaves your device',
-                              style: tt.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                    child: Text('Pixel Forge', style: tt.headlineLarge),
                   ),
-                  // Pro badge
                   if (!AdManager.instance.isPro)
                     _ProBadge(
                       onTap: () => Navigator.of(context).push(
@@ -82,8 +61,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     )
                   else
                     _ActiveProBadge(),
-                  const Gap(6),
-                  // Settings — contains theme toggle
+                  const Gap(4),
                   IconButton(
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
@@ -99,12 +77,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            const Gap(28),
+            const Gap(6),
 
-            // ── Mode cards ────────────────────────────────────────────────────
+            // ── Subtitle ──────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 0),
+              child: Text(
+                'What would you like to do?',
+                style: tt.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+            ),
+
+            const Gap(24),
+
+            // ── Mode cards ────────────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 child: Column(
                   children: [
                     _ModeCard(
@@ -112,42 +103,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       accentColor: AppColors.compress,
                       title: 'Compress',
                       subtitle: 'Reduce file size without losing quality',
-                      tag: 'JPG · PNG · WEBP',
+                      formats: const ['JPG', 'PNG', 'WEBP'],
                       onTap: () => _navigate(context, ImageMode.compress),
                     ),
-                    const Gap(12),
+                    const Gap(10),
                     _ModeCard(
                       icon: Icons.photo_size_select_large_rounded,
                       accentColor: AppColors.resize,
                       title: 'Resize',
                       subtitle: 'Change dimensions by pixels or percentage',
-                      tag: 'px · % · cm · mm',
+                      formats: const ['px', '%'],
                       onTap: () => _navigate(context, ImageMode.resize),
                     ),
-                    const Gap(12),
+                    const Gap(10),
                     _ModeCard(
                       icon: Icons.swap_horiz_rounded,
                       accentColor: AppColors.convert,
                       title: 'Convert',
                       subtitle: 'Change image format instantly',
-                      tag: 'JPG → PNG · PNG → WEBP · any format',
+                      formats: const ['JPG', 'PNG', 'WEBP', 'GIF'],
                       onTap: () => _navigate(context, ImageMode.convert),
                     ),
-                    const Gap(12),
+                    const Gap(10),
                     _ModeCard(
                       icon: Icons.photo_library_outlined,
                       accentColor: AppColors.batch,
                       title: 'Batch',
-                      subtitle: 'Process multiple images with shared settings',
-                      tag: 'Compress · Resize',
+                      subtitle: 'Process multiple images at once',
+                      formats: const ['Compress', 'Resize'],
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const BatchEntryScreen()),
                       ),
                     ),
-                    const Gap(20),
+                    const Gap(24),
                     AdManager.instance.getMediumNativeAdWidget(),
-                    const Gap(16),
                   ],
                 ),
               ),
@@ -165,14 +155,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-// ─── Mode card ────────────────────────────────────────────────────────────────
+// ── Mode card ────────────────────────────────────────────────────────────────
 
 class _ModeCard extends StatefulWidget {
   final IconData icon;
   final Color accentColor;
   final String title;
   final String subtitle;
-  final String tag;
+  final List<String> formats;
   final VoidCallback onTap;
 
   const _ModeCard({
@@ -180,7 +170,7 @@ class _ModeCard extends StatefulWidget {
     required this.accentColor,
     required this.title,
     required this.subtitle,
-    required this.tag,
+    required this.formats,
     required this.onTap,
   });
 
@@ -193,10 +183,7 @@ class _ModeCardState extends State<_ModeCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? AppColors.surface : AppColors.lightSurface;
-    final border =
-        isDark ? AppColors.surfaceBorder : AppColors.lightSurfaceBorder;
+    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     return GestureDetector(
@@ -207,41 +194,33 @@ class _ModeCardState extends State<_ModeCard> {
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
+        duration: const Duration(milliseconds: 130),
         curve: Curves.easeOut,
-        transform: Matrix4.identity()..scale(_pressed ? 0.985 : 1.0),
+        transform: Matrix4.identity()..scale(_pressed ? 0.982 : 1.0),
         transformAlignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
         decoration: BoxDecoration(
           color: _pressed
-              ? widget.accentColor.withOpacity(isDark ? 0.06 : 0.04)
-              : surface,
-          borderRadius: BorderRadius.circular(16),
+              ? widget.accentColor.withOpacity(0.05)
+              : cs.surfaceContainerHighest.withOpacity(0.35),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color:
-                _pressed ? widget.accentColor.withOpacity(0.35) : border,
+            color: _pressed
+                ? widget.accentColor.withOpacity(0.4)
+                : cs.outlineVariant.withOpacity(0.4),
             width: 1,
           ),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Accent bar
+            // Icon box
             Container(
-              width: 3,
-              height: 80,
-              decoration: BoxDecoration(
-                color: widget.accentColor,
-                borderRadius:
-                    const BorderRadius.horizontal(left: Radius.circular(16)),
-              ),
-            ),
-            const Gap(16),
-            // Icon
-            Container(
-              width: 44,
-              height: 44,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
                 color: widget.accentColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(11),
+                borderRadius: BorderRadius.circular(13),
               ),
               child: Icon(
                 widget.icon,
@@ -249,8 +228,8 @@ class _ModeCardState extends State<_ModeCard> {
                 size: 22,
               ),
             ),
-            const Gap(14),
-            // Text
+            const Gap(16),
+            // Text + chips
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,27 +242,46 @@ class _ModeCardState extends State<_ModeCard> {
                     ),
                   ),
                   const Gap(3),
-                  Text(widget.subtitle, style: tt.bodyMedium),
-                  const Gap(6),
                   Text(
-                    widget.tag,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: widget.accentColor.withOpacity(0.8),
-                      letterSpacing: 0.2,
+                    widget.subtitle,
+                    style: tt.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
                     ),
+                  ),
+                  const Gap(10),
+                  // Format chips
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: widget.formats.map((f) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: widget.accentColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          f,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: widget.accentColor,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
             ),
-            const Gap(12),
+            const Gap(10),
             Icon(
-              Icons.arrow_forward_rounded,
-              size: 18,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: cs.onSurfaceVariant.withOpacity(0.5),
             ),
-            const Gap(16),
           ],
         ),
       ),
@@ -291,7 +289,7 @@ class _ModeCardState extends State<_ModeCard> {
   }
 }
 
-// ─── Pro badge ────────────────────────────────────────────────────────────────
+// ── Pro badge ─────────────────────────────────────────────────────────────
 
 class _ProBadge extends StatelessWidget {
   final VoidCallback onTap;
@@ -308,7 +306,6 @@ class _ProBadge extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: const Color(0xFFFFD700).withOpacity(0.35),
-            width: 1,
           ),
         ),
         child: const Row(
@@ -340,10 +337,7 @@ class _ActiveProBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.compress.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.compress.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.compress.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
