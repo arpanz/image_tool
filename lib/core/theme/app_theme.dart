@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Pixel Forge design tokens
-/// Accent: sharp teal-green #1DB88A — energetic, tool-forward, not generic
+/// Compress: teal-green #1DB88A
+/// Resize:   blue #3B9EFF
+/// Batch:    orange-amber #F97316 — distinct third accent
 class AppColors {
-  // ── Dark theme ────────────────────────────────────────────────────────────
+  // ── Dark theme ─────────────────────────────────────────────────────────
   static const background = Color(0xFF0D0D0D);
   static const surface = Color(0xFF181818);
   static const surfaceElevated = Color(0xFF222222);
@@ -15,7 +17,8 @@ class AppColors {
   static const primaryFaint = Color(0xFF0F5A43); // pressed
 
   static const compress = Color(0xFF1DB88A);    // compress mode accent
-  static const resize = Color(0xFF3B9EFF);      // resize mode accent — clean blue
+  static const resize = Color(0xFF3B9EFF);      // resize mode accent
+  static const batch = Color(0xFFF97316);       // batch mode accent — orange
 
   static const success = Color(0xFF4CAF50);
   static const error = Color(0xFFEF5350);
@@ -24,7 +27,7 @@ class AppColors {
   static const textSecondary = Color(0xFF888888);
   static const textFaint = Color(0xFF555555);
 
-  // ── Light theme ───────────────────────────────────────────────────────────
+  // ── Light theme ─────────────────────────────────────────────────────────
   static const lightBackground = Color(0xFFF5F5F5);
   static const lightSurface = Color(0xFFFFFFFF);
   static const lightSurfaceElevated = Color(0xFFEDEDED);

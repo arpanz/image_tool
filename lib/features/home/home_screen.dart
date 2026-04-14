@@ -7,6 +7,7 @@ import '../../core/utils/ad_manager.dart';
 import '../../core/utils/app_update_service.dart';
 import '../../features/premium/paywall_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../batch/batch_entry_screen.dart';
 import '../mode_entry/mode_entry_screen.dart';
 
 enum ImageMode { compress, resize }
@@ -44,7 +45,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Top bar ────────────────────────────────────────────────
+            // ── Top bar ─────────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 18, 16, 0),
               child: Row(
@@ -57,7 +58,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Text('Pixel Forge', style: tt.headlineLarge),
                         const Gap(3),
                         Text(
-                          'Compress & resize images, offline.',
+                          'Compress, resize & batch process images.',
                           style: tt.bodyMedium,
                         ),
                       ],
@@ -97,9 +98,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            const Gap(36),
+            const Gap(32),
 
-            // ── Mode cards ──────────────────────────────────────────────
+            // ── Mode cards ──────────────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -119,8 +120,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       accentColor: AppColors.resize,
                       title: 'Resize',
                       subtitle: 'Change dimensions by pixels or percentage',
-                      tag: 'Single · Batch',
+                      tag: 'Custom dimensions',
                       onTap: () => _navigate(context, ImageMode.resize),
+                    ),
+                    const Gap(12),
+                    _ModeCard(
+                      icon: Icons.photo_library_outlined,
+                      accentColor: AppColors.batch,
+                      title: 'Batch',
+                      subtitle: 'Process multiple images with shared settings',
+                      tag: 'Compress · Resize',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const BatchEntryScreen()),
+                      ),
                     ),
                     const Gap(20),
                     AdManager.instance.getMediumNativeAdWidget(),
@@ -144,9 +157,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-// ─── Mode card ────────────────────────────────────────────────────────────────
-// Flat, left-aligned, typography-led. No gradient fills — accent color is
-// used only for the icon and left accent bar.
+// ─── Mode card ────────────────────────────────────────────────────────────────────
+// Flat, left-aligned, typography-led. No gradient fills.
 
 class _ModeCard extends StatefulWidget {
   final IconData icon;
@@ -271,7 +283,7 @@ class _ModeCardState extends State<_ModeCard> {
   }
 }
 
-// ─── Pro badge ────────────────────────────────────────────────────────────────
+// ─── Pro badge ──────────────────────────────────────────────────────────────────
 
 class _ProBadge extends StatelessWidget {
   final VoidCallback onTap;
@@ -345,7 +357,7 @@ class _ActiveProBadge extends StatelessWidget {
   }
 }
 
-// ─── Theme toggle ─────────────────────────────────────────────────────────────
+// ─── Theme toggle ─────────────────────────────────────────────────────────────────
 
 class _ThemeToggle extends StatelessWidget {
   final bool isDark;
@@ -378,7 +390,7 @@ class _ThemeToggle extends StatelessWidget {
   }
 }
 
-// ─── Offline badge ────────────────────────────────────────────────────────────
+// ─── Offline badge ──────────────────────────────────────────────────────────────
 
 class _OfflineBadge extends StatelessWidget {
   @override
@@ -393,7 +405,7 @@ class _OfflineBadge extends StatelessWidget {
         ),
         const Gap(6),
         Text(
-          'Fully offline · No data leaves your device',
+          'Fully offline \u00b7 No data leaves your device',
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
