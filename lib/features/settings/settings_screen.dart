@@ -31,7 +31,7 @@ class SettingsScreen extends ConsumerWidget {
     await SharePlus.instance.share(
       ShareParams(
         text:
-            'Check out Pixel Forge — compress & resize images offline!\n\n${AdManager.appStoreUrl}',
+            'Check out Pixel Forge — compress & resize images offline!\n\n${AdManager.instance.appStoreUrl}',
       ),
     );
   }

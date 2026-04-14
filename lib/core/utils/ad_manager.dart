@@ -45,6 +45,8 @@ class AdManager {
 
   static const List<String> _testDeviceIds = [];
 
+  var appStoreUrl;
+
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
     _isPro = prefs.getBool('is_premium_user') ?? false;
