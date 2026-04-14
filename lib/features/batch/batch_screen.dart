@@ -37,9 +37,9 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
 
   bool get _isCompress => widget.mode == ImageMode.compress;
 
-  List<Color> get _gradient => _isCompress
-      ? [const Color(0xFF6C63FF), const Color(0xFF9D97FF)]
-      : [const Color(0xFF11998E), const Color(0xFF38EF7D)];
+  // Mode accent — compress=teal, resize=blue (consistent with editor/result)
+  Color get _accent =>
+      _isCompress ? AppColors.compress : AppColors.resize;
 
   Future<void> _processAll() async {
     final notifier = ref.read(batchProvider.notifier);
@@ -81,7 +81,6 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
     final settings = state.settings;
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -108,11 +107,12 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
-              // ── Settings card ─────────────────────────────────────────
+              // ── Settings card ──────────────────────────────────────────
               _SectionCard(
                 child: _isCompress
                     ? _CompressSettings(
                         settings: settings,
+                        accent: _accent,
                         onChanged: (s) => notifier.updateSettings(s),
                       )
                     : _ResizeSettings(
@@ -128,42 +128,46 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
               ),
               const Gap(12),
 
-              // ── Format card ──────────────────────────────────────────
+              // ── Format card ─────────────────────────────────────────────
               _SectionCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Output Format', style: tt.labelLarge),
                     const Gap(12),
-                    Row(
+                    // Wrap prevents overflow on narrow screens
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
                       children: AppConstants.supportedFormats.map((f) {
                         final sel = f == settings.format;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: GestureDetector(
-                            onTap: () => notifier.updateSettings(
-                                settings.copyWith(format: f)),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 10),
-                              decoration: BoxDecoration(
+                        return GestureDetector(
+                          onTap: () => notifier.updateSettings(
+                              settings.copyWith(format: f)),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: sel
+                                  ? cs.primary
+                                  : cs.surfaceContainerHighest
+                                      .withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
                                 color: sel
                                     ? cs.primary
-                                    : (isDark
-                                        ? AppColors.surfaceElevated
-                                        : AppColors.lightSurfaceElevated),
-                                borderRadius: BorderRadius.circular(10),
+                                    : cs.outlineVariant.withOpacity(0.3),
                               ),
-                              child: Text(f,
-                                  style: TextStyle(
-                                    color: sel
-                                        ? Colors.white
-                                        : tt.bodySmall?.color,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  )),
                             ),
+                            child: Text(f,
+                                style: TextStyle(
+                                  color: sel
+                                      ? Colors.white
+                                      : cs.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                )),
                           ),
                         );
                       }).toList(),
@@ -173,7 +177,7 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
               ),
               const Gap(20),
 
-              // ── Image grid header ───────────────────────────────────────
+              // ── Image grid header ──────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -189,28 +193,28 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                     icon: const Icon(Icons.add_photo_alternate_outlined,
                         size: 18),
                     label: const Text('Add images'),
-                    style:
-                        TextButton.styleFrom(foregroundColor: cs.primary),
+                    style: TextButton.styleFrom(
+                        foregroundColor: cs.primary),
                   ),
                 ],
               ),
               const Gap(8),
 
-              // ── Image grid / empty state ─────────────────────────────
+              // ── Image grid / empty state ──────────────────────────────
               if (state.items.isEmpty)
                 _EmptyPicker(
-                  gradient: _gradient,
+                  accent: _accent,
                   onTap: notifier.pickImages,
                 )
               else
                 _ImageGrid(
                   items: state.items,
                   isProcessing: state.isProcessing,
-                  gradient: _gradient,
+                  accent: _accent,
                   onRemove: (i) => notifier.removeItem(i),
                 ),
 
-              // ── Progress bar ──────────────────────────────────────────
+              // ── Progress bar ───────────────────────────────────────────
               if (state.isProcessing) ...[
                 const Gap(16),
                 Row(
@@ -223,7 +227,7 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                     Text(
                       '${(state.progress * 100).round()}%',
                       style: TextStyle(
-                          color: cs.primary,
+                          color: _accent,
                           fontWeight: FontWeight.w700,
                           fontSize: 13),
                     ),
@@ -235,21 +239,20 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                   child: LinearProgressIndicator(
                     value: state.progress,
                     minHeight: 8,
-                    backgroundColor: isDark
-                        ? AppColors.surfaceElevated
-                        : AppColors.lightSurfaceElevated,
-                    valueColor: AlwaysStoppedAnimation(cs.primary),
+                    backgroundColor:
+                        cs.surfaceContainerHighest.withOpacity(0.5),
+                    valueColor: AlwaysStoppedAnimation(_accent),
                   ),
                 ),
               ],
 
               const Gap(20),
 
-              // ── Ad ──────────────────────────────────────────────────
+              // ── Ad ──────────────────────────────────────────────────────
               Center(child: AdManager.instance.getBannerAdWidget()),
               const Gap(20),
 
-              // ── Process button ─────────────────────────────────────
+              // ── Process button ─────────────────────────────────────────
               if (state.items.isNotEmpty)
                 PfButton(
                   label: _isCompress
@@ -259,6 +262,7 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                   icon: _isCompress
                       ? Icons.compress_rounded
                       : Icons.photo_size_select_large_rounded,
+                  backgroundColor: _accent,
                   onPressed: _processAll,
                 ),
               const Gap(16),
@@ -270,17 +274,20 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
   }
 }
 
-// ─── Compress settings ───────────────────────────────────────────────────────────
+// ── Compress settings ──────────────────────────────────────────────────
 
 class _CompressSettings extends StatelessWidget {
   final CompressionSettings settings;
+  final Color accent;
   final ValueChanged<CompressionSettings> onChanged;
-  const _CompressSettings(
-      {required this.settings, required this.onChanged});
+  const _CompressSettings({
+    required this.settings,
+    required this.accent,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,12 +300,12 @@ class _CompressSettings extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: cs.primary.withOpacity(0.12),
+                color: accent.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text('${settings.quality}%',
                   style: TextStyle(
-                      color: cs.primary,
+                      color: accent,
                       fontWeight: FontWeight.w700,
                       fontSize: 14)),
             ),
@@ -307,14 +314,21 @@ class _CompressSettings extends StatelessWidget {
         const Gap(4),
         Text(_qualityLabel(settings.quality), style: tt.bodySmall),
         const Gap(8),
-        Slider(
-          value: settings.quality.toDouble(),
-          min: 5,
-          max: 95,
-          divisions: 18,
-          label: '${settings.quality}%',
-          onChanged: (v) =>
-              onChanged(settings.copyWith(quality: v.round())),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: accent,
+            thumbColor: accent,
+            overlayColor: accent.withOpacity(0.15),
+          ),
+          child: Slider(
+            value: settings.quality.toDouble(),
+            min: 5,
+            max: 95,
+            divisions: 18,
+            label: '${settings.quality}%',
+            onChanged: (v) =>
+                onChanged(settings.copyWith(quality: v.round())),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -338,7 +352,7 @@ class _CompressSettings extends StatelessWidget {
   }
 }
 
-// ─── Resize settings ─────────────────────────────────────────────────────────────
+// ── Resize settings ───────────────────────────────────────────────────
 
 class _ResizeSettings extends StatelessWidget {
   final CompressionSettings settings;
@@ -450,6 +464,8 @@ class _ResizeSettings extends StatelessWidget {
   }
 }
 
+// ── Segment pill (px / %) ─────────────────────────────────────────────
+
 class _SegmentPill extends StatelessWidget {
   final bool selected;
   final ValueChanged<bool> onChanged;
@@ -457,13 +473,11 @@ class _SegmentPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return Container(
       height: 32,
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.surfaceElevated
-            : AppColors.lightSurfaceElevated,
+        color: cs.surfaceContainerHighest.withOpacity(0.5),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -512,6 +526,8 @@ class _PillTab extends StatelessWidget {
   }
 }
 
+// ── Preset chip ─────────────────────────────────────────────────────────
+
 class _Preset extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -519,17 +535,16 @@ class _Preset extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding:
             const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: isDark
-              ? AppColors.surfaceElevated
-              : AppColors.lightSurfaceElevated,
+          color: cs.surfaceContainerHighest.withOpacity(0.5),
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
         ),
         child: Text(label,
             style: const TextStyle(
@@ -539,12 +554,12 @@ class _Preset extends StatelessWidget {
   }
 }
 
-// ─── Empty picker ────────────────────────────────────────────────────────────
+// ── Empty picker ─────────────────────────────────────────────────────────
 
 class _EmptyPicker extends StatefulWidget {
-  final List<Color> gradient;
+  final Color accent;
   final VoidCallback onTap;
-  const _EmptyPicker({required this.gradient, required this.onTap});
+  const _EmptyPicker({required this.accent, required this.onTap});
 
   @override
   State<_EmptyPicker> createState() => _EmptyPickerState();
@@ -555,7 +570,7 @@ class _EmptyPickerState extends State<_EmptyPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
@@ -568,12 +583,12 @@ class _EmptyPickerState extends State<_EmptyPicker> {
         height: 160,
         decoration: BoxDecoration(
           color: _pressed
-              ? widget.gradient[0].withOpacity(0.06)
-              : (isDark ? AppColors.surface : AppColors.lightSurface),
+              ? widget.accent.withOpacity(0.06)
+              : cs.surfaceContainerHighest.withOpacity(0.3),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: widget.gradient[0]
-                .withOpacity(_pressed ? 0.7 : 0.3),
+            color: widget.accent
+                .withOpacity(_pressed ? 0.6 : 0.25),
             width: 1.5,
           ),
         ),
@@ -585,13 +600,14 @@ class _EmptyPickerState extends State<_EmptyPicker> {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: widget.gradient,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight),
+                  color: widget.accent.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: widget.accent.withOpacity(0.25),
+                  ),
                 ),
-                child: const Icon(Icons.photo_library_outlined,
-                    size: 26, color: Colors.white),
+                child: Icon(Icons.photo_library_outlined,
+                    size: 26, color: widget.accent),
               ),
               const Gap(12),
               const Text('Tap to select images',
@@ -608,18 +624,18 @@ class _EmptyPickerState extends State<_EmptyPicker> {
   }
 }
 
-// ─── Image grid ──────────────────────────────────────────────────────────────
+// ── Image grid ────────────────────────────────────────────────────────────
 
 class _ImageGrid extends StatelessWidget {
   final List<BatchItem> items;
   final bool isProcessing;
-  final List<Color> gradient;
+  final Color accent;
   final ValueChanged<int> onRemove;
 
   const _ImageGrid({
     required this.items,
     required this.isProcessing,
-    required this.gradient,
+    required this.accent,
     required this.onRemove,
   });
 
@@ -637,7 +653,7 @@ class _ImageGrid extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, index) => _GridTile(
         item: items[index],
-        gradient: gradient,
+        accent: accent,
         canRemove: !isProcessing,
         onRemove: () => onRemove(index),
       ),
@@ -647,13 +663,13 @@ class _ImageGrid extends StatelessWidget {
 
 class _GridTile extends StatelessWidget {
   final BatchItem item;
-  final List<Color> gradient;
+  final Color accent;
   final bool canRemove;
   final VoidCallback onRemove;
 
   const _GridTile({
     required this.item,
-    required this.gradient,
+    required this.accent,
     required this.canRemove,
     required this.onRemove,
   });
@@ -670,7 +686,9 @@ class _GridTile extends StatelessWidget {
             File(item.image.path),
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
-              color: AppColors.surfaceElevated,
+              color: Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest,
               child: const Icon(Icons.broken_image_outlined,
                   color: Colors.white38),
             ),
@@ -681,7 +699,7 @@ class _GridTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             child: Container(
               color: _overlayColor(status),
-              child: Center(child: _statusIcon(status)),
+              child: Center(child: _statusIcon(status, accent)),
             ),
           ),
         Positioned(
@@ -757,14 +775,14 @@ class _GridTile extends StatelessWidget {
     }
   }
 
-  Widget _statusIcon(BatchItemStatus s) {
+  Widget _statusIcon(BatchItemStatus s, Color accent) {
     switch (s) {
       case BatchItemStatus.processing:
         return SizedBox(
           width: 26,
           height: 26,
           child: CircularProgressIndicator(
-              color: gradient[1], strokeWidth: 2.5),
+              color: accent, strokeWidth: 2.5),
         );
       case BatchItemStatus.done:
         return const Icon(Icons.check_circle_rounded,
@@ -778,7 +796,8 @@ class _GridTile extends StatelessWidget {
   }
 }
 
-// ─── Section card ────────────────────────────────────────────────────────────
+// ── Section card ───────────────────────────────────────────────────────────
+// Border-only — consistent with editor_screen and settings_screen
 
 class _SectionCard extends StatelessWidget {
   final Widget child;
@@ -786,22 +805,14 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surface : AppColors.lightSurface,
+        color: cs.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.2)
-                : Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
       ),
       child: child,
     );
