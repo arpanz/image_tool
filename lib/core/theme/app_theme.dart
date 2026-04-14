@@ -4,9 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 /// Pixel Forge design tokens
 /// Compress: teal-green #1DB88A
 /// Resize:   blue #3B9EFF
-/// Batch:    orange-amber #F97316 — distinct third accent
+/// Convert:  purple #A855F7
+/// Batch:    orange-amber #F97316 — distinct fourth accent
 class AppColors {
-  // ── Dark theme ─────────────────────────────────────────────────────────
+  // ── Dark theme ──────────────────────────────────────────────────────────
   static const background = Color(0xFF0D0D0D);
   static const surface = Color(0xFF181818);
   static const surfaceElevated = Color(0xFF222222);
@@ -18,6 +19,7 @@ class AppColors {
 
   static const compress = Color(0xFF1DB88A);    // compress mode accent
   static const resize = Color(0xFF3B9EFF);      // resize mode accent
+  static const convert = Color(0xFFA855F7);     // convert mode accent — purple
   static const batch = Color(0xFFF97316);       // batch mode accent — orange
 
   static const success = Color(0xFF4CAF50);
@@ -27,7 +29,7 @@ class AppColors {
   static const textSecondary = Color(0xFF888888);
   static const textFaint = Color(0xFF555555);
 
-  // ── Light theme ─────────────────────────────────────────────────────────
+  // ── Light theme ──────────────────────────────────────────────────────────
   static const lightBackground = Color(0xFFF5F5F5);
   static const lightSurface = Color(0xFFFFFFFF);
   static const lightSurfaceElevated = Color(0xFFEDEDED);
