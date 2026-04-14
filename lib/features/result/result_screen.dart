@@ -32,6 +32,51 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
   CompressionResult get result => widget.result;
   ImageMode get mode => widget.mode;
 
+  // Mode accent
+  Color get _accent {
+    switch (mode) {
+      case ImageMode.compress:
+        return AppColors.compress;
+      case ImageMode.resize:
+        return AppColors.resize;
+      case ImageMode.convert:
+        return AppColors.convert;
+    }
+  }
+
+  String get _successTitle {
+    switch (mode) {
+      case ImageMode.compress:
+        return 'Compression done!';
+      case ImageMode.resize:
+        return 'Resize complete!';
+      case ImageMode.convert:
+        return 'Conversion done!';
+    }
+  }
+
+  String get _successSubtitle {
+    switch (mode) {
+      case ImageMode.compress:
+        return 'Your image is ready to save or share.';
+      case ImageMode.resize:
+        return 'Your image has been resized successfully.';
+      case ImageMode.convert:
+        return 'Format converted and ready to use.';
+    }
+  }
+
+  IconData get _successIcon {
+    switch (mode) {
+      case ImageMode.compress:
+        return Icons.compress_rounded;
+      case ImageMode.resize:
+        return Icons.photo_size_select_large_rounded;
+      case ImageMode.convert:
+        return Icons.swap_horiz_rounded;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -45,8 +90,9 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
       final dir = await getExternalStorageDirectory() ??
           await getApplicationDocumentsDirectory();
       final dot = result.outputPath.lastIndexOf('.');
-      final ext =
-          dot >= 0 ? result.outputPath.substring(dot).toLowerCase() : '.jpg';
+      final ext = dot >= 0
+          ? result.outputPath.substring(dot).toLowerCase()
+          : '.jpg';
       await File(result.outputPath).copy(
           '${dir.path}/PixelForge_${DateTime.now().millisecondsSinceEpoch}$ext');
       if (context.mounted) {
@@ -55,8 +101,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             content: const Text('Image saved to device!'),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -67,8 +113,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             content: Text('Save failed: $e'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -83,17 +129,14 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
   Widget build(BuildContext context) {
     final isResize = mode == ImageMode.resize;
     final savedPositive = result.savedPercent >= 0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final cardColor = isDark ? AppColors.surface : AppColors.lightSurface;
-    final dividerColor =
-        isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(isResize ? 'Resized!' : 'Compressed!'),
+        title: Text(_successTitle.replaceAll('!', '')),
         actions: [
           TextButton(
             onPressed: () {
@@ -103,69 +146,48 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             },
             child: Text(
               'New Image',
-              style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: cs.primary, fontWeight: FontWeight.w600),
             ),
           ),
         ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Success icon
+              // ── Success icon — uses mode accent, no gradient ────────────
               Container(
-                width: 72,
-                height: 72,
+                width: 68,
+                height: 68,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isResize
-                        ? [const Color(0xFF11998E), const Color(0xFF38EF7D)]
-                        : [const Color(0xFF6C63FF), const Color(0xFF9D97FF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: _accent.withOpacity(0.12),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isResize
-                              ? const Color(0xFF11998E)
-                              : const Color(0xFF6C63FF))
-                          .withOpacity(0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+                  border: Border.all(
+                    color: _accent.withOpacity(0.3),
+                    width: 1.5,
+                  ),
                 ),
-                child: Icon(
-                  isResize
-                      ? Icons.photo_size_select_large_rounded
-                      : Icons.compress_rounded,
-                  size: 34,
-                  color: Colors.white,
-                ),
+                child: Icon(_successIcon, size: 32, color: _accent),
               ),
               const Gap(14),
-              Text(
-                isResize ? 'Resize complete!' : 'Compression done!',
-                style: tt.headlineMedium,
-              ),
+              Text(_successTitle, style: tt.headlineMedium),
               const Gap(4),
               Text(
-                isResize
-                    ? 'Your image has been resized successfully.'
-                    : 'Your image is ready to save or share.',
+                _successSubtitle,
                 style: tt.bodyMedium,
                 textAlign: TextAlign.center,
               ),
               const Gap(24),
 
-              // Image preview
+              // ── Output image preview ───────────────────────────────
               GestureDetector(
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => _FullscreenViewer(path: result.outputPath),
+                    builder: (_) =>
+                        _FullscreenViewer(path: result.outputPath),
                   ),
                 ),
                 child: Stack(
@@ -180,16 +202,18 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                         errorBuilder: (_, __, ___) => Container(
                           height: 220,
                           decoration: BoxDecoration(
-                            color: cardColor,
+                            color: cs.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Center(
                             child: Icon(Icons.broken_image_outlined,
-                                size: 48, color: tt.bodySmall?.color),
+                                size: 48,
+                                color: cs.onSurfaceVariant),
                           ),
                         ),
                       ),
                     ),
+                    // Fullscreen hint
                     Positioned(
                       top: 10,
                       right: 10,
@@ -203,91 +227,73 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                             size: 18, color: Colors.white),
                       ),
                     ),
-                    if (isResize && result.outWidth > 0)
+                    // Dimension badge (resize/convert)
+                    if (result.outWidth > 0)
                       Positioned(
                         bottom: 10,
                         left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '${result.outWidth}\u00d7${result.outHeight}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                        child: _OverlayBadge(
+                            '${result.outWidth}×${result.outHeight}'),
                       ),
+                    // File size badge
                     Positioned(
                       bottom: 10,
                       right: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          formatBytes(result.newSize),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                      child: _OverlayBadge(formatBytes(result.newSize)),
                     ),
                   ],
                 ),
               ),
               const Gap(20),
 
-              // Stats card
+              // ── Stats card ───────────────────────────────────────────
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: cardColor,
+                  color: cs.surfaceContainerHighest.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isDark
-                          ? Colors.black.withOpacity(0.2)
-                          : Colors.black.withOpacity(0.05),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  border: Border.all(
+                      color: cs.outlineVariant.withOpacity(0.3)),
                 ),
                 child: Column(
                   children: [
                     _StatRow(
                       label: 'Original size',
                       value: formatBytes(result.originalSize),
-                      valueColor: tt.bodyMedium?.color ?? Colors.grey,
+                      valueColor: cs.onSurfaceVariant,
                     ),
-                    Divider(color: dividerColor, height: 24),
+                    Divider(
+                        color: cs.outlineVariant.withOpacity(0.3),
+                        height: 24),
                     _StatRow(
                       label: 'New size',
                       value: formatBytes(result.newSize),
-                      valueColor: cs.primary,
+                      valueColor: _accent,
                     ),
-                    if (!isResize) ...[
-                      Divider(color: dividerColor, height: 24),
+                    if (mode == ImageMode.compress) ...[
+                      Divider(
+                          color: cs.outlineVariant.withOpacity(0.3),
+                          height: 24),
                       _StatRow(
                         label: 'Saved',
                         value: savedPositive
                             ? '-${result.savedPercent.toStringAsFixed(1)}%'
                             : '+${(-result.savedPercent).toStringAsFixed(1)}%',
-                        valueColor:
-                            savedPositive ? AppColors.success : AppColors.error,
+                        valueColor: savedPositive
+                            ? AppColors.success
+                            : AppColors.error,
+                      ),
+                    ],
+                    if (isResize && result.outWidth > 0) ...[
+                      Divider(
+                          color: cs.outlineVariant.withOpacity(0.3),
+                          height: 24),
+                      _StatRow(
+                        label: 'Dimensions',
+                        value:
+                            '${result.outWidth}×${result.outHeight}',
+                        valueColor: _accent,
                       ),
                     ],
                   ],
@@ -295,29 +301,54 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
               ),
               const Gap(20),
 
-              // Ad between stats and actions (free users only)
-              Center(child: AdManager.instance.getBannerAdWidget()),
+              // ── Ad (free users) ──────────────────────────────────────
+              AdManager.instance.getBannerAdWidget(),
               const Gap(16),
 
-              // Actions
+              // ── Actions ─────────────────────────────────────────────
               PfButton(
                 label: 'Share Image',
                 icon: Icons.share_outlined,
+                backgroundColor: _accent,
                 onPressed: _share,
               ),
               const Gap(12),
               PfButton(
                 label: 'Save to Device',
                 icon: Icons.download_outlined,
-                backgroundColor:
-                    isDark ? AppColors.surface : AppColors.lightSurfaceElevated,
+                // Secondary button — uses surface tint, not accent
+                backgroundColor: isDark
+                    ? AppColors.surfaceElevated
+                    : AppColors.lightSurfaceElevated,
                 onPressed: () => _saveToDevice(context),
               ),
-              const Gap(8),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Widgets ─────────────────────────────────────────────────────────────
+
+class _OverlayBadge extends StatelessWidget {
+  final String text;
+  const _OverlayBadge(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(text,
+          style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600)),
     );
   }
 }
@@ -328,7 +359,9 @@ class _StatRow extends StatelessWidget {
   final Color valueColor;
 
   const _StatRow(
-      {required this.label, required this.value, required this.valueColor});
+      {required this.label,
+      required this.value,
+      required this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -339,7 +372,9 @@ class _StatRow extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-              color: valueColor, fontSize: 16, fontWeight: FontWeight.w700),
+              color: valueColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -357,7 +392,8 @@ class _FullscreenViewer extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Preview', style: TextStyle(color: Colors.white)),
+        title: const Text('Preview',
+            style: TextStyle(color: Colors.white)),
       ),
       body: InteractiveViewer(
         minScale: 0.5,

@@ -57,10 +57,13 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     super.dispose();
   }
 
+  // Mode accent colour — compress=teal, resize=blue
+  Color get _accent =>
+      widget.mode == ImageMode.compress ? AppColors.compress : AppColors.resize;
+
   Future<void> _onProcess() async {
     final notifier = ref.read(editorProvider.notifier);
 
-    // Apply target size if enabled
     if (widget.mode == ImageMode.compress && _useTargetSize) {
       final kb = int.tryParse(_targetSizeCtrl.text.trim());
       notifier.setTargetSizeKB(kb != null && kb > 0 ? kb : null);
@@ -98,14 +101,14 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
     final result = await notifier.compress(widget.image);
     if (result != null && mounted) {
-      // Show interstitial for free users, then navigate to result
       AdManager.instance.showInterstitial(
         context,
         onAdDismissed: () {
           if (mounted) {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => ResultScreen(result: result, mode: widget.mode),
+                builder: (_) =>
+                    ResultScreen(result: result, mode: widget.mode),
               ),
             );
           }
@@ -131,8 +134,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             content: Text('Failed: $err'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -150,19 +153,38 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── Image preview ───────────────────────────────────────
               _ImagePreview(
                 path: widget.image.path,
                 originalSize: widget.image.originalSize,
                 width: widget.image.width,
                 height: widget.image.height,
               ),
-              const Gap(28),
+              const Gap(24),
 
               if (isCompress) ...[
+                // ── Output format (before quality — format affects target-size compat) ──
+                _SectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SectionLabel('Output Format'),
+                      const Gap(12),
+                      _FormatSelector(
+                        current: settings.format,
+                        onChanged: (f) =>
+                            ref.read(editorProvider.notifier).setFormat(f),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(14),
+
+                // ── Quality slider ──────────────────────────────────
                 _SectionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,13 +197,13 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 4),
                             decoration: BoxDecoration(
-                              color: cs.primary.withOpacity(0.12),
+                              color: _accent.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               '${settings.quality}%',
                               style: TextStyle(
-                                color: cs.primary,
+                                color: _accent,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
                               ),
@@ -193,15 +215,25 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                       Text(_qualityLabel(settings.quality),
                           style: tt.bodySmall),
                       const Gap(8),
-                      Slider(
-                        value: settings.quality.toDouble(),
-                        min: AppConstants.minQuality.toDouble(),
-                        max: AppConstants.maxQuality.toDouble(),
-                        divisions: 18,
-                        label: '${settings.quality}%',
-                        onChanged: (v) => ref
-                            .read(editorProvider.notifier)
-                            .setQuality(v.round()),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: _accent,
+                          thumbColor: _accent,
+                          overlayColor: _accent.withOpacity(0.15),
+                        ),
+                        child: Slider(
+                          value: settings.quality.toDouble(),
+                          min: AppConstants.minQuality.toDouble(),
+                          max: AppConstants.maxQuality.toDouble(),
+                          // step of 5 from minQuality to maxQuality
+                          divisions: ((AppConstants.maxQuality -
+                                      AppConstants.minQuality) ~/
+                                  5),
+                          label: '${settings.quality}%',
+                          onChanged: (v) => ref
+                              .read(editorProvider.notifier)
+                              .setQuality(v.round()),
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -216,8 +248,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                     ],
                   ),
                 ),
-                const Gap(16),
-                // Target file-size option
+                const Gap(14),
+
+                // ── Target file size ─────────────────────────────────
                 _SectionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,7 +267,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         ],
                       ),
                       Text(
-                        'Compress to a specific file size (adjusts quality automatically)',
+                        'Compress to a specific file size (quality is set automatically)',
                         style: tt.bodySmall,
                       ),
                       if (_useTargetSize) ...[
@@ -258,6 +291,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         const Gap(8),
                         Wrap(
                           spacing: 8,
+                          runSpacing: 8,
                           children: [
                             _SizePresetChip(
                                 label: '100 KB',
@@ -285,7 +319,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
-                              'Target size is not supported for PNG format. Switch to JPG or WEBP.',
+                              'Target size is not supported for PNG. Switch to JPG or WEBP.',
                               style: tt.bodySmall
                                   ?.copyWith(color: AppColors.error),
                             ),
@@ -294,8 +328,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                     ],
                   ),
                 ),
-                const Gap(16),
+                const Gap(14),
               ] else ...[
+                // ── Dimensions ─────────────────────────────────────────
                 _SectionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +354,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                       const Gap(16),
                       if (_dimUnit == _DimUnit.percent) ...[
                         Text(
-                          'Scale to ${_percentCtrl.text.isNotEmpty ? _percentCtrl.text : "?"}% of original',
+                          'Scale to ${_percentCtrl.text.isNotEmpty ? _percentCtrl.text : '?'}% of original',
                           style: tt.bodySmall,
                         ),
                         const Gap(10),
@@ -423,7 +458,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                     : const TextInputType.numberWithOptions(
                                         decimal: true),
                                 inputFormatters: _dimUnit == _DimUnit.px
-                                    ? [FilteringTextInputFormatter.digitsOnly]
+                                    ? [
+                                        FilteringTextInputFormatter.digitsOnly
+                                      ]
                                     : [
                                         FilteringTextInputFormatter.allow(
                                             RegExp(r'[0-9.]'))
@@ -447,7 +484,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                     : const TextInputType.numberWithOptions(
                                         decimal: true),
                                 inputFormatters: _dimUnit == _DimUnit.px
-                                    ? [FilteringTextInputFormatter.digitsOnly]
+                                    ? [
+                                        FilteringTextInputFormatter.digitsOnly
+                                      ]
                                     : [
                                         FilteringTextInputFormatter.allow(
                                             RegExp(r'[0-9.]'))
@@ -494,7 +533,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                     ],
                   ),
                 ),
-                const Gap(16),
+                const Gap(14),
+
                 if (showFitMode) ...[
                   _SectionCard(
                     child: Column(
@@ -509,45 +549,50 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         const Gap(14),
                         _FitModeSelector(
                           current: settings.fitMode,
-                          onChanged: (m) =>
-                              ref.read(editorProvider.notifier).setFitMode(m),
+                          onChanged: (m) => ref
+                              .read(editorProvider.notifier)
+                              .setFitMode(m),
                         ),
                       ],
                     ),
                   ),
-                  const Gap(16),
+                  const Gap(14),
                 ],
+
+                // Output format at bottom for resize mode
+                _SectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SectionLabel('Output Format'),
+                      const Gap(12),
+                      _FormatSelector(
+                        current: settings.format,
+                        onChanged: (f) =>
+                            ref.read(editorProvider.notifier).setFormat(f),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(14),
               ],
 
-              _SectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionLabel('Output Format'),
-                    const Gap(12),
-                    _FormatSelector(
-                      current: settings.format,
-                      onChanged: (f) =>
-                          ref.read(editorProvider.notifier).setFormat(f),
-                    ),
-                  ],
-                ),
-              ),
-              const Gap(20),
-
-              // Banner ad between settings and the action button
-              Center(child: AdManager.instance.getBannerAdWidget()),
+              // ── Ad ─────────────────────────────────────────────────────
+              AdManager.instance.getBannerAdWidget(),
               const Gap(16),
 
+              // ── Process button ─────────────────────────────────────
               PfButton(
-                label: isCompress ? 'Compress Image' : 'Resize Image',
+                label:
+                    isCompress ? 'Compress Image' : 'Resize Image',
                 isLoading: isProcessing,
                 icon: isCompress
                     ? Icons.compress_rounded
                     : Icons.photo_size_select_large_rounded,
+                backgroundColor: _accent,
                 onPressed: _onProcess,
               ),
-              const Gap(16),
+              const Gap(20),
             ],
           ),
         ),
@@ -556,10 +601,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   }
 
   String _qualityLabel(int q) {
-    if (q >= 85) return 'High quality \u00b7 Larger file size';
+    if (q >= 85) return 'High quality · Larger file size';
     if (q >= 60) return 'Balanced quality and size';
-    if (q >= 35) return 'Smaller file \u00b7 Some quality loss';
-    return 'Maximum compression \u00b7 Visible quality loss';
+    if (q >= 35) return 'Smaller file · Some quality loss';
+    return 'Maximum compression · Visible quality loss';
   }
 
   String _dimUnitLabel(_DimUnit u) {
@@ -576,7 +621,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   }
 }
 
-// ── Widgets ──────────────────────────────────────────────────────────────────
+// ── Image preview ─────────────────────────────────────────────────────────
 
 class _ImagePreview extends StatelessWidget {
   final String path;
@@ -593,6 +638,10 @@ class _ImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Derive a sensible preview height: clamp to 36% of screen height
+    final screenH = MediaQuery.of(context).size.height;
+    final previewH = (screenH * 0.36).clamp(180.0, 280.0);
+
     return Stack(
       children: [
         ClipRRect(
@@ -600,14 +649,18 @@ class _ImagePreview extends StatelessWidget {
           child: Image.file(
             File(path),
             width: double.infinity,
-            height: 200,
+            height: previewH,
             fit: BoxFit.cover,
           ),
         ),
         Positioned(
-            bottom: 10, left: 10, child: _Badge('${width}\u00d7${height}')),
+            bottom: 10,
+            left: 10,
+            child: _Badge('${width}×${height}')),
         Positioned(
-            bottom: 10, right: 10, child: _Badge(formatBytes(originalSize))),
+            bottom: 10,
+            right: 10,
+            child: _Badge(formatBytes(originalSize))),
       ],
     );
   }
@@ -627,10 +680,15 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(text,
           style: const TextStyle(
-              color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600)),
     );
   }
 }
+
+// ── Section card ──────────────────────────────────────────────────────────
+// Consistent with settings_screen — border only, no shadow
 
 class _SectionCard extends StatelessWidget {
   final Widget child;
@@ -638,22 +696,14 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surface : AppColors.lightSurface,
+        color: cs.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.2)
-                : Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
       ),
       child: child,
     );
@@ -669,6 +719,8 @@ class _SectionLabel extends StatelessWidget {
       Text(text, style: Theme.of(context).textTheme.labelLarge);
 }
 
+// ── Unit selector ──────────────────────────────────────────────────────────
+
 class _UnitSelector extends StatelessWidget {
   final _DimUnit current;
   final ValueChanged<_DimUnit> onChanged;
@@ -676,12 +728,11 @@ class _UnitSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return Container(
       height: 34,
       decoration: BoxDecoration(
-        color:
-            isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
+        color: cs.surfaceContainerHighest.withOpacity(0.5),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -738,6 +789,8 @@ class _ToggleTab extends StatelessWidget {
   }
 }
 
+// ── Presets ────────────────────────────────────────────────────────────────
+
 class _PercentPreset extends StatelessWidget {
   final int percent;
   final VoidCallback onTap;
@@ -745,19 +798,18 @@ class _PercentPreset extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: isDark
-              ? AppColors.surfaceElevated
-              : AppColors.lightSurfaceElevated,
+          color: cs.surfaceContainerHighest.withOpacity(0.5),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text('$percent%',
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            style: const TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600)),
       ),
     );
   }
@@ -770,19 +822,18 @@ class _DpiPreset extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
-          color: isDark
-              ? AppColors.surfaceElevated
-              : AppColors.lightSurfaceElevated,
+          color: cs.surfaceContainerHighest.withOpacity(0.5),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600)),
       ),
     );
   }
@@ -795,14 +846,15 @@ class _SizePresetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Chip(
         label: Text(label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-        backgroundColor:
-            isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600)),
+        backgroundColor: cs.surfaceContainerHighest.withOpacity(0.5),
+        side: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
       ),
@@ -810,12 +862,16 @@ class _SizePresetChip extends StatelessWidget {
   }
 }
 
+// ── Dimension previews ────────────────────────────────────────────────────
+
 class _DimensionPreview extends StatelessWidget {
   final int originalW;
   final int originalH;
   final double pct;
   const _DimensionPreview(
-      {required this.originalW, required this.originalH, required this.pct});
+      {required this.originalW,
+      required this.originalH,
+      required this.pct});
 
   @override
   Widget build(BuildContext context) {
@@ -823,7 +879,7 @@ class _DimensionPreview extends StatelessWidget {
     final newH = (originalH * pct / 100).round();
     final cs = Theme.of(context).colorScheme;
     return _PreviewChip(
-        text: '${originalW}\u00d7${originalH}  \u2192  ${newW}\u00d7${newH}',
+        text: '${originalW}×${originalH}  →  ${newW}×${newH}',
         color: cs.primary);
   }
 }
@@ -886,10 +942,10 @@ class _PhysicalDimensionPreview extends StatelessWidget {
 
     final cs = Theme.of(context).colorScheme;
     final unitLabel =
-        unit == _DimUnit.px ? '' : ' (${resolvedW}\u00d7${resolvedH} px)';
+        unit == _DimUnit.px ? '' : ' (${resolvedW}×${resolvedH} px)';
     return _PreviewChip(
         text:
-            '${originalW}\u00d7${originalH}  \u2192  ${resolvedW}\u00d7${resolvedH}$unitLabel',
+            '${originalW}×${originalH}  →  ${resolvedW}×${resolvedH}$unitLabel',
         color: cs.primary);
   }
 }
@@ -914,12 +970,16 @@ class _PreviewChip extends StatelessWidget {
           const Gap(6),
           Text(text,
               style: TextStyle(
-                  color: color, fontSize: 13, fontWeight: FontWeight.w500)),
+                  color: color,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 }
+
+// ── Fit mode selector ─────────────────────────────────────────────────────
 
 class _FitModeOption {
   final ResizeFitMode mode;
@@ -964,7 +1024,6 @@ class _FitModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GridView.count(
       crossAxisCount: 2,
       crossAxisSpacing: 10,
@@ -978,17 +1037,18 @@ class _FitModeSelector extends StatelessWidget {
           onTap: () => onChanged(m.mode),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
                   ? cs.primary.withOpacity(0.12)
-                  : (isDark
-                      ? AppColors.surfaceElevated
-                      : AppColors.lightSurfaceElevated),
+                  : cs.surfaceContainerHighest.withOpacity(0.5),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isSelected ? cs.primary : Colors.transparent,
-                width: 1.5,
+                color: isSelected
+                    ? cs.primary
+                    : cs.outlineVariant.withOpacity(0.3),
+                width: isSelected ? 1.5 : 1,
               ),
             ),
             child: Row(
@@ -1010,7 +1070,10 @@ class _FitModeSelector extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             color: isSelected
                                 ? cs.primary
-                                : Theme.of(context).textTheme.bodyMedium?.color,
+                                : Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color,
                           )),
                       Text(m.desc,
                           style: Theme.of(context)
@@ -1031,6 +1094,9 @@ class _FitModeSelector extends StatelessWidget {
   }
 }
 
+// ── Format selector ────────────────────────────────────────────────────────
+// Wrap instead of Row — no overflow on small screens
+
 class _FormatSelector extends StatelessWidget {
   final String current;
   final ValueChanged<String> onChanged;
@@ -1039,34 +1105,34 @@ class _FormatSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Row(
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
       children: AppConstants.supportedFormats.map((f) {
         final isSelected = f == current;
-        return Padding(
-          padding: const EdgeInsets.only(right: 10),
-          child: GestureDetector(
-            onTap: () => onChanged(f),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
+        return GestureDetector(
+          onTap: () => onChanged(f),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? cs.primary
+                  : cs.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
                 color: isSelected
                     ? cs.primary
-                    : (isDark
-                        ? AppColors.surfaceElevated
-                        : AppColors.lightSurfaceElevated),
-                borderRadius: BorderRadius.circular(10),
+                    : cs.outlineVariant.withOpacity(0.3),
               ),
-              child: Text(f,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : Theme.of(context).textTheme.bodySmall?.color,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  )),
             ),
+            child: Text(f,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                )),
           ),
         );
       }).toList(),
