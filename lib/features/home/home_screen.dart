@@ -7,6 +7,7 @@ import '../../core/utils/app_update_service.dart';
 import '../../features/premium/paywall_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../batch/batch_entry_screen.dart';
+import '../convert/convert_screen.dart';
 import '../mode_entry/mode_entry_screen.dart';
 
 enum ImageMode { compress, resize, convert }
@@ -37,17 +38,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final gridHeight = MediaQuery.of(context).size.width - 24;
+
+    final tiles = <_ModeGridTileData>[
+      _ModeGridTileData(
+        icon: Icons.compress_rounded,
+        accentColor: AppColors.compress,
+        title: 'Compress',
+        subtitle: 'Shrink file size',
+        onTap: () => _navigateMode(context, ImageMode.compress),
+      ),
+      _ModeGridTileData(
+        icon: Icons.photo_size_select_large_rounded,
+        accentColor: AppColors.resize,
+        title: 'Resize',
+        subtitle: 'Change dimensions',
+        onTap: () => _navigateMode(context, ImageMode.resize),
+      ),
+      _ModeGridTileData(
+        icon: Icons.swap_horiz_rounded,
+        accentColor: AppColors.convert,
+        title: 'Convert',
+        subtitle: 'Change format',
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ConvertScreen()),
+        ),
+      ),
+      _ModeGridTileData(
+        icon: Icons.photo_library_outlined,
+        accentColor: AppColors.batch,
+        title: 'Batch',
+        subtitle: 'Process many files',
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const BatchEntryScreen()),
+        ),
+      ),
+    ];
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Top bar ───────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 20, 14, 0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
                   Expanded(
                     child: Text('Pixel Forge', style: tt.headlineLarge),
@@ -56,16 +91,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     _ProBadge(
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                            builder: (_) => const PaywallScreen()),
+                          builder: (_) => const PaywallScreen(),
+                        ),
                       ),
                     )
                   else
                     _ActiveProBadge(),
-                  const Gap(4),
+                  const Gap(6),
                   IconButton(
                     onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const SettingsScreen()),
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
                     ),
                     icon: const Icon(Icons.settings_outlined),
                     iconSize: 22,
@@ -75,221 +110,116 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ],
               ),
-            ),
-
-            const Gap(6),
-
-            // ── Subtitle ──────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 0, 22, 0),
-              child: Text(
-                'What would you like to do?',
-                style: tt.bodyMedium?.copyWith(
-                  color: cs.onSurfaceVariant,
+              const Gap(4),
+              Text(
+                'Simple tools for everyday image edits',
+                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              const Gap(16),
+              SizedBox(
+                height: gridHeight,
+                child: GridView.builder(
+                  itemCount: tiles.length,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.03,
+                  ),
+                  itemBuilder: (context, index) =>
+                      _ModeGridTile(data: tiles[index]),
                 ),
               ),
-            ),
-
-            const Gap(24),
-
-            // ── Mode cards ────────────────────────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                child: Column(
-                  children: [
-                    _ModeCard(
-                      icon: Icons.compress_rounded,
-                      accentColor: AppColors.compress,
-                      title: 'Compress',
-                      subtitle: 'Reduce file size without losing quality',
-                      formats: const ['JPG', 'PNG', 'WEBP'],
-                      onTap: () => _navigate(context, ImageMode.compress),
-                    ),
-                    const Gap(10),
-                    _ModeCard(
-                      icon: Icons.photo_size_select_large_rounded,
-                      accentColor: AppColors.resize,
-                      title: 'Resize',
-                      subtitle: 'Change dimensions by pixels or percentage',
-                      formats: const ['px', '%'],
-                      onTap: () => _navigate(context, ImageMode.resize),
-                    ),
-                    const Gap(10),
-                    _ModeCard(
-                      icon: Icons.swap_horiz_rounded,
-                      accentColor: AppColors.convert,
-                      title: 'Convert',
-                      subtitle: 'Change image format instantly',
-                      formats: const ['JPG', 'PNG', 'WEBP', 'GIF'],
-                      onTap: () => _navigate(context, ImageMode.convert),
-                    ),
-                    const Gap(10),
-                    _ModeCard(
-                      icon: Icons.photo_library_outlined,
-                      accentColor: AppColors.batch,
-                      title: 'Batch',
-                      subtitle: 'Process multiple images at once',
-                      formats: const ['Compress', 'Resize'],
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const BatchEntryScreen()),
-                      ),
-                    ),
-                    const Gap(24),
-                    AdManager.instance.getMediumNativeAdWidget(),
-                  ],
-                ),
-              ),
-            ),
-          ],
+              const Gap(16),
+              AdManager.instance.getMediumNativeAdWidget(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _navigate(BuildContext context, ImageMode mode) {
+  void _navigateMode(BuildContext context, ImageMode mode) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => ModeEntryScreen(mode: mode)),
     );
   }
 }
 
-// ── Mode card ────────────────────────────────────────────────────────────────
-
-class _ModeCard extends StatefulWidget {
+class _ModeGridTileData {
   final IconData icon;
   final Color accentColor;
   final String title;
   final String subtitle;
-  final List<String> formats;
   final VoidCallback onTap;
 
-  const _ModeCard({
+  const _ModeGridTileData({
     required this.icon,
     required this.accentColor,
     required this.title,
     required this.subtitle,
-    required this.formats,
     required this.onTap,
   });
-
-  @override
-  State<_ModeCard> createState() => _ModeCardState();
 }
 
-class _ModeCardState extends State<_ModeCard> {
-  bool _pressed = false;
+class _ModeGridTile extends StatelessWidget {
+  final _ModeGridTileData data;
+
+  const _ModeGridTile({required this.data});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 130),
-        curve: Curves.easeOut,
-        transform: Matrix4.identity()..scale(_pressed ? 0.982 : 1.0),
-        transformAlignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-        decoration: BoxDecoration(
-          color: _pressed
-              ? widget.accentColor.withOpacity(0.05)
-              : cs.surfaceContainerHighest.withOpacity(0.35),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: _pressed
-                ? widget.accentColor.withOpacity(0.4)
-                : cs.outlineVariant.withOpacity(0.4),
-            width: 1,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: data.onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest.withOpacity(0.32),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: cs.outlineVariant.withOpacity(0.35),
+            ),
           ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Icon box
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: widget.accentColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(13),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: data.accentColor.withOpacity(0.13),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  data.icon,
+                  color: data.accentColor,
+                  size: 22,
+                ),
               ),
-              child: Icon(
-                widget.icon,
-                color: widget.accentColor,
-                size: 22,
+              const Spacer(),
+              Text(
+                data.title,
+                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
-            ),
-            const Gap(16),
-            // Text + chips
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.title,
-                    style: tt.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                  const Gap(3),
-                  Text(
-                    widget.subtitle,
-                    style: tt.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                  const Gap(10),
-                  // Format chips
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: widget.formats.map((f) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: widget.accentColor.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          f,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: widget.accentColor,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
+              const Gap(4),
+              Text(
+                data.subtitle,
+                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
-            ),
-            const Gap(10),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 14,
-              color: cs.onSurfaceVariant.withOpacity(0.5),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
-
-// ── Pro badge ─────────────────────────────────────────────────────────────
 
 class _ProBadge extends StatelessWidget {
   final VoidCallback onTap;
@@ -342,8 +272,7 @@ class _ActiveProBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_circle_rounded,
-              size: 13, color: AppColors.compress),
+          Icon(Icons.check_circle_rounded, size: 13, color: AppColors.compress),
           const Gap(5),
           Text(
             'Pro',
