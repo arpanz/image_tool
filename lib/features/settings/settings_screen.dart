@@ -27,6 +27,15 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _shareApp() async {
+    await SharePlus.instance.share(
+      ShareParams(
+        text:
+            'Check out Pixel Forge — compress & resize images offline!\n\n${AdManager.appStoreUrl}',
+      ),
+    );
+  }
+
   void _showProFeaturesSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -208,9 +217,7 @@ class SettingsScreen extends ConsumerWidget {
                 iconColor: Colors.pink,
                 title: 'Share App',
                 subtitle: 'Spread the word',
-                onTap: () => Share.share(
-                  'Check out Pixel Forge — compress & resize images offline!\n\n${AdManager.appStoreUrl}',
-                ),
+                onTap: _shareApp,
               ),
               _SettingsTile(
                 icon: Icons.mail_outline_rounded,
@@ -352,7 +359,7 @@ class _AppHeader extends StatelessWidget {
           FutureBuilder<PackageInfo>(
             future: packageInfoFuture,
             builder: (ctx, snap) => Text(
-              snap.hasData ? 'Version ${snap.data!.version}' : '…',
+              snap.hasData ? 'Version ${snap.data!.version}' : '\u2026',
               style: tt.bodySmall,
             ),
           ),
@@ -584,7 +591,7 @@ class _ProActiveTile extends StatelessWidget {
                       style: TextStyle(
                           fontWeight: FontWeight.w700, fontSize: 14)),
                   Gap(2),
-                  Text('All features unlocked · Thank you!',
+                  Text('All features unlocked \u00b7 Thank you!',
                       style:
                           TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
@@ -657,7 +664,7 @@ class _UpgradeTile extends StatelessWidget {
                       style: TextStyle(
                           fontWeight: FontWeight.w700, fontSize: 14)),
                   Gap(2),
-                  Text('No Ads · Unlimited · All Pro Tools',
+                  Text('No Ads \u00b7 Unlimited \u00b7 All Pro Tools',
                       style:
                           TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
