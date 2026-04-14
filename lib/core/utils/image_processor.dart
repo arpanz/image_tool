@@ -37,6 +37,11 @@ Future<ui.Image> _decodeImage(File file) async {
   return frame.image;
 }
 
+/// Encodes an already-resized [ui.Image] canvas into the target format/quality.
+///
+/// IMPORTANT: minWidth/minHeight are set to 0 so flutter_image_compress does
+/// NOT upscale the canvas. The canvas pixel dimensions are already correct —
+/// we only want quality/format encoding here, no further scaling.
 Future<Uint8List> _encodeImage(
   ui.Image image,
   String format,
@@ -47,8 +52,8 @@ Future<Uint8List> _encodeImage(
   final pngBytes = byteData.buffer.asUint8List();
   return FlutterImageCompress.compressWithList(
     pngBytes,
-    minWidth: image.width,
-    minHeight: image.height,
+    minWidth: 0,   // ← 0 = no minimum, honour canvas size as-is
+    minHeight: 0,  // ← same
     quality: quality,
     format: _formatToCompressFormat(format),
   );
@@ -142,6 +147,7 @@ class ImageProcessor {
     int outH = originalHeight;
 
     if (!hasResize) {
+      // Pure compression — no canvas resize needed
       final compressed = await FlutterImageCompress.compressWithFile(
         inputPath,
         quality: settings.quality,
@@ -166,6 +172,7 @@ class ImageProcessor {
         } else if (settings.height != null && settings.width == null) {
           targetW = (originalWidth * targetH / originalHeight).round();
         } else {
+          // Both provided — fit inside the box without cropping
           final scale = (targetW / originalWidth) < (targetH / originalHeight)
               ? targetW / originalWidth
               : targetH / originalHeight;
@@ -180,20 +187,20 @@ class ImageProcessor {
       final resized =
           await _resizeCanvas(src, targetW, targetH, settings.fitMode);
       src.dispose();
+      // _encodeImage uses minWidth/minHeight = 0 — no upscaling risk
       resultBytes =
           await _encodeImage(resized, settings.format, settings.quality);
       resized.dispose();
     }
 
-    // ── Target-size binary search ──
+    // ── Target-size binary search ──────────────────────────────────────────
     if (settings.targetSizeKB != null &&
         settings.format.toUpperCase() != 'PNG') {
       final targetBytes = settings.targetSizeKB! * 1024;
-      // Only attempt if the first pass is already larger than target
       if (resultBytes.length > targetBytes) {
         int lo = 1;
         int hi = settings.quality;
-        Uint8List? bestUnder; // best result that fits within target
+        Uint8List? bestUnder;
         int bestQuality = 1;
 
         while (lo <= hi) {
@@ -220,12 +227,10 @@ class ImageProcessor {
           }
 
           if (attempt.length <= targetBytes) {
-            // Fits! Remember it, try higher quality
             bestUnder = attempt;
             bestQuality = mid;
             lo = mid + 1;
           } else {
-            // Too large, try lower quality
             hi = mid - 1;
           }
         }
@@ -233,7 +238,7 @@ class ImageProcessor {
         if (bestUnder != null) {
           resultBytes = bestUnder;
         } else {
-          // Even quality=1 is too large — progressively downscale dimensions
+          // Even quality=1 too large — progressively downscale dimensions
           int scaleW = outW;
           int scaleH = outH;
           Uint8List scaled = resultBytes;
