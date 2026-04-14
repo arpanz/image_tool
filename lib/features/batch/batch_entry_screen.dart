@@ -14,9 +14,6 @@ class BatchEntryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? AppColors.surface : AppColors.lightSurface;
-    final border = isDark ? AppColors.surfaceBorder : AppColors.lightSurfaceBorder;
 
     return Scaffold(
       appBar: AppBar(
@@ -27,8 +24,8 @@ class BatchEntryScreen extends StatelessWidget {
         title: const Text('Batch'),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -36,28 +33,37 @@ class BatchEntryScreen extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
                       color: AppColors.batch.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(11),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
                       Icons.photo_library_outlined,
                       color: AppColors.batch,
-                      size: 20,
+                      size: 26,
                     ),
                   ),
-                  const Gap(12),
+                  const Gap(16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Batch Processing', style: tt.headlineMedium),
-                        const Gap(2),
                         Text(
-                          'Process multiple images with shared settings',
-                          style: tt.bodyMedium,
+                          'Batch Process',
+                          style: tt.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const Gap(4),
+                        Text(
+                          'Process multiple images simultaneously',
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -67,26 +73,25 @@ class BatchEntryScreen extends StatelessWidget {
                 ],
               ),
 
-              const Gap(28),
+              const Gap(36),
 
               // ── Mode label ─────────────────────────────────────────────────
               Text(
-                'SELECT MODE',
-                style: TextStyle(
-                  fontSize: 11,
+                'CHOOSE OPERATION',
+                style: tt.labelSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: cs.primary.withOpacity(0.65),
-                  letterSpacing: 0.8,
+                  color: cs.onSurfaceVariant,
+                  letterSpacing: 1.2,
                 ),
               ),
-              const Gap(10),
+              const Gap(12),
 
               // ── Mode cards ─────────────────────────────────────────────────
               _BatchModeCard(
                 icon: Icons.compress_rounded,
                 accentColor: AppColors.compress,
-                title: 'Batch Compress',
-                subtitle: 'Reduce file size across multiple images',
+                title: 'Compress',
+                subtitle: 'Shrink file size of multiple images',
                 tag: 'JPG · PNG · WEBP',
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
@@ -94,12 +99,12 @@ class BatchEntryScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const Gap(12),
+              const Gap(16),
               _BatchModeCard(
                 icon: Icons.photo_size_select_large_rounded,
                 accentColor: AppColors.resize,
-                title: 'Batch Resize',
-                subtitle: 'Apply same dimensions to multiple images',
+                title: 'Resize',
+                subtitle: 'Change dimensions of multiple images',
                 tag: 'Pixels · Percentage',
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
@@ -108,55 +113,29 @@ class BatchEntryScreen extends StatelessWidget {
                 ),
               ),
 
-              const Gap(20),
-
-              // ── Feature chips ──────────────────────────────────────────────
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _FeatureChip(
-                    icon: Icons.layers_rounded,
-                    label: 'Multiple images',
-                    surface: surface,
-                    border: border,
-                  ),
-                  _FeatureChip(
-                    icon: Icons.tune_rounded,
-                    label: 'Shared settings',
-                    surface: surface,
-                    border: border,
-                  ),
-                  _FeatureChip(
-                    icon: Icons.save_alt_rounded,
-                    label: 'Save all at once',
-                    surface: surface,
-                    border: border,
-                  ),
-                ],
-              ),
-
-              const Spacer(),
+              const Gap(36),
 
               // ── Ad + footer ────────────────────────────────────────────────
-              AdManager.instance.getSmallNativeAdWidget(),
-              const Gap(8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.lock_outline_rounded,
-                    size: 12,
+                    Icons.privacy_tip_outlined,
+                    size: 14,
                     color: cs.onSurfaceVariant,
                   ),
                   const Gap(6),
                   Text(
-                    'Fully offline \u00b7 No data leaves your device',
-                    style: tt.bodySmall,
+                    'Offline & private processing',
+                    style: tt.labelSmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
-              const Gap(16),
+              const Gap(24),
+              AdManager.instance.getMediumNativeAdWidget(),
             ],
           ),
         ),
@@ -195,7 +174,8 @@ class _BatchModeCardState extends State<_BatchModeCard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? AppColors.surface : AppColors.lightSurface;
-    final border = isDark ? AppColors.surfaceBorder : AppColors.lightSurfaceBorder;
+    final border =
+        isDark ? AppColors.surfaceBorder : AppColors.lightSurfaceBorder;
     final tt = Theme.of(context).textTheme;
 
     return GestureDetector(
@@ -208,44 +188,37 @@ class _BatchModeCardState extends State<_BatchModeCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
         curve: Curves.easeOut,
-        transform: Matrix4.identity()..scale(_pressed ? 0.985 : 1.0),
+        transform: Matrix4.identity()..scale(_pressed ? 0.98 : 1.0),
         transformAlignment: Alignment.center,
         decoration: BoxDecoration(
-          color: _pressed
-              ? widget.accentColor.withOpacity(isDark ? 0.06 : 0.04)
-              : surface,
-          borderRadius: BorderRadius.circular(16),
+          color: surface,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: widget.accentColor.withOpacity(0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
           border: Border.all(
-            color: _pressed
-                ? widget.accentColor.withOpacity(0.35)
-                : border,
-            width: 1,
+            color: _pressed ? widget.accentColor.withOpacity(0.5) : border,
+            width: 1.5,
           ),
         ),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            // Accent bar
-            Container(
-              width: 3,
-              height: 80,
-              decoration: BoxDecoration(
-                color: widget.accentColor,
-                borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(16)),
-              ),
-            ),
-            const Gap(16),
             // Icon
             Container(
-              width: 44,
-              height: 44,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                color: widget.accentColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(11),
+                color: widget.accentColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(widget.icon, color: widget.accentColor, size: 22),
+              child: Icon(widget.icon, color: widget.accentColor, size: 28),
             ),
-            const Gap(14),
+            const Gap(16),
             // Text
             Expanded(
               child: Column(
@@ -253,78 +226,40 @@ class _BatchModeCardState extends State<_BatchModeCard> {
                 children: [
                   Text(
                     widget.title,
-                    style: tt.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
+                    style: tt.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                     ),
                   ),
-                  const Gap(3),
-                  Text(widget.subtitle, style: tt.bodyMedium),
-                  const Gap(6),
+                  const Gap(4),
                   Text(
-                    widget.tag,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: widget.accentColor.withOpacity(0.8),
-                      letterSpacing: 0.2,
+                    widget.subtitle,
+                    style: tt.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
             ),
             const Gap(12),
-            Icon(
-              Icons.arrow_forward_rounded,
-              size: 18,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: widget.accentColor,
+              ),
             ),
-            const Gap(16),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ─── Feature chip ─────────────────────────────────────────────────────────────
-
-class _FeatureChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color surface;
-  final Color border;
-
-  const _FeatureChip({
-    required this.icon,
-    required this.label,
-    required this.surface,
-    required this.border,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: AppColors.batch),
-          const Gap(5),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ),
     );
   }
