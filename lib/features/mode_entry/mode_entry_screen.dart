@@ -22,42 +22,15 @@ class ModeEntryScreen extends ConsumerStatefulWidget {
 class _ModeEntryScreenState extends ConsumerState<ModeEntryScreen>
     with SingleTickerProviderStateMixin {
   _EntryTab _tab = _EntryTab.single;
-  late final AnimationController _slideCtrl;
-  late final Animation<double> _slideAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _slideCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 260),
-    );
-    _slideAnim = CurvedAnimation(
-      parent: _slideCtrl,
-      curve: Curves.easeInOutCubic,
-    );
-  }
-
-  @override
-  void dispose() {
-    _slideCtrl.dispose();
-    super.dispose();
-  }
 
   bool get _isCompress => widget.mode == ImageMode.compress;
 
-  List<Color> get _gradient => _isCompress
-      ? [const Color(0xFF6C63FF), const Color(0xFF9D97FF)]
-      : [const Color(0xFF11998E), const Color(0xFF38EF7D)];
+  Color get _accent =>
+      _isCompress ? AppColors.compress : AppColors.resize;
 
   void _switchTab(_EntryTab tab) {
     if (_tab == tab) return;
     setState(() => _tab = tab);
-    if (tab == _EntryTab.batch) {
-      _slideCtrl.forward();
-    } else {
-      _slideCtrl.reverse();
-    }
   }
 
   @override
@@ -68,11 +41,11 @@ class _ModeEntryScreenState extends ConsumerState<ModeEntryScreen>
 
     final title = _isCompress ? 'Compress' : 'Resize';
     final singleSubtitle = _isCompress
-        ? 'Reduce file size while keeping quality'
-        : 'Change dimensions by pixels or percentage';
+        ? 'Reduce file size, keep quality'
+        : 'Change dimensions by pixels or %';
     final batchSubtitle = _isCompress
-        ? 'Compress multiple images at the same time'
-        : 'Resize multiple images with the same settings';
+        ? 'Process multiple images at once'
+        : 'Resize multiple images, same settings';
 
     return Scaffold(
       appBar: AppBar(
@@ -81,37 +54,32 @@ class _ModeEntryScreenState extends ConsumerState<ModeEntryScreen>
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(title),
-        elevation: 0,
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header ────────────────────────────────────────────────
+              // ── Mode header ─────────────────────────────────────────
               Row(
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: _gradient,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(13),
+                      color: _accent.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(11),
                     ),
                     child: Icon(
                       _isCompress
                           ? Icons.compress_rounded
                           : Icons.photo_size_select_large_rounded,
-                      color: Colors.white,
-                      size: 24,
+                      color: _accent,
+                      size: 20,
                     ),
                   ),
-                  const Gap(14),
+                  const Gap(12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,13 +87,13 @@ class _ModeEntryScreenState extends ConsumerState<ModeEntryScreen>
                         Text(title, style: tt.headlineMedium),
                         const Gap(2),
                         AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 220),
+                          duration: const Duration(milliseconds: 200),
                           child: Text(
                             _tab == _EntryTab.single
                                 ? singleSubtitle
                                 : batchSubtitle,
                             key: ValueKey(_tab),
-                            style: tt.bodySmall,
+                            style: tt.bodyMedium,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -136,21 +104,21 @@ class _ModeEntryScreenState extends ConsumerState<ModeEntryScreen>
                 ],
               ),
 
-              const Gap(28),
+              const Gap(24),
 
-              // ── Animated toggle ───────────────────────────────────────
+              // ── Tab toggle ───────────────────────────────────────────
               _TabToggle(
                 selected: _tab,
-                gradient: _gradient,
+                accent: _accent,
                 onChanged: _switchTab,
               ),
 
-              const Gap(28),
+              const Gap(20),
 
-              // ── Content area — slides between single and batch ────────
+              // ── Content ─────────────────────────────────────────────
               Expanded(
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
+                  duration: const Duration(milliseconds: 240),
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeInCubic,
                   transitionBuilder: (child, anim) {
@@ -164,9 +132,8 @@ class _ModeEntryScreenState extends ConsumerState<ModeEntryScreen>
                             : const Offset(1, 0));
                     return SlideTransition(
                       position: Tween<Offset>(
-                        begin: offset,
-                        end: Offset.zero,
-                      ).animate(anim),
+                              begin: offset, end: Offset.zero)
+                          .animate(anim),
                       child: FadeTransition(opacity: anim, child: child),
                     );
                   },
@@ -174,12 +141,12 @@ class _ModeEntryScreenState extends ConsumerState<ModeEntryScreen>
                       ? _SingleContent(
                           key: const ValueKey(_EntryTab.single),
                           mode: widget.mode,
-                          gradient: _gradient,
+                          accent: _accent,
                         )
                       : _BatchContent(
                           key: const ValueKey(_EntryTab.batch),
                           mode: widget.mode,
-                          gradient: _gradient,
+                          accent: _accent,
                         ),
                 ),
               ),
@@ -192,15 +159,16 @@ class _ModeEntryScreenState extends ConsumerState<ModeEntryScreen>
 }
 
 // ─── Tab toggle ───────────────────────────────────────────────────────────────
+// Clean pill toggle — active side gets accent background, no gradient
 
 class _TabToggle extends StatelessWidget {
   final _EntryTab selected;
-  final List<Color> gradient;
+  final Color accent;
   final ValueChanged<_EntryTab> onChanged;
 
   const _TabToggle({
     required this.selected,
-    required this.gradient,
+    required this.accent,
     required this.onChanged,
   });
 
@@ -208,21 +176,20 @@ class _TabToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.surface : AppColors.lightSurface;
-    final border =
-        isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated;
+    final border = isDark ? AppColors.surfaceBorder : AppColors.lightSurfaceBorder;
 
     return Container(
-      height: 46,
+      height: 44,
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: border, width: 1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: border),
       ),
       child: Stack(
         children: [
-          // Sliding pill
+          // Sliding pill — flat accent, no gradient
           AnimatedAlign(
-            duration: const Duration(milliseconds: 240),
+            duration: const Duration(milliseconds: 220),
             curve: Curves.easeInOutCubic,
             alignment: selected == _EntryTab.single
                 ? Alignment.centerLeft
@@ -230,21 +197,10 @@ class _TabToggle extends StatelessWidget {
             child: FractionallySizedBox(
               widthFactor: 0.5,
               child: Container(
-                margin: const EdgeInsets.all(4),
+                margin: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: gradient,
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: gradient[0].withOpacity(0.35),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  color: accent,
+                  borderRadius: BorderRadius.circular(9),
                 ),
               ),
             ),
@@ -252,70 +208,17 @@ class _TabToggle extends StatelessWidget {
           // Labels
           Row(
             children: [
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onChanged(_EntryTab.single),
-                  child: Center(
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 200),
-                      style: TextStyle(
-                        color: selected == _EntryTab.single
-                            ? Colors.white
-                            : Theme.of(context).textTheme.bodySmall?.color,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      child: const Text('Single Image'),
-                    ),
-                  ),
-                ),
+              _TabLabel(
+                label: 'Single',
+                isSelected: selected == _EntryTab.single,
+                onTap: () => onChanged(_EntryTab.single),
               ),
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onChanged(_EntryTab.batch),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 200),
-                          style: TextStyle(
-                            color: selected == _EntryTab.batch
-                                ? Colors.white
-                                : Theme.of(context).textTheme.bodySmall?.color,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          child: const Text('Batch'),
-                        ),
-                        const Gap(6),
-                        AnimatedOpacity(
-                          duration: const Duration(milliseconds: 200),
-                          opacity: selected == _EntryTab.batch ? 0 : 1,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 1),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: gradient),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              'NEW',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              _TabLabel(
+                label: 'Batch',
+                isSelected: selected == _EntryTab.batch,
+                onTap: () => onChanged(_EntryTab.batch),
+                badge: selected != _EntryTab.batch ? 'NEW' : null,
+                badgeColor: accent,
               ),
             ],
           ),
@@ -325,23 +228,90 @@ class _TabToggle extends StatelessWidget {
   }
 }
 
+class _TabLabel extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final String? badge;
+  final Color? badgeColor;
+
+  const _TabLabel({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.badge,
+    this.badgeColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 180),
+                style: TextStyle(
+                  color: isSelected
+                      ? Colors.black
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+                child: Text(label),
+              ),
+              if (badge != null) ...[
+                const Gap(5),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: badgeColor?.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                        color: badgeColor?.withOpacity(0.4) ??
+                            Colors.transparent),
+                  ),
+                  child: Text(
+                    badge!,
+                    style: TextStyle(
+                      color: badgeColor,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Single content ───────────────────────────────────────────────────────────
 
 class _SingleContent extends ConsumerWidget {
   final ImageMode mode;
-  final List<Color> gradient;
+  final Color accent;
 
   const _SingleContent({
     super.key,
     required this.mode,
-    required this.gradient,
+    required this.accent,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(pickerProvider);
     final notifier = ref.read(pickerProvider.notifier);
-    final tt = Theme.of(context).textTheme;
 
     ref.listen<PickerState>(pickerProvider, (prev, next) {
       if (next is PickerLoaded) {
@@ -356,8 +326,8 @@ class _SingleContent extends ConsumerWidget {
             content: Text(next.message),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -368,17 +338,17 @@ class _SingleContent extends ConsumerWidget {
         Expanded(
           child: _PickZone(
             isLoading: state is PickerLoading,
-            gradient: gradient,
+            accent: accent,
             icon: Icons.add_photo_alternate_outlined,
-            primaryLabel: 'Tap to select an image',
-            secondaryLabel: 'From gallery or camera',
+            primaryLabel: 'Select an image',
+            secondaryLabel: 'Tap to pick from gallery or camera',
             onTap: notifier.pickImage,
           ),
         ),
         const Gap(12),
         AdManager.instance.getSmallNativeAdWidget(),
         const Gap(8),
-        _PrivacyNote(),
+        const _PrivacyNote(),
         const Gap(12),
       ],
     );
@@ -389,17 +359,16 @@ class _SingleContent extends ConsumerWidget {
 
 class _BatchContent extends StatelessWidget {
   final ImageMode mode;
-  final List<Color> gradient;
+  final Color accent;
 
   const _BatchContent({
     super.key,
     required this.mode,
-    required this.gradient,
+    required this.accent,
   });
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
     final isCompress = mode == ImageMode.compress;
 
     return Column(
@@ -407,55 +376,40 @@ class _BatchContent extends StatelessWidget {
         Expanded(
           child: _PickZone(
             isLoading: false,
-            gradient: gradient,
+            accent: accent,
             icon: Icons.photo_library_outlined,
-            primaryLabel:
-                'Tap to start batch ${isCompress ? "compression" : "resize"}',
+            primaryLabel: 'Start batch ${isCompress ? "compression" : "resize"}',
             secondaryLabel: 'Select multiple images at once',
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => BatchScreen(mode: mode),
-              ),
+              MaterialPageRoute(builder: (_) => BatchScreen(mode: mode)),
             ),
           ),
         ),
         const Gap(12),
-        // Batch info chips
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _InfoChip(
-              icon: Icons.layers_rounded,
-              label: 'Multiple images',
-              gradient: gradient,
-            ),
-            const Gap(10),
-            _InfoChip(
-              icon: Icons.tune_rounded,
-              label: 'Shared settings',
-              gradient: gradient,
-            ),
-            const Gap(10),
-            _InfoChip(
-              icon: Icons.download_outlined,
-              label: 'Save all at once',
-              gradient: gradient,
-            ),
+            _InfoChip(icon: Icons.layers_rounded, label: 'Multiple images', accent: accent),
+            const Gap(8),
+            _InfoChip(icon: Icons.tune_rounded, label: 'Shared settings', accent: accent),
+            const Gap(8),
+            _InfoChip(icon: Icons.save_alt_rounded, label: 'Save all at once', accent: accent),
           ],
         ),
         const Gap(8),
-        _PrivacyNote(),
+        const _PrivacyNote(),
         const Gap(12),
       ],
     );
   }
 }
 
-// ─── Shared pick zone ─────────────────────────────────────────────────────────
+// ─── Pick zone ────────────────────────────────────────────────────────────────
+// Clean dashed-border tap target. No pulsing gradient, no glow.
 
 class _PickZone extends StatefulWidget {
   final bool isLoading;
-  final List<Color> gradient;
+  final Color accent;
   final IconData icon;
   final String primaryLabel;
   final String secondaryLabel;
@@ -463,7 +417,7 @@ class _PickZone extends StatefulWidget {
 
   const _PickZone({
     required this.isLoading,
-    required this.gradient,
+    required this.accent,
     required this.icon,
     required this.primaryLabel,
     required this.secondaryLabel,
@@ -474,35 +428,13 @@ class _PickZone extends StatefulWidget {
   State<_PickZone> createState() => _PickZoneState();
 }
 
-class _PickZoneState extends State<_PickZone>
-    with SingleTickerProviderStateMixin {
+class _PickZoneState extends State<_PickZone> {
   bool _pressed = false;
-  late AnimationController _pulseCtrl;
-  late Animation<double> _pulseAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-    _pulseAnim = Tween<double>(begin: 0.92, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _pulseCtrl.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? AppColors.surface : AppColors.lightSurface;
-    final borderColor = widget.gradient[0].withOpacity(_pressed ? 0.75 : 0.3);
+    final surface = isDark ? AppColors.surface : AppColors.lightSurface;
     final tt = Theme.of(context).textTheme;
 
     return GestureDetector(
@@ -513,20 +445,20 @@ class _PickZoneState extends State<_PickZone>
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 150),
+        width: double.infinity,
         decoration: BoxDecoration(
-          color: _pressed ? widget.gradient[0].withOpacity(0.07) : surfaceColor,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: borderColor, width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: isDark
-                  ? Colors.black.withOpacity(0.2)
-                  : Colors.black.withOpacity(0.04),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
-            ),
-          ],
+          color: _pressed
+              ? widget.accent.withOpacity(0.05)
+              : surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: _pressed
+                ? widget.accent.withOpacity(0.5)
+                : widget.accent.withOpacity(0.2),
+            width: 1.5,
+            // note: Flutter Border does not support dashed; keeping solid
+          ),
         ),
         child: Center(
           child: widget.isLoading
@@ -534,60 +466,44 @@ class _PickZoneState extends State<_PickZone>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
-                      width: 44,
-                      height: 44,
+                      width: 36,
+                      height: 36,
                       child: CircularProgressIndicator(
-                        color: widget.gradient[0],
-                        strokeWidth: 3,
+                        color: widget.accent,
+                        strokeWidth: 2.5,
                       ),
                     ),
-                    const Gap(16),
+                    const Gap(14),
                     Text('Reading image…', style: tt.bodyMedium),
                   ],
                 )
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Pulsing icon container
-                    AnimatedBuilder(
-                      animation: _pulseAnim,
-                      builder: (_, child) => Transform.scale(
-                        scale: _pulseAnim.value,
-                        child: child,
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: widget.accent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(18),
                       ),
-                      child: Container(
-                        width: 88,
-                        height: 88,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: widget.gradient,
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: widget.gradient[0].withOpacity(0.4),
-                              blurRadius: 20,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Icon(widget.icon, size: 40, color: Colors.white),
+                      child: Icon(
+                        widget.icon,
+                        size: 34,
+                        color: widget.accent,
                       ),
                     ),
-                    const Gap(22),
+                    const Gap(18),
                     Text(
                       widget.primaryLabel,
-                      style: tt.bodyMedium?.copyWith(
-                        fontSize: 16,
+                      style: tt.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const Gap(6),
+                    const Gap(5),
                     Text(
                       widget.secondaryLabel,
-                      style: tt.bodySmall,
+                      style: tt.bodyMedium,
                     ),
                   ],
                 ),
@@ -602,38 +518,36 @@ class _PickZoneState extends State<_PickZone>
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  final List<Color> gradient;
+  final Color accent;
 
   const _InfoChip({
     required this.icon,
     required this.label,
-    required this.gradient,
+    required this.accent,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final border = isDark ? AppColors.surfaceBorder : AppColors.lightSurfaceBorder;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surface : AppColors.lightSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: gradient[0].withOpacity(0.25),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: gradient[0]),
+          Icon(icon, size: 12, color: accent),
           const Gap(5),
           Text(
             label,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: Theme.of(context).textTheme.bodySmall?.color,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -645,17 +559,22 @@ class _InfoChip extends StatelessWidget {
 // ─── Privacy note ─────────────────────────────────────────────────────────────
 
 class _PrivacyNote extends StatelessWidget {
+  const _PrivacyNote();
+
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.lock_outline_rounded, size: 12, color: tt.bodySmall?.color),
+        Icon(
+          Icons.lock_outline_rounded,
+          size: 12,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const Gap(5),
         Text(
           'Fully offline · No data leaves your device',
-          style: tt.bodySmall,
+          style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
     );
