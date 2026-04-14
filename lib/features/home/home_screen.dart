@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import '../../core/providers/theme_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
 import '../../core/utils/app_update_service.dart';
@@ -10,7 +9,7 @@ import '../../features/settings/settings_screen.dart';
 import '../batch/batch_entry_screen.dart';
 import '../mode_entry/mode_entry_screen.dart';
 
-enum ImageMode { compress, resize }
+enum ImageMode { compress, resize, convert }
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -36,7 +35,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = ref.watch(themeProvider);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -45,7 +43,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Top bar ─────────────────────────────────────────────────────────
+            // ── Top bar ───────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 18, 16, 0),
               child: Row(
@@ -57,9 +55,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       children: [
                         Text('Pixel Forge', style: tt.headlineLarge),
                         const Gap(3),
-                        Text(
-                          'Compress, resize & batch process images.',
-                          style: tt.bodyMedium,
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.lock_outline_rounded,
+                              size: 11,
+                              color: cs.onSurfaceVariant,
+                            ),
+                            const Gap(4),
+                            Text(
+                              'Offline · No data leaves your device',
+                              style: tt.bodySmall,
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -75,14 +83,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   else
                     _ActiveProBadge(),
                   const Gap(6),
-                  // Theme toggle
-                  _ThemeToggle(
-                    isDark: isDark,
-                    onToggle: () =>
-                        ref.read(themeProvider.notifier).state = !isDark,
-                  ),
-                  const Gap(4),
-                  // Settings
+                  // Settings — contains theme toggle
                   IconButton(
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
@@ -98,9 +99,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            const Gap(32),
+            const Gap(28),
 
-            // ── Mode cards ──────────────────────────────────────────────────
+            // ── Mode cards ────────────────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -120,8 +121,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       accentColor: AppColors.resize,
                       title: 'Resize',
                       subtitle: 'Change dimensions by pixels or percentage',
-                      tag: 'Custom dimensions',
+                      tag: 'px · % · cm · mm',
                       onTap: () => _navigate(context, ImageMode.resize),
+                    ),
+                    const Gap(12),
+                    _ModeCard(
+                      icon: Icons.swap_horiz_rounded,
+                      accentColor: AppColors.convert,
+                      title: 'Convert',
+                      subtitle: 'Change image format instantly',
+                      tag: 'JPG → PNG · PNG → WEBP · any format',
+                      onTap: () => _navigate(context, ImageMode.convert),
                     ),
                     const Gap(12),
                     _ModeCard(
@@ -138,8 +148,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const Gap(20),
                     AdManager.instance.getMediumNativeAdWidget(),
                     const Gap(16),
-                    _OfflineBadge(),
-                    const Gap(12),
                   ],
                 ),
               ),
@@ -157,8 +165,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-// ─── Mode card ────────────────────────────────────────────────────────────────────
-// Flat, left-aligned, typography-led. No gradient fills.
+// ─── Mode card ────────────────────────────────────────────────────────────────
 
 class _ModeCard extends StatefulWidget {
   final IconData icon;
@@ -188,7 +195,8 @@ class _ModeCardState extends State<_ModeCard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? AppColors.surface : AppColors.lightSurface;
-    final border = isDark ? AppColors.surfaceBorder : AppColors.lightSurfaceBorder;
+    final border =
+        isDark ? AppColors.surfaceBorder : AppColors.lightSurfaceBorder;
     final tt = Theme.of(context).textTheme;
 
     return GestureDetector(
@@ -201,8 +209,7 @@ class _ModeCardState extends State<_ModeCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
         curve: Curves.easeOut,
-        transform: Matrix4.identity()
-          ..scale(_pressed ? 0.985 : 1.0),
+        transform: Matrix4.identity()..scale(_pressed ? 0.985 : 1.0),
         transformAlignment: Alignment.center,
         decoration: BoxDecoration(
           color: _pressed
@@ -210,9 +217,8 @@ class _ModeCardState extends State<_ModeCard> {
               : surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _pressed
-                ? widget.accentColor.withOpacity(0.35)
-                : border,
+            color:
+                _pressed ? widget.accentColor.withOpacity(0.35) : border,
             width: 1,
           ),
         ),
@@ -224,8 +230,8 @@ class _ModeCardState extends State<_ModeCard> {
               height: 80,
               decoration: BoxDecoration(
                 color: widget.accentColor,
-                borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(16)),
+                borderRadius:
+                    const BorderRadius.horizontal(left: Radius.circular(16)),
               ),
             ),
             const Gap(16),
@@ -249,11 +255,13 @@ class _ModeCardState extends State<_ModeCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.title,
-                      style: tt.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                      )),
+                  Text(
+                    widget.title,
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
                   const Gap(3),
                   Text(widget.subtitle, style: tt.bodyMedium),
                   const Gap(6),
@@ -283,7 +291,7 @@ class _ModeCardState extends State<_ModeCard> {
   }
 }
 
-// ─── Pro badge ──────────────────────────────────────────────────────────────────
+// ─── Pro badge ────────────────────────────────────────────────────────────────
 
 class _ProBadge extends StatelessWidget {
   final VoidCallback onTap;
@@ -353,62 +361,6 @@ class _ActiveProBadge extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ─── Theme toggle ─────────────────────────────────────────────────────────────────
-
-class _ThemeToggle extends StatelessWidget {
-  final bool isDark;
-  final VoidCallback onToggle;
-  const _ThemeToggle({required this.isDark, required this.onToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onToggle,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: cs.outlineVariant.withOpacity(0.5),
-            width: 1,
-          ),
-        ),
-        child: Icon(
-          isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-          size: 18,
-          color: cs.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Offline badge ──────────────────────────────────────────────────────────────
-
-class _OfflineBadge extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.lock_outline_rounded,
-          size: 12,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const Gap(6),
-        Text(
-          'Fully offline \u00b7 No data leaves your device',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ],
     );
   }
 }
