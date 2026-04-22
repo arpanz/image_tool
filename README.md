@@ -1,4 +1,4 @@
-# Pixel Forge ⚡
+# Image Resizer ⚡
 
 > Offline-first high-performance image compression and resizing utility
 >
@@ -63,7 +63,7 @@ flutter run
 ### iOS permissions (ios/Runner/Info.plist)
 ```xml
 <key>NSPhotoLibraryUsageDescription</key>
-<string>Pixel Forge needs access to select images for compression.</string>
+<string>Image Resizer needs access to select images for compression.</string>
 <key>NSPhotoLibraryAddUsageDescription</key>
-<string>Pixel Forge needs permission to save compressed images.</string>
+<string>Image Resizer needs permission to save compressed images.</string>
 ```

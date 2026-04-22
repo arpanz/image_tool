@@ -127,7 +127,7 @@ class _PaywallScreenState extends State<PaywallScreen>
       Navigator.pop(context);
       messenger.showSnackBar(const SnackBar(
         content: Text(
-            'Pixel Forge Pro unlocked \u2728 Enjoy ad-free, unlimited processing!'),
+            'Image Resizer Pro unlocked \u2728 Enjoy ad-free, unlimited processing!'),
         backgroundColor: Color(0xFF4CAF50),
         behavior: SnackBarBehavior.floating,
       ));
@@ -186,7 +186,7 @@ class _PaywallScreenState extends State<PaywallScreen>
     return Theme(
       data: AppTheme.darkTheme,
       child: Builder(builder: (context) {
-        const accent = Color(0xFF9D97FF); // Pixel Forge purple
+        const accent = Color(0xFF9D97FF); // Image Resizer accent
         const accentGold = Color(0xFFFFD700);
         final theme = Theme.of(context);
         return Scaffold(
@@ -229,7 +229,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                             // Hero animation
                             ScaleTransition(
                               scale: _scaleAnimation,
-                              child: const _PixelForgeHero(size: 130),
+                              child: const _ImageResizerHero(size: 130),
                             ),
                             const SizedBox(height: 22),
 
@@ -238,7 +238,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                               padding:
                                   EdgeInsets.symmetric(horizontal: 32),
                               child: Text(
-                                'Pixel Forge Pro',
+                                'Image Resizer Pro',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 32,
@@ -616,17 +616,17 @@ class _PaywallScreenState extends State<PaywallScreen>
   }
 }
 
-// ─── Pixel Forge Hero Animation ──────────────────────────────────────────────
+// ─── Image Resizer Hero Animation ──────────────────────────────────────────────
 
-class _PixelForgeHero extends StatefulWidget {
+class _ImageResizerHero extends StatefulWidget {
   final double size;
-  const _PixelForgeHero({required this.size});
+  const _ImageResizerHero({required this.size});
 
   @override
-  State<_PixelForgeHero> createState() => _PixelForgeHeroState();
+  State<_ImageResizerHero> createState() => _ImageResizerHeroState();
 }
 
-class _PixelForgeHeroState extends State<_PixelForgeHero>
+class _ImageResizerHeroState extends State<_ImageResizerHero>
     with TickerProviderStateMixin {
   late AnimationController _rotateCtrl;
   late AnimationController _pulseCtrl;
@@ -793,3 +793,4 @@ class _HaloPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter old) => true;
 }
+

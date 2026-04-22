@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String appName = 'Pixel Forge';
+  static const String appName = 'Image Resizer';
   static const String publisher = 'Livinlabs';
 
   static const int defaultQuality = 80;
@@ -10,3 +10,4 @@ class AppConstants {
 
   static const double defaultBorderRadius = 8.0;
 }
+

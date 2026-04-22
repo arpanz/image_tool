@@ -13,17 +13,17 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
   await AdManager.instance.initialize();
-  runApp(const ProviderScope(child: PixelForgeApp()));
+  runApp(const ProviderScope(child: ImageResizerApp()));
 }
 
-class PixelForgeApp extends ConsumerWidget {
-  const PixelForgeApp({super.key});
+class ImageResizerApp extends ConsumerWidget {
+  const ImageResizerApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = ref.watch(themeProvider);
     return MaterialApp(
-      title: 'Pixel Forge',
+      title: 'Image Resizer',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
@@ -32,3 +32,4 @@ class PixelForgeApp extends ConsumerWidget {
     );
   }
 }
+

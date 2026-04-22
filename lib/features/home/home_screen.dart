@@ -86,7 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Pixel Forge',
+                      'Image Resizer',
                       style: tt.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
@@ -328,3 +328,4 @@ class _ActiveProBadge extends StatelessWidget {
     );
   }
 }
+

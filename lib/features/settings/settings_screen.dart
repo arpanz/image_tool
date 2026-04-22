@@ -31,7 +31,7 @@ class SettingsScreen extends ConsumerWidget {
     await SharePlus.instance.share(
       ShareParams(
         text:
-            'Check out Pixel Forge — compress & resize images offline!\n\n${AdManager.instance.appStoreUrl}',
+            'Check out Image Resizer - compress & resize images offline!\n\n${AdManager.instance.appStoreUrl}',
       ),
     );
   }
@@ -226,7 +226,7 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'Questions or feedback',
                 showDivider: false,
                 onTap: () => _launchUrl(
-                  'mailto:connect.livinlabs@gmail.com?subject=Pixel%20Forge%20Support',
+                  'mailto:connect.livinlabs@gmail.com?subject=Image%20Resizer%20Support',
                 ),
               ),
             ],
@@ -324,7 +324,7 @@ class _AppHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Pixel Forge',
+                'Image Resizer',
                 style: tt.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
@@ -744,3 +744,4 @@ class _ProFeatureRow extends StatelessWidget {
     );
   }
 }
+

@@ -38,7 +38,7 @@ class AppUpdateService {
       builder: (ctx) => AlertDialog(
         title: const Text('Update available'),
         content: const Text(
-          'A new version of Pixel Forge is available. Update now for the best experience.',
+          'A new version of Image Resizer is available. Update now for the best experience.',
         ),
         actions: [
           TextButton(
@@ -56,3 +56,4 @@ class AppUpdateService {
     return choice ?? false;
   }
 }
+

@@ -146,7 +146,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
           dot >= 0 ? result.outputPath.substring(dot).toLowerCase() : '.jpg';
 
       await File(result.outputPath).copy(
-          '${dir.path}/PixelForge_${DateTime.now().millisecondsSinceEpoch}$ext');
+          '${dir.path}/ImageResizer_${DateTime.now().millisecondsSinceEpoch}$ext');
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -511,3 +511,4 @@ class _FullscreenViewer extends StatelessWidget {
     );
   }
 }
+

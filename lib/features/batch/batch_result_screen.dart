@@ -249,7 +249,7 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
             ? item.result!.outputPath.substring(dot).toLowerCase()
             : '.jpg';
         await File(item.result!.outputPath).copy(
-            '${dir.path}/PixelForge_batch_${DateTime.now().millisecondsSinceEpoch}_$saved$ext');
+            '${dir.path}/ImageResizer_batch_${DateTime.now().millisecondsSinceEpoch}_$saved$ext');
         saved++;
       }
       if (ctx.mounted) {
@@ -371,3 +371,4 @@ class _ResultGrid extends StatelessWidget {
     );
   }
 }
+

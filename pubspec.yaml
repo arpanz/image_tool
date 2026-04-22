@@ -1,4 +1,4 @@
-name: pixel_forge
+name: image_resizer
 description: Offline-first image compression and resizing utility by Livinlabs.
 publish_to: 'none'
 version: 1.0.0+1

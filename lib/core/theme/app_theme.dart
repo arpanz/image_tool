@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Pixel Forge design tokens
+/// Image Resizer design tokens
 /// Compress: teal-green #1DB88A
 /// Resize:   blue #3B9EFF
 /// Convert:  purple #A855F7

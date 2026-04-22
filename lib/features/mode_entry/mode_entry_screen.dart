@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:pixel_forge/features/editor/editor_screen.dart';
+import 'package:image_resizer/features/editor/editor_screen.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
 import '../home/home_screen.dart';
