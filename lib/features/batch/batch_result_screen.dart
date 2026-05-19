@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:gal/gal.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
@@ -22,6 +22,7 @@ class BatchResultScreen extends ConsumerStatefulWidget {
 
 class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
   ImageMode get mode => widget.mode;
+  bool _isListView = true;
 
   @override
   void initState() {
@@ -189,14 +190,42 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
               ),
               const Gap(20),
 
-              // ── Per-image results grid ────────────────────────────────────
+              // ── Per-image results grid/list ───────────────────────────────
               if (done.isNotEmpty) ...[
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Processed Images', style: tt.labelLarge),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Processed Images', style: tt.labelLarge),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.list_rounded,
+                              color: _isListView
+                                  ? cs.primary
+                                  : cs.onSurfaceVariant),
+                          onPressed: () => setState(() => _isListView = true),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        const Gap(12),
+                        IconButton(
+                          icon: Icon(Icons.grid_view_rounded,
+                              color: !_isListView
+                                  ? cs.primary
+                                  : cs.onSurfaceVariant),
+                          onPressed: () => setState(() => _isListView = false),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const Gap(10),
-                _ResultGrid(items: done),
+                const Gap(12),
+                _isListView
+                    ? _ResultList(items: done)
+                    : _ResultGrid(items: done),
                 const Gap(20),
               ],
 
@@ -239,22 +268,20 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
 
   Future<void> _saveAll(BuildContext ctx, List<BatchItem> items) async {
     try {
-      final dir = await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        await Gal.requestAccess();
+      }
+
       int saved = 0;
       for (final item in items) {
         if (item.result == null) continue;
-        final dot = item.result!.outputPath.lastIndexOf('.');
-        final ext = dot >= 0
-            ? item.result!.outputPath.substring(dot).toLowerCase()
-            : '.jpg';
-        await File(item.result!.outputPath).copy(
-            '${dir.path}/ImageResizer_batch_${DateTime.now().millisecondsSinceEpoch}_$saved$ext');
+        await Gal.putImage(item.result!.outputPath, album: 'ImageResizer');
         saved++;
       }
       if (ctx.mounted) {
         ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-          content: Text('$saved images saved to device!'),
+          content: Text('$saved images saved to gallery!'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
           shape:
@@ -321,13 +348,21 @@ class _ResultGrid extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.file(
-                File(item.result!.outputPath),
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.surfaceElevated,
-                  child: const Icon(Icons.broken_image_outlined,
-                      color: Colors.white38),
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        _FullscreenViewer(path: item.result!.outputPath),
+                  ),
+                ),
+                child: Image.file(
+                  File(item.result!.outputPath),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: AppColors.surfaceElevated,
+                    child: const Icon(Icons.broken_image_outlined,
+                        color: Colors.white38),
+                  ),
                 ),
               ),
             ),
@@ -335,33 +370,36 @@ class _ResultGrid extends StatelessWidget {
               bottom: 0,
               left: 0,
               right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.65),
-                  borderRadius:
-                      const BorderRadius.vertical(bottom: Radius.circular(10)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      formatBytes(item.result!.newSize),
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700),
-                    ),
-                    if (pct > 0)
+              child: IgnorePointer(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.65),
+                    borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(10)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Text(
-                        '-${pct.toStringAsFixed(0)}%',
+                        formatBytes(item.result!.newSize),
                         style: const TextStyle(
-                            color: Color(0xFF4ADE80),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600),
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700),
                       ),
-                  ],
+                      if (pct > 0)
+                        Text(
+                          '-${pct.toStringAsFixed(0)}%',
+                          style: const TextStyle(
+                              color: Color(0xFF4ADE80),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -372,3 +410,204 @@ class _ResultGrid extends StatelessWidget {
   }
 }
 
+class _ResultList extends StatelessWidget {
+  final List<BatchItem> items;
+  const _ResultList({required this.items});
+
+  Future<void> _shareIndividual(BatchItem item) async {
+    if (item.result != null) {
+      await Share.shareXFiles([XFile(item.result!.outputPath)]);
+    }
+  }
+
+  Future<void> _saveIndividual(BuildContext context, BatchItem item) async {
+    if (item.result == null) return;
+    try {
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        await Gal.requestAccess();
+      }
+      await Gal.putImage(item.result!.outputPath, album: 'ImageResizer');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Image saved to gallery!'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Save failed: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const Gap(12),
+      itemBuilder: (context, i) {
+        final item = items[i];
+        final saved = item.image.originalSize - (item.result?.newSize ?? 0);
+        final pct = item.image.originalSize > 0
+            ? (saved / item.image.originalSize * 100)
+            : 0.0;
+        final cs = Theme.of(context).colorScheme;
+
+        return GestureDetector(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => _FullscreenViewer(path: item.result!.outputPath),
+            ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    File(item.result!.outputPath),
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 60,
+                      height: 60,
+                      color: AppColors.surfaceElevated,
+                      child: const Icon(Icons.broken_image_outlined,
+                          color: Colors.white38),
+                    ),
+                  ),
+                ),
+                const Gap(16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.image.path.split(RegExp(r'[/\\]')).last,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Gap(4),
+                      Row(
+                        children: [
+                          Text(
+                            formatBytes(item.image.originalSize),
+                            style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize: 12,
+                                decoration: TextDecoration.lineThrough),
+                          ),
+                          const Gap(8),
+                          Icon(Icons.arrow_forward_rounded,
+                              size: 12, color: cs.onSurfaceVariant),
+                          const Gap(8),
+                          Text(
+                            formatBytes(item.result!.newSize),
+                            style: TextStyle(
+                                color: cs.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700),
+                          ),
+                          if (pct > 0) ...[
+                            const Gap(8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color:
+                                    const Color(0xFF4ADE80).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                '-${pct.toStringAsFixed(0)}%',
+                                style: const TextStyle(
+                                    color: Color(0xFF4ADE80),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 10),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, size: 20),
+                      onPressed: () => _shareIndividual(item),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(8),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.download_outlined, size: 20),
+                      onPressed: () => _saveIndividual(context, item),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(8),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FullscreenViewer extends StatelessWidget {
+  final String path;
+  const _FullscreenViewer({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Preview', style: TextStyle(color: Colors.white)),
+      ),
+      body: InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 6.0,
+        child: Center(
+          child: Image.file(
+            File(path),
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Icon(
+              Icons.broken_image_outlined,
+              color: Colors.white54,
+              size: 64,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
