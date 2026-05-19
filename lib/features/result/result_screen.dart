@@ -92,6 +92,18 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     return ext;
   }
 
+  String get _inputFormat {
+    final pickerState = ref.read(pickerProvider);
+    if (pickerState is PickerLoaded) {
+      final parts = pickerState.image.path.split('.');
+      if (parts.length < 2) return 'JPG';
+      final ext = parts.last.toUpperCase();
+      if (ext == 'JPEG') return 'JPG';
+      return ext;
+    }
+    return 'JPG';
+  }
+
   String get _shareLabel {
     switch (mode) {
       case ImageMode.compress:
@@ -229,13 +241,14 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                 color: _accent,
               ),
               const Gap(16),
-              _OutputPreview(path: result.outputPath, result: result),
+              _OutputPreview(path: result.outputPath, result: result, mode: mode),
               const Gap(16),
               _StatsCard(
                   result: result,
                   mode: mode,
                   accent: _accent,
-                  outputFormat: _outputFormat),
+                  outputFormat: _outputFormat,
+                  inputFormat: _inputFormat),
               const Gap(16),
               AdManager.instance.getBannerAdWidget(),
               const Gap(14),
@@ -302,8 +315,17 @@ class _ResultHeroMetric extends StatelessWidget {
 class _OutputPreview extends StatelessWidget {
   final String path;
   final CompressionResult result;
+  final ImageMode mode;
 
-  const _OutputPreview({required this.path, required this.result});
+  const _OutputPreview({required this.path, required this.result, required this.mode});
+
+  String get _outputFormat {
+    final parts = path.split('.');
+    if (parts.length < 2) return 'JPG';
+    final ext = parts.last.toUpperCase();
+    if (ext == 'JPEG') return 'JPG';
+    return ext;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -347,12 +369,20 @@ class _OutputPreview extends StatelessWidget {
                   size: 18, color: Colors.white),
             ),
           ),
+          // Bottom-right: show file size for compress, format for convert
           Positioned(
             bottom: 10,
             right: 10,
-            child: _OverlayBadge(formatBytes(result.newSize)),
+            child: _OverlayBadge(
+              mode == ImageMode.compress
+                  ? formatBytes(result.newSize)
+                  : mode == ImageMode.convert
+                      ? _outputFormat
+                      : formatBytes(result.newSize),
+            ),
           ),
-          if (result.outWidth > 0)
+          // Bottom-left: show dimensions for compress/resize only
+          if (result.outWidth > 0 && mode != ImageMode.convert)
             Positioned(
               bottom: 10,
               left: 10,
@@ -369,12 +399,14 @@ class _StatsCard extends StatelessWidget {
   final ImageMode mode;
   final Color accent;
   final String outputFormat;
+  final String inputFormat;
 
   const _StatsCard({
     required this.result,
     required this.mode,
     required this.accent,
     required this.outputFormat,
+    required this.inputFormat,
   });
 
   @override
@@ -392,18 +424,18 @@ class _StatsCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _StatRow(
-            label: 'Original size',
-            value: formatBytes(result.originalSize),
-            valueColor: cs.onSurfaceVariant,
-          ),
-          Divider(color: cs.outlineVariant.withOpacity(0.3), height: 20),
-          _StatRow(
-            label: 'Output size',
-            value: formatBytes(result.newSize),
-            valueColor: accent,
-          ),
           if (mode == ImageMode.compress) ...[
+            _StatRow(
+              label: 'Original size',
+              value: formatBytes(result.originalSize),
+              valueColor: cs.onSurfaceVariant,
+            ),
+            Divider(color: cs.outlineVariant.withOpacity(0.3), height: 20),
+            _StatRow(
+              label: 'Output size',
+              value: formatBytes(result.newSize),
+              valueColor: accent,
+            ),
             Divider(color: cs.outlineVariant.withOpacity(0.3), height: 20),
             _StatRow(
               label: 'Size change',
@@ -412,16 +444,30 @@ class _StatsCard extends StatelessWidget {
                   : '+${(-result.savedPercent).toStringAsFixed(1)}%',
               valueColor: savedPositive ? AppColors.success : AppColors.error,
             ),
-          ],
-          if (mode == ImageMode.resize) ...[
+          ] else if (mode == ImageMode.resize) ...[
+            _StatRow(
+              label: 'Original size',
+              value: formatBytes(result.originalSize),
+              valueColor: cs.onSurfaceVariant,
+            ),
+            Divider(color: cs.outlineVariant.withOpacity(0.3), height: 20),
+            _StatRow(
+              label: 'Output size',
+              value: formatBytes(result.newSize),
+              valueColor: cs.onSurfaceVariant,
+            ),
             Divider(color: cs.outlineVariant.withOpacity(0.3), height: 20),
             _StatRow(
               label: 'New dimensions',
               value: '${result.outWidth} x ${result.outHeight}',
               valueColor: accent,
             ),
-          ],
-          if (mode == ImageMode.convert) ...[
+          ] else if (mode == ImageMode.convert) ...[
+            _StatRow(
+              label: 'Original format',
+              value: inputFormat,
+              valueColor: cs.onSurfaceVariant,
+            ),
             Divider(color: cs.outlineVariant.withOpacity(0.3), height: 20),
             _StatRow(
               label: 'Output format',

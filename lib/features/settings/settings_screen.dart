@@ -243,16 +243,7 @@ class SettingsScreen extends ConsumerWidget {
                 iconColor: AppColors.compress,
                 title: 'Privacy Policy',
                 onTap: () => _launchUrl(
-                  'https://livinlabs.com/privacy',
-                ),
-              ),
-              _SettingsTile(
-                icon: Icons.description_outlined,
-                iconColor: Colors.purple,
-                title: 'Terms of Service',
-                showDivider: false,
-                onTap: () => _launchUrl(
-                  'https://livinlabs.com/terms',
+                  'https://livinlabs.dev/privacy/image-resizer',
                 ),
               ),
             ],
@@ -264,8 +255,7 @@ class SettingsScreen extends ConsumerWidget {
             child: Text(
               'Made with \u2764 by LivinLabs',
               style: theme.textTheme.bodySmall?.copyWith(
-                color:
-                    theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
+                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
                 letterSpacing: 0.3,
               ),
             ),
@@ -301,21 +291,25 @@ class _AppHeader extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Icon
+          // Icon — real app icon with splash background colour
           Container(
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: AppColors.compress.withOpacity(0.1),
+              color: const Color(0xFF30CF7B),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppColors.compress.withOpacity(0.2),
-              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF30CF7B).withOpacity(0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: const Icon(
-              Icons.photo_filter_rounded,
-              color: AppColors.compress,
-              size: 36,
+            padding: const EdgeInsets.all(12),
+            child: Image.asset(
+              'assets/icon.png',
+              fit: BoxFit.contain,
             ),
           ),
           const Gap(12),
@@ -588,23 +582,20 @@ class _ProActiveTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Pro Active',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 14)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                   Gap(2),
                   Text('All features unlocked \u00b7 Thank you!',
-                      style:
-                          TextStyle(fontSize: 12, color: Colors.grey)),
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.green.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                    color: Colors.green.withOpacity(0.3)),
+                border: Border.all(color: Colors.green.withOpacity(0.3)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -661,18 +652,16 @@ class _UpgradeTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Upgrade to Pro',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 14)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                   Gap(2),
                   Text('No Ads \u00b7 Unlimited \u00b7 All Pro Tools',
-                      style:
-                          TextStyle(fontSize: 12, color: Colors.grey)),
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: gold,
                 borderRadius: BorderRadius.circular(20),
@@ -744,4 +733,3 @@ class _ProFeatureRow extends StatelessWidget {
     );
   }
 }
-
