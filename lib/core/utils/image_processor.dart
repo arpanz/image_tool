@@ -39,9 +39,9 @@ Future<ui.Image> _decodeImage(File file) async {
 
 /// Encodes an already-resized [ui.Image] canvas into the target format/quality.
 ///
-/// IMPORTANT: minWidth/minHeight are set to 0 so flutter_image_compress does
-/// NOT upscale the canvas. The canvas pixel dimensions are already correct —
-/// we only want quality/format encoding here, no further scaling.
+/// IMPORTANT: minWidth/minHeight must match the canvas dimensions so that
+/// flutter_image_compress preserves the exact pixel size. Passing 0 causes the
+/// library to ignore or miscalculate scaling, effectively undoing the resize.
 Future<Uint8List> _encodeImage(
   ui.Image image,
   String format,
@@ -52,8 +52,8 @@ Future<Uint8List> _encodeImage(
   final pngBytes = byteData.buffer.asUint8List();
   return FlutterImageCompress.compressWithList(
     pngBytes,
-    minWidth: 0,   // ← 0 = no minimum, honour canvas size as-is
-    minHeight: 0,  // ← same
+    minWidth: image.width,
+    minHeight: image.height,
     quality: quality,
     format: _formatToCompressFormat(format),
   );
