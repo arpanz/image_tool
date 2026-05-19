@@ -17,7 +17,6 @@ class _PaywallScreenState extends State<PaywallScreen>
   final InAppPurchase _iap = InAppPurchase.instance;
   bool _available = true;
   bool _isLoading = false;
-  bool _isLifetimeSelected = true;
 
   List<ProductDetails> _products = [];
   StreamSubscription<List<PurchaseDetails>>? _subscription;
@@ -35,8 +34,8 @@ class _PaywallScreenState extends State<PaywallScreen>
         vsync: this, duration: const Duration(milliseconds: 800));
     _scaleAnimation =
         CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
-    _fadeAnimation = Tween<double>(begin: 0.15, end: 1.0).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+    _fadeAnimation = Tween<double>(begin: 0.15, end: 1.0)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
     _controller.forward();
     _initStore();
   }
@@ -66,7 +65,6 @@ class _PaywallScreenState extends State<PaywallScreen>
     if (_products.isEmpty) {
       final response = await _iap.queryProductDetails({
         AdManager.productId,
-        AdManager.yearlyProductId,
       });
       if (mounted) {
         setState(() {
@@ -100,11 +98,7 @@ class _PaywallScreenState extends State<PaywallScreen>
         }
       } else if (p.status == PurchaseStatus.purchased ||
           p.status == PurchaseStatus.restored) {
-        final known = {
-          AdManager.productId,
-          AdManager.yearlyProductId,
-          AdManager.legacyProductId
-        };
+        final known = {AdManager.productId, AdManager.legacyProductId};
         if (known.contains(p.productID)) {
           _restoreTimer?.cancel();
           if (!_purchaseHandled) {
@@ -136,19 +130,18 @@ class _PaywallScreenState extends State<PaywallScreen>
 
   Future<void> _buyProduct() async {
     if (_products.isEmpty) return;
-    final id =
-        _isLifetimeSelected ? AdManager.productId : AdManager.yearlyProductId;
+    final id = AdManager.productId;
     final product = _getProduct(id);
     if (product == null) return;
     _purchaseHandled = false;
     try {
-      await _iap
-          .buyNonConsumable(purchaseParam: PurchaseParam(productDetails: product));
+      await _iap.buyNonConsumable(
+          purchaseParam: PurchaseParam(productDetails: product));
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Error: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
       }
     }
   }
@@ -173,8 +166,7 @@ class _PaywallScreenState extends State<PaywallScreen>
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Restore failed: $e'),
-            backgroundColor: Colors.red));
+            content: Text('Restore failed: $e'), backgroundColor: Colors.red));
       }
     }
   }
@@ -204,8 +196,8 @@ class _PaywallScreenState extends State<PaywallScreen>
                 children: [
                   // ── Close ──────────────────────────────────────────────
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: IconButton(
@@ -234,25 +226,32 @@ class _PaywallScreenState extends State<PaywallScreen>
                             const SizedBox(height: 22),
 
                             // Headline
-                            const Padding(
+                            Padding(
                               padding:
-                                  EdgeInsets.symmetric(horizontal: 32),
-                              child: Text(
-                                'Image Resizer Pro',
+                                  const EdgeInsets.symmetric(horizontal: 32),
+                              child: RichText(
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: -1,
-                                  height: 1.1,
+                                text: const TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: -1,
+                                    height: 1.1,
+                                  ),
+                                  children: [
+                                    TextSpan(text: 'Image Resizer '),
+                                    TextSpan(
+                                      text: 'Pro',
+                                      style: TextStyle(color: accentGold),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                             const SizedBox(height: 8),
                             const Padding(
-                              padding:
-                                  EdgeInsets.symmetric(horizontal: 44),
+                              padding: EdgeInsets.symmetric(horizontal: 44),
                               child: Text(
                                 'Compress and resize images without limits — no ads, no caps, just pure speed.',
                                 textAlign: TextAlign.center,
@@ -266,8 +265,8 @@ class _PaywallScreenState extends State<PaywallScreen>
 
                             // Feature rows
                             Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
                               child: Column(
                                 children: [
                                   _featureRow(
@@ -341,43 +340,14 @@ class _PaywallScreenState extends State<PaywallScreen>
                             ),
                           ),
 
-                          // Pricing cards
-                          _pricingCard(
-                            title: 'Lifetime',
-                            price: _getProduct(AdManager.productId)
-                                    ?.price ??
-                                '...',
-                            subtitle: 'One-time payment. Own it forever.',
-                            badge: 'BEST VALUE',
-                            badgeColor: accentGold,
-                            isSelected: _isLifetimeSelected,
-                            theme: theme,
-                            onTap: () =>
-                                setState(() => _isLifetimeSelected = true),
-                          ),
-                          const SizedBox(height: 10),
-                          _pricingCard(
-                            title: 'Yearly',
-                            price: _getProduct(AdManager.yearlyProductId)
-                                    ?.price ??
-                                '...',
-                            subtitle: 'Billed once a year. Cancel anytime.',
-                            badge: null,
-                            badgeColor: Colors.white30,
-                            isSelected: !_isLifetimeSelected,
-                            theme: theme,
-                            onTap: () =>
-                                setState(() => _isLifetimeSelected = false),
-                          ),
-                          const SizedBox(height: 16),
-
                           // CTA button
                           SizedBox(
                             width: double.infinity,
                             height: 52,
                             child: ElevatedButton(
-                              onPressed:
-                                  _available && !_isLoading ? _buyProduct : null,
+                              onPressed: _available && !_isLoading
+                                  ? _buyProduct
+                                  : null,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: accent,
                                 foregroundColor: Colors.white,
@@ -394,9 +364,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                                           strokeWidth: 2.5,
                                           color: Colors.white))
                                   : Text(
-                                      _isLifetimeSelected
-                                          ? 'Get Lifetime Access'
-                                          : 'Start Yearly Plan',
+                                      'Get Lifetime Access • ${_getProduct(AdManager.productId)?.price ?? '...'}',
                                       style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700,
@@ -409,27 +377,19 @@ class _PaywallScreenState extends State<PaywallScreen>
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              _trustBadge(_isLifetimeSelected
-                                  ? '\u2713  Lifetime'
-                                  : '\u2713  Yearly'),
+                              _trustBadge('\u2713  Lifetime'),
                               const Padding(
-                                padding:
-                                    EdgeInsets.symmetric(horizontal: 4),
+                                padding: EdgeInsets.symmetric(horizontal: 4),
                                 child: Text('\u2022',
                                     style: TextStyle(
-                                        color: Colors.white24,
-                                        fontSize: 11)),
+                                        color: Colors.white24, fontSize: 11)),
                               ),
-                              _trustBadge(_isLifetimeSelected
-                                  ? '\u2713  No subscription'
-                                  : '\u2713  Cancel anytime'),
+                              _trustBadge('\u2713  No subscription'),
                               const Padding(
-                                padding:
-                                    EdgeInsets.symmetric(horizontal: 4),
+                                padding: EdgeInsets.symmetric(horizontal: 4),
                                 child: Text('\u2022',
                                     style: TextStyle(
-                                        color: Colors.white24,
-                                        fontSize: 11)),
+                                        color: Colors.white24, fontSize: 11)),
                               ),
                               _trustBadge('\u2713  No data shared'),
                             ],
@@ -446,8 +406,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                             child: const Text(
                               'Already purchased? Restore Purchases',
                               style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w500),
+                                  fontSize: 12.5, fontWeight: FontWeight.w500),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -509,111 +468,6 @@ class _PaywallScreenState extends State<PaywallScreen>
       ),
     );
   }
-
-  Widget _pricingCard({
-    required String title,
-    required String price,
-    required String subtitle,
-    required String? badge,
-    required Color badgeColor,
-    required bool isSelected,
-    required ThemeData theme,
-    required VoidCallback onTap,
-  }) {
-    const selectedBorder = Color(0xFF9D97FF);
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        padding:
-            const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF9D97FF).withOpacity(0.09)
-              : const Color(0xFF1C1B2E),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? selectedBorder
-                : Colors.white.withOpacity(0.07),
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Radio circle
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: isSelected ? selectedBorder : Colors.white24,
-                    width: 2),
-                color:
-                    isSelected ? selectedBorder : Colors.transparent,
-              ),
-              child: isSelected
-                  ? const Icon(Icons.check, color: Colors.white, size: 13)
-                  : null,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(title,
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14.5,
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.white60)),
-                      if (badge != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: badgeColor,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(badge,
-                              style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 9,
-                                  letterSpacing: 0.4)),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(subtitle,
-                      style: TextStyle(
-                          color: isSelected
-                              ? Colors.white54
-                              : Colors.white30,
-                          fontSize: 11.5)),
-                ],
-              ),
-            ),
-            Text(price,
-                style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                    color: isSelected
-                        ? const Color(0xFF9D97FF)
-                        : Colors.white60)),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // ─── Image Resizer Hero Animation ──────────────────────────────────────────────
@@ -635,14 +489,14 @@ class _ImageResizerHeroState extends State<_ImageResizerHero>
   @override
   void initState() {
     super.initState();
-    _rotateCtrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 12))
-      ..repeat();
+    _rotateCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 12))
+          ..repeat();
     _pulseCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1800))
       ..repeat(reverse: true);
-    _pulse = Tween<double>(begin: 0.95, end: 1.05).animate(
-        CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+    _pulse = Tween<double>(begin: 0.95, end: 1.05)
+        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -793,4 +647,3 @@ class _HaloPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter old) => true;
 }
-

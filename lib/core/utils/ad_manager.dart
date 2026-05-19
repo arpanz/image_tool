@@ -19,7 +19,6 @@ class AdManager {
 
   // IAP product IDs
   static const String productId = 'pro_lifetime';
-  static const String yearlyProductId = 'pro_yearly';
   static const String legacyProductId = 'remove_ads_forever';
 
   List<ProductDetails> products = [];
@@ -74,7 +73,6 @@ class AdManager {
           final hasPro = purchases.any(
             (p) =>
                 (p.productID == productId ||
-                    p.productID == yearlyProductId ||
                     p.productID == legacyProductId) &&
                 (p.status == PurchaseStatus.purchased ||
                     p.status == PurchaseStatus.restored),
