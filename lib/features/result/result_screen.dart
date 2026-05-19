@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gal/gal.dart';
 import 'package:gap/gap.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/models/compression_result.dart';
 import '../../core/theme/app_theme.dart';
@@ -139,19 +139,19 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
 
   Future<void> _saveToDevice(BuildContext context) async {
     try {
-      final dir = await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
-      final dot = result.outputPath.lastIndexOf('.');
-      final ext =
-          dot >= 0 ? result.outputPath.substring(dot).toLowerCase() : '.jpg';
+      // Request gallery access if needed
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        await Gal.requestAccess();
+      }
 
-      await File(result.outputPath).copy(
-          '${dir.path}/ImageResizer_${DateTime.now().millisecondsSinceEpoch}$ext');
+      // Save to device gallery (visible in Photos / Gallery app)
+      await Gal.putImage(result.outputPath, album: 'ImageResizer');
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Image saved to device!'),
+          content: const Text('Image saved to gallery!'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
           shape:
@@ -511,4 +511,3 @@ class _FullscreenViewer extends StatelessWidget {
     );
   }
 }
-

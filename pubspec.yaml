@@ -27,6 +27,7 @@ dependencies:
   in_app_review: ^2.0.11
   url_launcher: ^6.3.0
   package_info_plus: ^9.0.1
+  gal: ^2.3.2
 
 assets:
   - assets/icon.png
