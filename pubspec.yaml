@@ -29,8 +29,6 @@ dependencies:
   package_info_plus: ^9.0.1
   gal: ^2.3.2
 
-assets:
-  - assets/icon.png
 
 dev_dependencies:
   flutter_test:
@@ -39,6 +37,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon.png
 
 flutter_launcher_icons:
   android: "launcher_icon"

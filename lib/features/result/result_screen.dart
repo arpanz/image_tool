@@ -241,7 +241,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                 color: _accent,
               ),
               const Gap(16),
-              _OutputPreview(path: result.outputPath, result: result, mode: mode),
+              _OutputPreview(
+                  path: result.outputPath, result: result, mode: mode),
               const Gap(16),
               _StatsCard(
                   result: result,
@@ -317,7 +318,8 @@ class _OutputPreview extends StatelessWidget {
   final CompressionResult result;
   final ImageMode mode;
 
-  const _OutputPreview({required this.path, required this.result, required this.mode});
+  const _OutputPreview(
+      {required this.path, required this.result, required this.mode});
 
   String get _outputFormat {
     final parts = path.split('.');
