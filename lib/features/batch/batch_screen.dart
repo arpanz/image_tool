@@ -279,11 +279,13 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                           ),
                         ],
                       ),
-                      if (settings.format.toUpperCase() == 'PNG')
+                      if (settings.format.toUpperCase() == 'PNG' ||
+                          settings.format.toUpperCase() == 'BMP' ||
+                          settings.format.toUpperCase() == 'TIFF')
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            'Target size is not supported for PNG. Switch to JPG or WEBP.',
+                            'Target size is not supported for ${settings.format.toUpperCase()}. Switch to JPG or WEBP.',
                             style: tt.bodySmall
                                 ?.copyWith(color: AppColors.error),
                           ),

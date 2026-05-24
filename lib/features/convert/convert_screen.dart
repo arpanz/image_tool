@@ -171,7 +171,7 @@ class _ConvertScreenState extends ConsumerState<ConvertScreen> {
               _OptionCard(
                 title: 'Quality',
                 trailing: Text(
-                  _format == 'PNG' ? 'Lossless' : '$_quality%',
+                  _format == 'PNG' || _format == 'BMP' || _format == 'TIFF' ? 'Lossless' : '$_quality%',
                   style: TextStyle(
                     color: AppColors.convert,
                     fontWeight: FontWeight.w700,
@@ -191,14 +191,14 @@ class _ConvertScreenState extends ConsumerState<ConvertScreen> {
                         min: 20,
                         max: 100,
                         divisions: 16,
-                        onChanged: _format == 'PNG'
+                        onChanged: _format == 'PNG' || _format == 'BMP' || _format == 'TIFF'
                             ? null
                             : (v) => setState(() => _quality = v.round()),
                       ),
                     ),
                     Text(
-                      _format == 'PNG'
-                          ? 'PNG keeps transparency and uses lossless output.'
+                      _format == 'PNG' || _format == 'BMP' || _format == 'TIFF'
+                          ? 'Lossless format. Quality settings are not applicable.'
                           : 'Higher quality gives better visuals but larger file size.',
                       style: tt.bodySmall,
                     ),
@@ -294,6 +294,8 @@ class _ConvertScreenState extends ConsumerState<ConvertScreen> {
     if (lower.endsWith('.webp')) return 'WEBP';
     if (lower.endsWith('.heic')) return 'HEIC';
     if (lower.endsWith('.heif')) return 'HEIF';
+    if (lower.endsWith('.bmp')) return 'BMP';
+    if (lower.endsWith('.tiff') || lower.endsWith('.tif')) return 'TIFF';
     return 'JPG';
   }
 }
@@ -365,19 +367,6 @@ class _PickImageCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (isHeic && !isPro)
-                            Positioned.fill(
-                              child: Container(
-                                color: Colors.black.withOpacity(0.4),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.lock_outline_rounded,
-                                    color: Color(0xFFFFD700),
-                                    size: 24,
-                                  ),
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                     ),

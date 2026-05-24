@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
 import 'core/theme/app_theme.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/utils/ad_manager.dart';

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:heif_converter/heif_converter.dart';
+import 'package:image/image.dart' as img;
 import '../../core/models/selected_image.dart';
 
 sealed class PickerState {}
@@ -70,7 +71,16 @@ class PickerNotifier extends Notifier<PickerState> {
           w = frame.image.width;
           h = frame.image.height;
           frame.image.dispose();
-        } catch (_) {}
+        } catch (_) {
+          try {
+            final data = await file.readAsBytes();
+            final decoded = img.decodeImage(data);
+            if (decoded != null) {
+              w = decoded.width;
+              h = decoded.height;
+            }
+          } catch (_) {}
+        }
       }
 
       state = PickerLoaded(
@@ -91,7 +101,7 @@ class PickerNotifier extends Notifier<PickerState> {
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'bmp', 'tiff', 'tif'],
       );
       if (result == null ||
           result.files.isEmpty ||
@@ -134,7 +144,16 @@ class PickerNotifier extends Notifier<PickerState> {
           w = frame.image.width;
           h = frame.image.height;
           frame.image.dispose();
-        } catch (_) {}
+        } catch (_) {
+          try {
+            final data = await file.readAsBytes();
+            final decoded = img.decodeImage(data);
+            if (decoded != null) {
+              w = decoded.width;
+              h = decoded.height;
+            }
+          } catch (_) {}
+        }
       }
 
       state = PickerLoaded(

@@ -6,7 +6,7 @@ class AppConstants {
   static const int minQuality = 10;
   static const int maxQuality = 100;
 
-  static const List<String> supportedFormats = ['JPG', 'PNG', 'WEBP'];
+  static const List<String> supportedFormats = ['JPG', 'PNG', 'WEBP', 'BMP', 'TIFF'];
 
   static const double defaultBorderRadius = 8.0;
 }

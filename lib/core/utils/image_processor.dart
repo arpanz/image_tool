@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'dart:async';
 
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:heif_converter/heif_converter.dart';
+import 'package:image/image.dart' as img;
 
 import '../models/compression_result.dart';
 import '../models/compression_settings.dart';
@@ -15,6 +17,10 @@ String _formatToExt(String format) {
       return 'png';
     case 'WEBP':
       return 'webp';
+    case 'BMP':
+      return 'bmp';
+    case 'TIFF':
+      return 'tiff';
     default:
       return 'jpg';
   }
@@ -33,9 +39,27 @@ CompressFormat _formatToCompressFormat(String format) {
 
 Future<ui.Image> _decodeImage(File file) async {
   final bytes = await file.readAsBytes();
-  final codec = await ui.instantiateImageCodec(bytes);
-  final frame = await codec.getNextFrame();
-  return frame.image;
+  try {
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    return frame.image;
+  } catch (e) {
+    // Fallback: decode using package:image
+    final imgImage = img.decodeImage(bytes);
+    if (imgImage == null) {
+      throw Exception('Failed to decode image natively or with fallback: $e');
+    }
+    final rgbaBytes = imgImage.getBytes(order: img.ChannelOrder.rgba);
+    final completer = Completer<ui.Image>();
+    ui.decodeImageFromPixels(
+      rgbaBytes,
+      imgImage.width,
+      imgImage.height,
+      ui.PixelFormat.rgba8888,
+      completer.complete,
+    );
+    return completer.future;
+  }
 }
 
 /// Encodes an already-resized [ui.Image] canvas into the target format/quality.
@@ -48,6 +72,25 @@ Future<Uint8List> _encodeImage(
   String format,
   int quality,
 ) async {
+  final upperFormat = format.toUpperCase();
+  if (upperFormat == 'BMP' || upperFormat == 'TIFF') {
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    if (byteData == null) throw Exception('Failed to get raw RGBA bytes');
+    final rawBytes = byteData.buffer.asUint8List();
+    final imgImage = img.Image.fromBytes(
+      width: image.width,
+      height: image.height,
+      bytes: rawBytes.buffer,
+      numChannels: 4,
+      order: img.ChannelOrder.rgba,
+    );
+    if (upperFormat == 'BMP') {
+      return Uint8List.fromList(img.encodeBmp(imgImage));
+    } else {
+      return Uint8List.fromList(img.encodeTiff(imgImage));
+    }
+  }
+
   final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
   if (byteData == null) throw Exception('Failed to encode canvas to PNG');
   final pngBytes = byteData.buffer.asUint8List();
@@ -179,7 +222,10 @@ class ImageProcessor {
       int outW = activeOriginalWidth;
       int outH = activeOriginalHeight;
 
-      if (!hasResize) {
+      final isBmpOrTiff = settings.format.toUpperCase() == 'BMP' ||
+          settings.format.toUpperCase() == 'TIFF';
+
+      if (!hasResize && !isBmpOrTiff) {
         // Pure compression — no canvas resize needed
         final compressed = await FlutterImageCompress.compressWithFile(
           activeInputPath,
@@ -210,7 +256,7 @@ class ImageProcessor {
           } else if (settings.height != null && settings.width == null) {
             targetW =
                 (activeOriginalWidth * targetH / activeOriginalHeight).round();
-          } else {
+          } else if (settings.width != null && settings.height != null) {
             // Both provided — fit inside the box without cropping
             final scale = (targetW / activeOriginalWidth) <
                     (targetH / activeOriginalHeight)
@@ -224,18 +270,27 @@ class ImageProcessor {
         outW = targetW;
         outH = targetH;
 
-        final resized =
-            await _resizeCanvas(src, targetW, targetH, settings.fitMode);
-        src.dispose();
-        // _encodeImage uses minWidth/minHeight = 0 — no upscaling risk
-        resultBytes =
-            await _encodeImage(resized, settings.format, settings.quality);
-        resized.dispose();
+        final bool actuallyResized = targetW != activeOriginalWidth || targetH != activeOriginalHeight;
+
+        if (actuallyResized) {
+          final resized =
+              await _resizeCanvas(src, targetW, targetH, settings.fitMode);
+          src.dispose();
+          resultBytes =
+              await _encodeImage(resized, settings.format, settings.quality);
+          resized.dispose();
+        } else {
+          resultBytes =
+              await _encodeImage(src, settings.format, settings.quality);
+          src.dispose();
+        }
       }
 
       // ── Target-size binary search ──────────────────────────────────────────
       if (settings.targetSizeKB != null &&
-          settings.format.toUpperCase() != 'PNG') {
+          settings.format.toUpperCase() != 'PNG' &&
+          settings.format.toUpperCase() != 'BMP' &&
+          settings.format.toUpperCase() != 'TIFF') {
         final targetBytes = settings.targetSizeKB! * 1024;
         if (resultBytes.length > targetBytes) {
           int lo = 1;
