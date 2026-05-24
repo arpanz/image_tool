@@ -280,6 +280,8 @@ class _ConvertScreenState extends ConsumerState<ConvertScreen> {
     final lower = path.toLowerCase();
     if (lower.endsWith('.png')) return 'PNG';
     if (lower.endsWith('.webp')) return 'WEBP';
+    if (lower.endsWith('.heic')) return 'HEIC';
+    if (lower.endsWith('.heif')) return 'HEIF';
     return 'JPG';
   }
 }

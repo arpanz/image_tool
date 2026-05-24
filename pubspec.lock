@@ -384,6 +384,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  heif_converter:
+    dependency: "direct main"
+    description:
+      name: heif_converter
+      sha256: "1b64d0053555a199d12f58d7355ac717647e744868e29714a65d7b277a32ada0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.5"
   hive:
     dependency: "direct main"
     description:

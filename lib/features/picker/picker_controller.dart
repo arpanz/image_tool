@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:heif_converter/heif_converter.dart';
 import '../../core/models/selected_image.dart';
 
 sealed class PickerState {}
@@ -38,16 +39,37 @@ class PickerNotifier extends Notifier<PickerState> {
       final file = File(picked.path);
       final bytes = await file.length();
 
-      // Decode image to get width/height without extra packages
+      // Decode image to get width/height
       int w = 0, h = 0;
-      try {
-        final data = await file.readAsBytes();
-        final codec = await ui.instantiateImageCodec(data);
-        final frame = await codec.getNextFrame();
-        w = frame.image.width;
-        h = frame.image.height;
-        frame.image.dispose();
-      } catch (_) {}
+      final pathLower = picked.path.toLowerCase();
+      final isHeic = pathLower.endsWith('.heic') || pathLower.endsWith('.heif');
+
+      if (isHeic) {
+        try {
+          final tempJpg = await HeifConverter.convert(picked.path, format: 'jpg');
+          if (tempJpg != null) {
+            final tempFile = File(tempJpg);
+            final data = await tempFile.readAsBytes();
+            final codec = await ui.instantiateImageCodec(data);
+            final frame = await codec.getNextFrame();
+            w = frame.image.width;
+            h = frame.image.height;
+            frame.image.dispose();
+            if (tempFile.existsSync()) {
+              await tempFile.delete();
+            }
+          }
+        } catch (_) {}
+      } else {
+        try {
+          final data = await file.readAsBytes();
+          final codec = await ui.instantiateImageCodec(data);
+          final frame = await codec.getNextFrame();
+          w = frame.image.width;
+          h = frame.image.height;
+          frame.image.dispose();
+        } catch (_) {}
+      }
 
       state = PickerLoaded(
         SelectedImage(

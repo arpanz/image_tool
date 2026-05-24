@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:heif_converter/heif_converter.dart';
 import '../../core/models/compression_result.dart';
 import '../../core/models/compression_settings.dart';
 import '../../core/models/selected_image.dart';
@@ -17,11 +18,35 @@ class _ImageSize {
 }
 
 Future<_ImageSize> _decodeSize(File file) async {
+  final pathLower = file.path.toLowerCase();
+  final isHeic = pathLower.endsWith('.heic') || pathLower.endsWith('.heif');
+
+  if (isHeic) {
+    try {
+      final tempJpg = await HeifConverter.convert(file.path, format: 'jpg');
+      if (tempJpg != null) {
+        final tempFile = File(tempJpg);
+        final data = await tempFile.readAsBytes();
+        final codec = await ui.instantiateImageCodec(data);
+        final frame = await codec.getNextFrame();
+        final size = _ImageSize(frame.image.width, frame.image.height);
+        frame.image.dispose();
+        if (tempFile.existsSync()) {
+          await tempFile.delete();
+        }
+        return size;
+      }
+    } catch (_) {}
+    return const _ImageSize(800, 600);
+  }
+
   try {
     final bytes = await file.readAsBytes();
     final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
-    return _ImageSize(frame.image.width, frame.image.height);
+    final size = _ImageSize(frame.image.width, frame.image.height);
+    frame.image.dispose();
+    return size;
   } catch (_) {
     return const _ImageSize(800, 600);
   }

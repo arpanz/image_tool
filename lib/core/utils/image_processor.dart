@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:heif_converter/heif_converter.dart';
 
 import '../models/compression_result.dart';
 import '../models/compression_settings.dart';
@@ -123,6 +124,11 @@ Future<ui.Image> _resizeCanvas(
   return recorder.endRecording().toImage(targetW, targetH);
 }
 
+bool _isHeic(String path) {
+  final lower = path.toLowerCase();
+  return lower.endsWith('.heic') || lower.endsWith('.heif');
+}
+
 class ImageProcessor {
   static Future<CompressionResult> process({
     required String inputPath,
@@ -136,139 +142,178 @@ class ImageProcessor {
     }
 
     final originalSize = await inputFile.length();
-    final ext = _formatToExt(settings.format);
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final dir = await getTemporaryDirectory();
-    final outputPath = '${dir.path}/pf_$timestamp.$ext';
+    String activeInputPath = inputPath;
+    int activeOriginalWidth = originalWidth;
+    int activeOriginalHeight = originalHeight;
+    String? tempConvertedPath;
 
-    final bool hasResize = settings.width != null || settings.height != null;
-    Uint8List resultBytes;
-    int outW = originalWidth;
-    int outH = originalHeight;
+    try {
+      if (_isHeic(inputPath)) {
+        final targetFormat =
+            settings.format.toLowerCase() == 'png' ? 'png' : 'jpg';
+        final converted =
+            await HeifConverter.convert(inputPath, format: targetFormat);
+        if (converted == null) {
+          throw Exception('Failed to convert HEIC/HEIF image.');
+        }
+        tempConvertedPath = converted;
+        activeInputPath = converted;
 
-    if (!hasResize) {
-      // Pure compression — no canvas resize needed
-      final compressed = await FlutterImageCompress.compressWithFile(
-        inputPath,
-        quality: settings.quality,
-        minWidth: originalWidth,
-        minHeight: originalHeight,
-        keepExif: false,
-        format: _formatToCompressFormat(settings.format),
+        try {
+          final decoded = await _decodeImage(File(converted));
+          activeOriginalWidth = decoded.width;
+          activeOriginalHeight = decoded.height;
+          decoded.dispose();
+        } catch (_) {}
+      }
+
+      final ext = _formatToExt(settings.format);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final dir = await getTemporaryDirectory();
+      final outputPath = '${dir.path}/pf_$timestamp.$ext';
+
+      final bool hasResize = settings.width != null || settings.height != null;
+      Uint8List resultBytes;
+      int outW = activeOriginalWidth;
+      int outH = activeOriginalHeight;
+
+      if (!hasResize) {
+        // Pure compression — no canvas resize needed
+        final compressed = await FlutterImageCompress.compressWithFile(
+          activeInputPath,
+          quality: settings.quality,
+          minWidth: activeOriginalWidth,
+          minHeight: activeOriginalHeight,
+          keepExif: false,
+          format: _formatToCompressFormat(settings.format),
+        );
+        if (compressed == null || compressed.isEmpty) {
+          throw Exception('Compression returned empty result.');
+        }
+        resultBytes = compressed;
+      } else {
+        final src = await _decodeImage(File(activeInputPath));
+
+        int targetW = settings.width ?? activeOriginalWidth;
+        int targetH = settings.height ?? activeOriginalHeight;
+
+        if (settings.keepAspectRatio) {
+          if (settings.width != null && settings.height == null) {
+            targetH =
+                (activeOriginalHeight * targetW / activeOriginalWidth).round();
+          } else if (settings.height != null && settings.width == null) {
+            targetW =
+                (activeOriginalWidth * targetH / activeOriginalHeight).round();
+          } else {
+            // Both provided — fit inside the box without cropping
+            final scale = (targetW / activeOriginalWidth) <
+                    (targetH / activeOriginalHeight)
+                ? targetW / activeOriginalWidth
+                : targetH / activeOriginalHeight;
+            targetW = (activeOriginalWidth * scale).round();
+            targetH = (activeOriginalHeight * scale).round();
+          }
+        }
+
+        outW = targetW;
+        outH = targetH;
+
+        final resized =
+            await _resizeCanvas(src, targetW, targetH, settings.fitMode);
+        src.dispose();
+        // _encodeImage uses minWidth/minHeight = 0 — no upscaling risk
+        resultBytes =
+            await _encodeImage(resized, settings.format, settings.quality);
+        resized.dispose();
+      }
+
+      // ── Target-size binary search ──────────────────────────────────────────
+      if (settings.targetSizeKB != null &&
+          settings.format.toUpperCase() != 'PNG') {
+        final targetBytes = settings.targetSizeKB! * 1024;
+        if (resultBytes.length > targetBytes) {
+          int lo = 1;
+          int hi = settings.quality;
+          Uint8List? bestUnder;
+          int bestQuality = 1;
+
+          while (lo <= hi) {
+            final mid = (lo + hi) ~/ 2;
+            Uint8List attempt;
+            if (!hasResize) {
+              final c = await FlutterImageCompress.compressWithFile(
+                activeInputPath,
+                quality: mid,
+                minWidth: activeOriginalWidth,
+                minHeight: activeOriginalHeight,
+                keepExif: false,
+                format: _formatToCompressFormat(settings.format),
+              );
+              if (c == null || c.isEmpty) break;
+              attempt = c;
+            } else {
+              final src = await _decodeImage(File(activeInputPath));
+              final resized =
+                  await _resizeCanvas(src, outW, outH, settings.fitMode);
+              src.dispose();
+              attempt = await _encodeImage(resized, settings.format, mid);
+              resized.dispose();
+            }
+
+            if (attempt.length <= targetBytes) {
+              bestUnder = attempt;
+              bestQuality = mid;
+              lo = mid + 1;
+            } else {
+              hi = mid - 1;
+            }
+          }
+
+          if (bestUnder != null) {
+            resultBytes = bestUnder;
+          } else {
+            // Even quality=1 too large — progressively downscale dimensions
+            int scaleW = outW;
+            int scaleH = outH;
+            Uint8List scaled = resultBytes;
+            for (double factor = 0.9; factor >= 0.1; factor -= 0.1) {
+              scaleW = (outW * factor).round().clamp(1, outW);
+              scaleH = (outH * factor).round().clamp(1, outH);
+              final src = await _decodeImage(File(activeInputPath));
+              final resized =
+                  await _resizeCanvas(src, scaleW, scaleH, settings.fitMode);
+              src.dispose();
+              scaled =
+                  await _encodeImage(resized, settings.format, bestQuality);
+              resized.dispose();
+              if (scaled.length <= targetBytes) break;
+            }
+            resultBytes = scaled;
+            outW = scaleW;
+            outH = scaleH;
+          }
+        }
+      }
+
+      await File(outputPath).writeAsBytes(resultBytes);
+
+      return CompressionResult.fromSizes(
+        originalSize: originalSize,
+        newSize: resultBytes.length,
+        outputPath: outputPath,
+        outWidth: outW,
+        outHeight: outH,
       );
-      if (compressed == null || compressed.isEmpty) {
-        throw Exception('Compression returned empty result.');
-      }
-      resultBytes = compressed;
-    } else {
-      final src = await _decodeImage(inputFile);
-
-      int targetW = settings.width ?? originalWidth;
-      int targetH = settings.height ?? originalHeight;
-
-      if (settings.keepAspectRatio) {
-        if (settings.width != null && settings.height == null) {
-          targetH = (originalHeight * targetW / originalWidth).round();
-        } else if (settings.height != null && settings.width == null) {
-          targetW = (originalWidth * targetH / originalHeight).round();
-        } else {
-          // Both provided — fit inside the box without cropping
-          final scale = (targetW / originalWidth) < (targetH / originalHeight)
-              ? targetW / originalWidth
-              : targetH / originalHeight;
-          targetW = (originalWidth * scale).round();
-          targetH = (originalHeight * scale).round();
-        }
-      }
-
-      outW = targetW;
-      outH = targetH;
-
-      final resized =
-          await _resizeCanvas(src, targetW, targetH, settings.fitMode);
-      src.dispose();
-      // _encodeImage uses minWidth/minHeight = 0 — no upscaling risk
-      resultBytes =
-          await _encodeImage(resized, settings.format, settings.quality);
-      resized.dispose();
-    }
-
-    // ── Target-size binary search ──────────────────────────────────────────
-    if (settings.targetSizeKB != null &&
-        settings.format.toUpperCase() != 'PNG') {
-      final targetBytes = settings.targetSizeKB! * 1024;
-      if (resultBytes.length > targetBytes) {
-        int lo = 1;
-        int hi = settings.quality;
-        Uint8List? bestUnder;
-        int bestQuality = 1;
-
-        while (lo <= hi) {
-          final mid = (lo + hi) ~/ 2;
-          Uint8List attempt;
-          if (!hasResize) {
-            final c = await FlutterImageCompress.compressWithFile(
-              inputPath,
-              quality: mid,
-              minWidth: originalWidth,
-              minHeight: originalHeight,
-              keepExif: false,
-              format: _formatToCompressFormat(settings.format),
-            );
-            if (c == null || c.isEmpty) break;
-            attempt = c;
-          } else {
-            final src = await _decodeImage(inputFile);
-            final resized =
-                await _resizeCanvas(src, outW, outH, settings.fitMode);
-            src.dispose();
-            attempt = await _encodeImage(resized, settings.format, mid);
-            resized.dispose();
+    } finally {
+      if (tempConvertedPath != null) {
+        try {
+          final f = File(tempConvertedPath);
+          if (f.existsSync()) {
+            await f.delete();
           }
-
-          if (attempt.length <= targetBytes) {
-            bestUnder = attempt;
-            bestQuality = mid;
-            lo = mid + 1;
-          } else {
-            hi = mid - 1;
-          }
-        }
-
-        if (bestUnder != null) {
-          resultBytes = bestUnder;
-        } else {
-          // Even quality=1 too large — progressively downscale dimensions
-          int scaleW = outW;
-          int scaleH = outH;
-          Uint8List scaled = resultBytes;
-          for (double factor = 0.9; factor >= 0.1; factor -= 0.1) {
-            scaleW = (outW * factor).round().clamp(1, outW);
-            scaleH = (outH * factor).round().clamp(1, outH);
-            final src = await _decodeImage(inputFile);
-            final resized =
-                await _resizeCanvas(src, scaleW, scaleH, settings.fitMode);
-            src.dispose();
-            scaled = await _encodeImage(resized, settings.format, bestQuality);
-            resized.dispose();
-            if (scaled.length <= targetBytes) break;
-          }
-          resultBytes = scaled;
-          outW = scaleW;
-          outH = scaleH;
-        }
+        } catch (_) {}
       }
     }
-
-    await File(outputPath).writeAsBytes(resultBytes);
-
-    return CompressionResult.fromSizes(
-      originalSize: originalSize,
-      newSize: resultBytes.length,
-      outputPath: outputPath,
-      outWidth: outW,
-      outHeight: outH,
-    );
   }
 }
 
