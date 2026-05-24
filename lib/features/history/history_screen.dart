@@ -8,12 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/models/history_entry.dart';
-import '../../core/models/selected_image.dart';
 import '../../core/utils/image_processor.dart';
-import '../picker/picker_controller.dart';
-import '../home/home_screen.dart';
-import '../mode_entry/mode_entry_screen.dart';
-import '../convert/convert_screen.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
@@ -156,109 +151,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         ],
       ),
     );
-  }
-
-  void _reEditImage(HistoryEntry entry) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Re-edit Image',
-                    style: Theme.of(ctx).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
-                        ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const Gap(4),
-              Text(
-                'Select a processing mode to apply to this image.',
-                style: Theme.of(ctx).textTheme.bodyMedium,
-              ),
-              const Gap(20),
-              _ReEditActionTile(
-                icon: Icons.compress_rounded,
-                color: AppColors.compress,
-                title: 'Compress Image',
-                subtitle: 'Shrink file size while preserving quality',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _navigateToTool(entry, ImageMode.compress);
-                },
-              ),
-              const Gap(12),
-              _ReEditActionTile(
-                icon: Icons.photo_size_select_large_rounded,
-                color: AppColors.resize,
-                title: 'Resize Image',
-                subtitle: 'Change width and height dimensions',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _navigateToTool(entry, ImageMode.resize);
-                },
-              ),
-              const Gap(12),
-              _ReEditActionTile(
-                icon: Icons.swap_horiz_rounded,
-                color: AppColors.convert,
-                title: 'Convert Image',
-                subtitle: 'Change image file format (PNG, JPG, WEBP)',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _navigateToTool(entry, null);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _navigateToTool(HistoryEntry entry, ImageMode? mode) {
-    if (!File(entry.outputPath).existsSync()) {
-      _showErrorSnackBar('Original file not found on disk.');
-      return;
-    }
-
-    // Set picked state in picker provider
-    ref.read(pickerProvider.notifier).setImage(
-          SelectedImage(
-            path: entry.outputPath,
-            originalSize: entry.newSize,
-            width: entry.width,
-            height: entry.height,
-          ),
-        );
-
-    // Push screen
-    if (mode != null) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ModeEntryScreen(mode: mode)),
-      );
-    } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const ConvertScreen()),
-      );
-    }
   }
 
   @override
@@ -573,11 +465,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                         onTap: () => _saveIndividual(entry),
                                       ),
                                       _ItemActionButton(
-                                        icon: Icons.replay_rounded,
-                                        label: 'Re-edit',
-                                        onTap: () => _reEditImage(entry),
-                                      ),
-                                      _ItemActionButton(
                                         icon: Icons.delete_outline_rounded,
                                         label: 'Delete',
                                         color: AppColors.error,
@@ -792,85 +679,6 @@ class _ItemActionButton extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ReEditActionTile extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _ReEditActionTile({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: color, size: 22),
-                ),
-                const Gap(16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: tt.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      const Gap(2),
-                      Text(
-                        subtitle,
-                        style: tt.bodySmall?.copyWith(
-                          fontSize: 11,
-                          color: cs.onSurfaceVariant.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: cs.onSurfaceVariant.withOpacity(0.4),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
