@@ -9,6 +9,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/models/history_entry.dart';
 import '../../core/utils/image_processor.dart';
+import '../../core/utils/ad_manager.dart';
+import '../premium/paywall_screen.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
@@ -194,6 +196,92 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     );
   }
 
+  Widget _buildProBanner(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFD700), Color(0xFFF5B041)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.workspace_premium_rounded,
+              color: Color(0xFF6B4C0A),
+              size: 24,
+            ),
+          ),
+          const Gap(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Unlock Unlimited History',
+                  style: TextStyle(
+                    color: Color(0xFF6B4C0A),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13.5,
+                  ),
+                ),
+                const Gap(2),
+                Text(
+                  'Free users are limited to 3 items.',
+                  style: TextStyle(
+                    color: const Color(0xFF6B4C0A).withOpacity(0.85),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PaywallScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              minimumSize: const Size(0, 36),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            child: const Text('Upgrade'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final historyState = ref.watch(historyProvider);
@@ -313,6 +401,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                           },
                         ),
             ),
+            
+            // ── Pro Banner (fixed at the bottom) ───────────────────────────
+            if (!AdManager.instance.isPro && historyState.entries.isNotEmpty) ...[
+              _buildProBanner(context),
+            ],
           ],
         ),
       ),
@@ -464,7 +557,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   // ─── Mode Specific Highlights ───────────────────────────────────────────────
   Widget _buildModeHighlight(HistoryEntry entry, ColorScheme cs, TextTheme tt) {
     if (entry.mode == 'compress') {
-      // Highlight: Size difference strikethrough -> bold
       final positiveReduction = entry.originalSize > entry.newSize;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -512,7 +604,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         ],
       );
     } else if (entry.mode == 'resize') {
-      // Highlight: Dimension change strikethrough -> bold
       final hasOrigDims = entry.originalWidth > 0 && entry.originalHeight > 0;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -551,7 +642,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         ],
       );
     } else if (entry.mode == 'convert') {
-      // Highlight: Format Change (PNG -> JPG)
       final origFmt = entry.originalFormat.isNotEmpty ? entry.originalFormat : 'IMG';
       final newFmt = entry.newFormat.isNotEmpty ? entry.newFormat : 'JPG';
       return Column(
@@ -604,7 +694,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       );
     }
 
-    // Default fallback
     return Text(
       'File size: ${formatBytes(entry.newSize)}',
       style: tt.bodyMedium,
@@ -618,7 +707,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       return const SizedBox.shrink();
     }
 
-    final modeColor = AppColors.batch; // Orange badge for grouped batches
+    final modeColor = AppColors.batch;
     final positiveReduction = entry.originalSize > entry.newSize;
 
     return Container(
@@ -631,7 +720,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header details
           Row(
             children: [
               Container(
@@ -665,7 +753,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ],
           ),
           const Gap(12),
-          // Grouped Mini-Thumbnails scroll list (Minimal UI)
           SizedBox(
             height: 56,
             child: ListView.separated(
@@ -727,7 +814,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ),
           ),
           const Gap(12),
-          // Batch Stats Highlights
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -774,7 +860,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ],
           ),
           const Divider(height: 20),
-          // Action row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [

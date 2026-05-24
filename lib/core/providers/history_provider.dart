@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/history_entry.dart';
+import '../utils/ad_manager.dart';
 
 class HistoryState {
   final bool isEnabled;
@@ -66,6 +67,46 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
     state = state.copyWith(isEnabled: enabled);
   }
 
+  Future<void> _enforceNonProLimit() async {
+    if (AdManager.instance.isPro) return;
+
+    final List<HistoryEntry> currentEntries = [];
+    for (var key in _box.keys) {
+      final val = _box.get(key);
+      if (val is Map) {
+        try {
+          currentEntries.add(HistoryEntry.fromJson(val));
+        } catch (_) {}
+      }
+    }
+
+    // Sort oldest first
+    currentEntries.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    // We are about to add 1 entry, so delete oldest if we currently have 3 or more
+    while (currentEntries.length >= 3) {
+      final oldest = currentEntries.removeAt(0);
+
+      if (oldest.isBatch && oldest.batchItems != null) {
+        for (var item in oldest.batchItems!) {
+          final path = item['outputPath'] as String?;
+          if (path != null) {
+            final file = File(path);
+            if (file.existsSync()) {
+              await file.delete();
+            }
+          }
+        }
+      } else {
+        final file = File(oldest.outputPath);
+        if (file.existsSync()) {
+          await file.delete();
+        }
+      }
+      await _box.delete(oldest.id);
+    }
+  }
+
   Future<void> addEntry({
     required int originalSize,
     required int newSize,
@@ -117,11 +158,16 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
         isBatch: false,
       );
 
+      // Enforce the 3-item limit for non-Pro users
+      await _enforceNonProLimit();
+
       // Save to Hive
       await _box.put(entry.id, entry.toJson());
 
-      // Update State
-      final updatedList = List<HistoryEntry>.from(state.entries)
+      // Update State (filter out deleted items)
+      final updatedList = state.entries
+          .where((e) => _box.containsKey(e.id))
+          .toList()
         ..insert(0, entry);
       state = state.copyWith(entries: updatedList);
     } catch (e) {
@@ -194,11 +240,16 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
         batchItems: savedBatchItems,
       );
 
+      // Enforce the 3-item limit for non-Pro users
+      await _enforceNonProLimit();
+
       // Save to Hive
       await _box.put(entry.id, entry.toJson());
 
-      // Update State
-      final updatedList = List<HistoryEntry>.from(state.entries)
+      // Update State (filter out deleted items)
+      final updatedList = state.entries
+          .where((e) => _box.containsKey(e.id))
+          .toList()
         ..insert(0, entry);
       state = state.copyWith(entries: updatedList);
     } catch (e) {
