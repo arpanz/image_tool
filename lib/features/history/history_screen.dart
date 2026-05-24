@@ -95,6 +95,47 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     }
   }
 
+  void _shareBatch(HistoryEntry entry) async {
+    if (entry.batchItems == null) return;
+    final List<XFile> files = [];
+    for (var item in entry.batchItems!) {
+      final path = item['outputPath'] as String?;
+      if (path != null && File(path).existsSync()) {
+        files.add(XFile(path));
+      }
+    }
+    if (files.isNotEmpty) {
+      await Share.shareXFiles(files);
+    } else {
+      _showErrorSnackBar('No files found on disk for this batch.');
+    }
+  }
+
+  void _saveBatch(HistoryEntry entry) async {
+    if (entry.batchItems == null) return;
+    try {
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        await Gal.requestAccess();
+      }
+      int saved = 0;
+      for (var item in entry.batchItems!) {
+        final path = item['outputPath'] as String?;
+        if (path != null && File(path).existsSync()) {
+          await Gal.putImage(path, album: 'ImageResizer');
+          saved++;
+        }
+      }
+      if (saved > 0) {
+        _showSuccessSnackBar('$saved images saved to gallery!');
+      } else {
+        _showErrorSnackBar('No files found on disk to save.');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Save failed: $e');
+    }
+  }
+
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -226,7 +267,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       ),
                       Expanded(
                         child: _StatCard(
-                          title: 'Total Files',
+                          title: 'Total Items',
                           value: '${historyState.entries.length}',
                           icon: Icons.photo_library_outlined,
                           iconColor: AppColors.convert,
@@ -265,227 +306,500 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                           separatorBuilder: (_, __) => const Gap(12),
                           itemBuilder: (context, index) {
                             final entry = filteredEntries[index];
-                            final modeColor = _getModeColor(entry.mode);
-                            final savedPercent = entry.savedPercent;
-
-                            return Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: cs.surfaceContainerHighest.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                    color: cs.outlineVariant.withOpacity(0.25)),
-                              ),
-                              child: Column(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      if (File(entry.outputPath).existsSync()) {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => _FullscreenViewer(
-                                              path: entry.outputPath,
-                                            ),
-                                          ),
-                                        );
-                                      } else {
-                                        _showErrorSnackBar(
-                                            'Original file not found on disk.');
-                                      }
-                                    },
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Image thumbnail
-                                        ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          child: Stack(
-                                            children: [
-                                              Image.file(
-                                                File(entry.outputPath),
-                                                width: 76,
-                                                height: 76,
-                                                fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (_, __, ___) => Container(
-                                                  width: 76,
-                                                  height: 76,
-                                                  color: cs.surfaceContainerHighest,
-                                                  child: const Icon(
-                                                    Icons.broken_image_outlined,
-                                                    color: Colors.white30,
-                                                  ),
-                                                ),
-                                              ),
-                                              Positioned(
-                                                top: 4,
-                                                left: 4,
-                                                child: Container(
-                                                  padding: const EdgeInsets.all(4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black.withOpacity(0.55),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.fullscreen_rounded,
-                                                    size: 14,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const Gap(14),
-                                        // Metadata
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 3),
-                                                    decoration: BoxDecoration(
-                                                      color: modeColor
-                                                          .withOpacity(0.12),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              6),
-                                                      border: Border.all(
-                                                          color: modeColor
-                                                              .withOpacity(0.3)),
-                                                    ),
-                                                    child: Text(
-                                                      _getModeLabel(entry.mode),
-                                                      style: TextStyle(
-                                                        color: modeColor,
-                                                        fontSize: 10,
-                                                        fontWeight:
-                                                            FontWeight.w900,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  const Spacer(),
-                                                  Text(
-                                                    _formatDate(
-                                                        entry.timestamp),
-                                                    style: tt.bodySmall
-                                                        ?.copyWith(
-                                                            fontSize: 10.5),
-                                                  ),
-                                                ],
-                                              ),
-                                              const Gap(8),
-                                              Row(
-                                                children: [
-                                                  Text(
-                                                    formatBytes(
-                                                        entry.originalSize),
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: cs.onSurfaceVariant
-                                                          .withOpacity(0.6),
-                                                      decoration: TextDecoration
-                                                          .lineThrough,
-                                                    ),
-                                                  ),
-                                                  const Gap(6),
-                                                  Icon(
-                                                    Icons.east_rounded,
-                                                    size: 12,
-                                                    color: cs.onSurfaceVariant
-                                                        .withOpacity(0.5),
-                                                  ),
-                                                  const Gap(6),
-                                                  Text(
-                                                    formatBytes(entry.newSize),
-                                                    style: TextStyle(
-                                                      fontSize: 12.5,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: cs.onSurface,
-                                                    ),
-                                                  ),
-                                                  if (savedPercent > 0 &&
-                                                      entry.mode ==
-                                                          'compress') ...[
-                                                    const Gap(8),
-                                                    Text(
-                                                      '-${savedPercent.toStringAsFixed(1)}%',
-                                                      style: const TextStyle(
-                                                        color:
-                                                            AppColors.success,
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.w800,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ],
-                                              ),
-                                              if (entry.width > 0 &&
-                                                  entry.height > 0) ...[
-                                                const Gap(6),
-                                                Text(
-                                                  '${entry.width} x ${entry.height} pixels',
-                                                  style: tt.bodySmall?.copyWith(
-                                                    fontSize: 11,
-                                                    color: cs.onSurfaceVariant
-                                                        .withOpacity(0.7),
-                                                  ),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Divider(height: 20),
-                                  // Action Buttons
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      _ItemActionButton(
-                                        icon: Icons.share_rounded,
-                                        label: 'Share',
-                                        onTap: () => _shareIndividual(entry),
-                                      ),
-                                      _ItemActionButton(
-                                        icon: Icons.download_rounded,
-                                        label: 'Save Gallery',
-                                        onTap: () => _saveIndividual(entry),
-                                      ),
-                                      _ItemActionButton(
-                                        icon: Icons.delete_outline_rounded,
-                                        label: 'Delete',
-                                        color: AppColors.error,
-                                        onTap: () {
-                                          ref
-                                              .read(historyProvider.notifier)
-                                              .deleteEntry(entry.id);
-                                          _showSuccessSnackBar(
-                                              'Item removed.');
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
+                            if (entry.isBatch) {
+                              return _buildBatchCard(context, entry, cs, tt);
+                            }
+                            return _buildSingleCard(context, entry, cs, tt);
                           },
                         ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ─── Single Item Layout ─────────────────────────────────────────────────────
+  Widget _buildSingleCard(
+      BuildContext context, HistoryEntry entry, ColorScheme cs, TextTheme tt) {
+    final modeColor = _getModeColor(entry.mode);
+    final savedPercent = entry.savedPercent;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.25)),
+      ),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () {
+              if (File(entry.outputPath).existsSync()) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => _FullscreenViewer(path: entry.outputPath),
+                  ),
+                );
+              } else {
+                _showErrorSnackBar('Original file not found on disk.');
+              }
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image thumbnail
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    children: [
+                      Image.file(
+                        File(entry.outputPath),
+                        width: 76,
+                        height: 76,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 76,
+                          height: 76,
+                          color: cs.surfaceContainerHighest,
+                          child: const Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.white30,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.55),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.fullscreen_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(14),
+                // Metadata details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: modeColor.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                  color: modeColor.withOpacity(0.3)),
+                            ),
+                            child: Text(
+                              _getModeLabel(entry.mode),
+                              style: TextStyle(
+                                color: modeColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            _formatDate(entry.timestamp),
+                            style: tt.bodySmall?.copyWith(fontSize: 10.5),
+                          ),
+                        ],
+                      ),
+                      const Gap(10),
+                      // Mode-Specific Details Highlight
+                      _buildModeHighlight(entry, cs, tt),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 20),
+          // Action Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _ItemActionButton(
+                icon: Icons.share_rounded,
+                label: 'Share',
+                onTap: () => _shareIndividual(entry),
+              ),
+              _ItemActionButton(
+                icon: Icons.download_rounded,
+                label: 'Save Gallery',
+                onTap: () => _saveIndividual(entry),
+              ),
+              _ItemActionButton(
+                icon: Icons.delete_outline_rounded,
+                label: 'Delete',
+                color: AppColors.error,
+                onTap: () {
+                  ref.read(historyProvider.notifier).deleteEntry(entry.id);
+                  _showSuccessSnackBar('Item removed.');
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Mode Specific Highlights ───────────────────────────────────────────────
+  Widget _buildModeHighlight(HistoryEntry entry, ColorScheme cs, TextTheme tt) {
+    if (entry.mode == 'compress') {
+      // Highlight: Size difference strikethrough -> bold
+      final positiveReduction = entry.originalSize > entry.newSize;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                formatBytes(entry.originalSize),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: cs.onSurfaceVariant.withOpacity(0.6),
+                  decoration: TextDecoration.lineThrough,
+                ),
+              ),
+              const Gap(6),
+              Icon(Icons.east_rounded,
+                  size: 11, color: cs.onSurfaceVariant.withOpacity(0.5)),
+              const Gap(6),
+              Text(
+                formatBytes(entry.newSize),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface,
+                ),
+              ),
+              if (positiveReduction && entry.savedPercent > 0) ...[
+                const Gap(8),
+                Text(
+                  '-${entry.savedPercent.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                    color: AppColors.success,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const Gap(4),
+          Text(
+            'Compression Optimization',
+            style: tt.bodySmall?.copyWith(fontSize: 10.5),
+          ),
+        ],
+      );
+    } else if (entry.mode == 'resize') {
+      // Highlight: Dimension change strikethrough -> bold
+      final hasOrigDims = entry.originalWidth > 0 && entry.originalHeight > 0;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (hasOrigDims) ...[
+                Text(
+                  '${entry.originalWidth}x${entry.originalHeight}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: cs.onSurfaceVariant.withOpacity(0.6),
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ),
+                const Gap(6),
+                Icon(Icons.east_rounded,
+                    size: 11, color: cs.onSurfaceVariant.withOpacity(0.5)),
+                const Gap(6),
+              ],
+              Text(
+                '${entry.width} x ${entry.height}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.resize,
+                ),
+              ),
+            ],
+          ),
+          const Gap(4),
+          Text(
+            'Output File Size: ${formatBytes(entry.newSize)}',
+            style: tt.bodySmall?.copyWith(fontSize: 10.5, fontWeight: FontWeight.w500),
+          ),
+        ],
+      );
+    } else if (entry.mode == 'convert') {
+      // Highlight: Format Change (PNG -> JPG)
+      final origFmt = entry.originalFormat.isNotEmpty ? entry.originalFormat : 'IMG';
+      final newFmt = entry.newFormat.isNotEmpty ? entry.newFormat : 'JPG';
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  origFmt,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const Gap(6),
+              Icon(Icons.east_rounded,
+                  size: 11, color: cs.onSurfaceVariant.withOpacity(0.5)),
+              const Gap(6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.convert.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  newFmt,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.convert,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(4),
+          Text(
+            'Output File Size: ${formatBytes(entry.newSize)}',
+            style: tt.bodySmall?.copyWith(fontSize: 10.5, fontWeight: FontWeight.w500),
+          ),
+        ],
+      );
+    }
+
+    // Default fallback
+    return Text(
+      'File size: ${formatBytes(entry.newSize)}',
+      style: tt.bodyMedium,
+    );
+  }
+
+  // ─── Grouped Batch Layout ──────────────────────────────────────────────────
+  Widget _buildBatchCard(
+      BuildContext context, HistoryEntry entry, ColorScheme cs, TextTheme tt) {
+    if (entry.batchItems == null || entry.batchItems!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final modeColor = AppColors.batch; // Orange badge for grouped batches
+    final positiveReduction = entry.originalSize > entry.newSize;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header details
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: modeColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: modeColor.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.style_rounded, size: 10, color: modeColor),
+                    const Gap(4),
+                    Text(
+                      'Batch ${_getModeLabel(entry.mode)}',
+                      style: TextStyle(
+                        color: modeColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _formatDate(entry.timestamp),
+                style: tt.bodySmall?.copyWith(fontSize: 10.5),
+              ),
+            ],
+          ),
+          const Gap(12),
+          // Grouped Mini-Thumbnails scroll list (Minimal UI)
+          SizedBox(
+            height: 56,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: entry.batchItems!.length,
+              separatorBuilder: (_, __) => const Gap(8),
+              itemBuilder: (context, i) {
+                final path = entry.batchItems![i]['outputPath'] as String;
+                return GestureDetector(
+                  onTap: () {
+                    if (File(path).existsSync()) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => _FullscreenViewer(path: path),
+                        ),
+                      );
+                    } else {
+                      _showErrorSnackBar('File not found on disk.');
+                    }
+                  },
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          File(path),
+                          width: 56,
+                          height: 56,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 56,
+                            height: 56,
+                            color: cs.surfaceContainerHighest,
+                            child: const Icon(Icons.broken_image_outlined,
+                                size: 18, color: Colors.white30),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 2,
+                        left: 2,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.fullscreen_rounded,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const Gap(12),
+          // Batch Stats Highlights
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Grouped Batch: ${entry.batchItems!.length} images',
+                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const Gap(3),
+              Row(
+                children: [
+                  Text(
+                    formatBytes(entry.originalSize),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: cs.onSurfaceVariant.withOpacity(0.6),
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                  const Gap(6),
+                  Icon(Icons.east_rounded,
+                      size: 11, color: cs.onSurfaceVariant.withOpacity(0.5)),
+                  const Gap(6),
+                  Text(
+                    formatBytes(entry.newSize),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  if (positiveReduction && entry.savedPercent > 0) ...[
+                    const Gap(8),
+                    Text(
+                      '-${entry.savedPercent.toStringAsFixed(1)}%',
+                      style: const TextStyle(
+                        color: AppColors.success,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+          const Divider(height: 20),
+          // Action row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _ItemActionButton(
+                icon: Icons.share_rounded,
+                label: 'Share All',
+                onTap: () => _shareBatch(entry),
+              ),
+              _ItemActionButton(
+                icon: Icons.download_rounded,
+                label: 'Save All',
+                onTap: () => _saveBatch(entry),
+              ),
+              _ItemActionButton(
+                icon: Icons.delete_outline_rounded,
+                label: 'Delete Group',
+                color: AppColors.error,
+                onTap: () {
+                  ref.read(historyProvider.notifier).deleteEntry(entry.id);
+                  _showSuccessSnackBar('Grouped batch removed.');
+                },
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

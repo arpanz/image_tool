@@ -73,6 +73,10 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
     required String tempOutputPath,
     required int width,
     required int height,
+    required int originalWidth,
+    required int originalHeight,
+    required String originalFormat,
+    required String newFormat,
     required String mode,
   }) async {
     if (!state.isEnabled) return;
@@ -105,7 +109,89 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
         outputPath: persistentPath,
         width: width,
         height: height,
+        originalWidth: originalWidth,
+        originalHeight: originalHeight,
+        originalFormat: originalFormat,
+        newFormat: newFormat,
         mode: mode,
+        isBatch: false,
+      );
+
+      // Save to Hive
+      await _box.put(entry.id, entry.toJson());
+
+      // Update State
+      final updatedList = List<HistoryEntry>.from(state.entries)
+        ..insert(0, entry);
+      state = state.copyWith(entries: updatedList);
+    } catch (e) {
+      // ignore errors gracefully
+    }
+  }
+
+  Future<void> addBatchEntry({
+    required List<Map<String, dynamic>>
+        rawItems, // contains outputPath, originalSize, newSize, width, height, originalWidth, originalHeight
+    required String mode,
+  }) async {
+    if (!state.isEnabled) return;
+
+    try {
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final historyDir = Directory('${appDocDir.path}/history');
+      if (!historyDir.existsSync()) {
+        await historyDir.create(recursive: true);
+      }
+
+      final List<Map<String, dynamic>> savedBatchItems = [];
+      int totalOriginalSize = 0;
+      int totalNewSize = 0;
+
+      for (var item in rawItems) {
+        final tempPath = item['outputPath'] as String;
+        final tempFile = File(tempPath);
+        if (!tempFile.existsSync()) continue;
+
+        final rawFileName = tempPath.replaceAll('\\', '/').split('/').last;
+        final fileName =
+            'hist_${DateTime.now().millisecondsSinceEpoch}_batch_$rawFileName';
+        final persistentPath = '${historyDir.path}/$fileName';
+
+        // Copy file to persistent location
+        await tempFile.copy(persistentPath);
+
+        totalOriginalSize += item['originalSize'] as int;
+        totalNewSize += item['newSize'] as int;
+
+        savedBatchItems.add({
+          'outputPath': persistentPath,
+          'originalSize': item['originalSize'],
+          'newSize': item['newSize'],
+          'width': item['width'],
+          'height': item['height'],
+          'originalWidth': item['originalWidth'] ?? 0,
+          'originalHeight': item['originalHeight'] ?? 0,
+        });
+      }
+
+      if (savedBatchItems.isEmpty) return;
+
+      final double savedPercent = totalOriginalSize > 0
+          ? ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100)
+          : 0.0;
+
+      final entry = HistoryEntry(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+        originalSize: totalOriginalSize,
+        newSize: totalNewSize,
+        savedPercent: savedPercent,
+        outputPath: savedBatchItems.first['outputPath'] as String,
+        width: 0,
+        height: 0,
+        mode: mode,
+        isBatch: true,
+        batchItems: savedBatchItems,
       );
 
       // Save to Hive
@@ -124,10 +210,22 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
     try {
       final entry = state.entries.firstWhere((element) => element.id == id);
 
-      // Delete file from local storage
-      final file = File(entry.outputPath);
-      if (file.existsSync()) {
-        await file.delete();
+      // Delete file(s) from local storage
+      if (entry.isBatch && entry.batchItems != null) {
+        for (var item in entry.batchItems!) {
+          final path = item['outputPath'] as String?;
+          if (path != null) {
+            final file = File(path);
+            if (file.existsSync()) {
+              await file.delete();
+            }
+          }
+        }
+      } else {
+        final file = File(entry.outputPath);
+        if (file.existsSync()) {
+          await file.delete();
+        }
       }
 
       // Delete from Hive
@@ -146,9 +244,21 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
     try {
       // Delete all persistent files
       for (var entry in state.entries) {
-        final file = File(entry.outputPath);
-        if (file.existsSync()) {
-          await file.delete();
+        if (entry.isBatch && entry.batchItems != null) {
+          for (var item in entry.batchItems!) {
+            final path = item['outputPath'] as String?;
+            if (path != null) {
+              final file = File(path);
+              if (file.existsSync()) {
+                await file.delete();
+              }
+            }
+          }
+        } else {
+          final file = File(entry.outputPath);
+          if (file.existsSync()) {
+            await file.delete();
+          }
         }
       }
 

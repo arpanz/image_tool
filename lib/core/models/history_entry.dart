@@ -7,7 +7,13 @@ class HistoryEntry {
   final String outputPath;
   final int width;
   final int height;
-  final String mode; // 'compress', 'resize', 'convert'
+  final int originalWidth;
+  final int originalHeight;
+  final String originalFormat;
+  final String newFormat;
+  final String mode;
+  final bool isBatch;
+  final List<Map<String, dynamic>>? batchItems;
 
   const HistoryEntry({
     required this.id,
@@ -18,7 +24,13 @@ class HistoryEntry {
     required this.outputPath,
     required this.width,
     required this.height,
+    this.originalWidth = 0,
+    this.originalHeight = 0,
+    this.originalFormat = '',
+    this.newFormat = '',
     required this.mode,
+    this.isBatch = false,
+    this.batchItems,
   });
 
   Map<String, dynamic> toJson() {
@@ -31,7 +43,13 @@ class HistoryEntry {
       'outputPath': outputPath,
       'width': width,
       'height': height,
+      'originalWidth': originalWidth,
+      'originalHeight': originalHeight,
+      'originalFormat': originalFormat,
+      'newFormat': newFormat,
       'mode': mode,
+      'isBatch': isBatch,
+      'batchItems': batchItems,
     };
   }
 
@@ -45,7 +63,15 @@ class HistoryEntry {
       outputPath: json['outputPath'] as String,
       width: json['width'] as int,
       height: json['height'] as int,
+      originalWidth: json['originalWidth'] != null ? json['originalWidth'] as int : 0,
+      originalHeight: json['originalHeight'] != null ? json['originalHeight'] as int : 0,
+      originalFormat: json['originalFormat'] != null ? json['originalFormat'] as String : '',
+      newFormat: json['newFormat'] != null ? json['newFormat'] as String : '',
       mode: json['mode'] as String,
+      isBatch: json['isBatch'] != null ? json['isBatch'] as bool : false,
+      batchItems: json['batchItems'] != null
+          ? (json['batchItems'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList()
+          : null,
     );
   }
 }

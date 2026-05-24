@@ -33,20 +33,43 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
   CompressionResult get result => widget.result;
   ImageMode get mode => widget.mode;
 
+  bool _isSavedToHistory = false;
+
+  void _saveHistoryIfNeeded() {
+    if (_isSavedToHistory) return;
+    
+    final historyNotifier = ref.read(historyProvider.notifier);
+    if (!historyNotifier.state.isEnabled) return;
+
+    final pickerState = ref.read(pickerProvider);
+    int origWidth = 0;
+    int origH = 0;
+    if (pickerState is PickerLoaded) {
+      origWidth = pickerState.image.width;
+      origH = pickerState.image.height;
+    }
+
+    historyNotifier.addEntry(
+      originalSize: result.originalSize,
+      newSize: result.newSize,
+      savedPercent: result.savedPercent,
+      tempOutputPath: result.outputPath,
+      width: result.outWidth,
+      height: result.outHeight,
+      originalWidth: origWidth,
+      originalHeight: origH,
+      originalFormat: _inputFormat,
+      newFormat: _outputFormat,
+      mode: mode.name,
+    );
+    _isSavedToHistory = true;
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AppReviewService.registerSuccessfulAction();
-      ref.read(historyProvider.notifier).addEntry(
-        originalSize: result.originalSize,
-        newSize: result.newSize,
-        savedPercent: result.savedPercent,
-        tempOutputPath: result.outputPath,
-        width: result.outWidth,
-        height: result.outHeight,
-        mode: mode.name,
-      );
     });
   }
 
@@ -170,6 +193,9 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
       // Save to device gallery (visible in Photos / Gallery app)
       await Gal.putImage(result.outputPath, album: 'ImageResizer');
 
+      // Save explicitly to history on successful gallery save
+      _saveHistoryIfNeeded();
+
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -195,6 +221,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
   }
 
   Future<void> _share() async {
+    // Save explicitly to history on share triggers
+    _saveHistoryIfNeeded();
     await Share.shareXFiles([XFile(result.outputPath)]);
   }
 

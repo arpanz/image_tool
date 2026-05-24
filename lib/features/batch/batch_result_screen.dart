@@ -25,6 +25,48 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
   ImageMode get mode => widget.mode;
   bool _isListView = true;
 
+  bool _isSavedToHistory = false;
+
+  void _saveBatchToHistory(List<BatchItem> doneItems) {
+    if (_isSavedToHistory) return;
+
+    final historyNotifier = ref.read(historyProvider.notifier);
+    if (!historyNotifier.state.isEnabled) return;
+
+    final List<Map<String, dynamic>> rawItems = [];
+    for (final item in doneItems) {
+      if (item.result != null) {
+        rawItems.add({
+          'outputPath': item.result!.outputPath,
+          'originalSize': item.image.originalSize,
+          'newSize': item.result!.newSize,
+          'width': item.result!.outWidth,
+          'height': item.result!.outHeight,
+          'originalWidth': item.image.width,
+          'originalHeight': item.image.height,
+        });
+      }
+    }
+
+    historyNotifier.addBatchEntry(
+      rawItems: rawItems,
+      mode: mode.name,
+    );
+
+    setState(() {
+      _isSavedToHistory = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Batch saved to history!'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -34,19 +76,6 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
           state.items.any((i) => i.status == BatchItemStatus.done);
       if (hasSuccess) {
         AppReviewService.registerSuccessfulAction();
-        for (final item in state.items) {
-          if (item.status == BatchItemStatus.done && item.result != null) {
-            ref.read(historyProvider.notifier).addEntry(
-                  originalSize: item.image.originalSize,
-                  newSize: item.result!.newSize,
-                  savedPercent: item.result!.savedPercent,
-                  tempOutputPath: item.result!.outputPath,
-                  width: item.result!.outWidth,
-                  height: item.result!.outHeight,
-                  mode: mode.name,
-                );
-          }
-        }
       }
     });
   }
@@ -168,6 +197,59 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
                     ? _ResultList(items: done)
                     : _ResultGrid(items: done),
                 const Gap(20),
+              ],
+
+              // ── History Group Card ─────────────────────────────────────────
+              if (done.isNotEmpty && ref.watch(historyProvider).isEnabled) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.history_rounded, color: cs.primary, size: 20),
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Save Batch to History',
+                              style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const Gap(2),
+                            Text(
+                              'Group these ${done.length} images in your history log',
+                              style: tt.bodySmall?.copyWith(fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                      FilledButton(
+                        onPressed: _isSavedToHistory ? null : () => _saveBatchToHistory(done),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _isSavedToHistory ? cs.surfaceContainerHighest : cs.primary,
+                          foregroundColor: _isSavedToHistory ? cs.onSurfaceVariant : Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          minimumSize: const Size(0, 36),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: Text(_isSavedToHistory ? 'Saved' : 'Save'),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(16),
               ],
 
               // ── Ad ────────────────────────────────────────────────────────
