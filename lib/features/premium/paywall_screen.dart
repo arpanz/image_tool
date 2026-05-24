@@ -272,32 +272,27 @@ class _PaywallScreenState extends State<PaywallScreen>
                                   _featureRow(
                                     Icons.compress_rounded,
                                     'Unlimited Compressions',
-                                    'Compress as many images as you want, every day.',
                                     const Color(0xFF6C63FF),
                                   ),
                                   _featureRow(
                                     Icons.photo_size_select_large_rounded,
                                     'Unlimited Resizes',
-                                    'Pixel-perfect resizing with all fit modes unlocked.',
                                     const Color(0xFF11998E),
                                   ),
                                   _featureRow(
                                     Icons.block_flipped,
                                     'Completely Ad-Free',
-                                    'No banners, no interstitials. Just your images.',
                                     const Color(0xFFFF6B6B),
+                                  ),
+                                  _featureRow(
+                                    Icons.history_rounded,
+                                    'Full Image History',
+                                    Colors.tealAccent,
                                   ),
                                   _featureRow(
                                     Icons.auto_fix_high_rounded,
                                     'All Output Formats',
-                                    'Export to JPG, PNG, WebP — all formats, no locks.',
                                     Colors.orangeAccent,
-                                  ),
-                                  _featureRow(
-                                    Icons.rocket_launch_rounded,
-                                    'All Future Features',
-                                    'Batch processing and new tools ship to Pro first.',
-                                    Colors.tealAccent,
                                   ),
                                 ],
                               ),
@@ -428,7 +423,7 @@ class _PaywallScreenState extends State<PaywallScreen>
           color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600));
 
   Widget _featureRow(
-      IconData icon, String title, String subtitle, Color color) {
+      IconData icon, String title, Color color) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -446,24 +441,32 @@ class _PaywallScreenState extends State<PaywallScreen>
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14.5,
-                        color: Colors.white,
-                        letterSpacing: -0.2)),
-                const SizedBox(height: 2),
-                Text(subtitle,
-                    style: const TextStyle(
-                        fontSize: 12.5, color: Colors.white54, height: 1.3)),
-              ],
+            child: Text(title,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14.5,
+                    color: Colors.white,
+                    letterSpacing: -0.2)),
+          ),
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFF4ADE80).withOpacity(0.15),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFF4ADE80).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.check_rounded,
+                color: Color(0xFF4ADE80),
+                size: 14,
+              ),
             ),
           ),
-          const Icon(Icons.check_circle_rounded,
-              color: Color(0xFF4ADE80), size: 18),
         ],
       ),
     );
