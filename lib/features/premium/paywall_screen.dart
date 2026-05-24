@@ -182,13 +182,13 @@ class _PaywallScreenState extends State<PaywallScreen>
         const accentGold = Color(0xFFFFD700);
         final theme = Theme.of(context);
         return Scaffold(
-          backgroundColor: const Color(0xFF0B0B12),
+          backgroundColor: const Color(0xFF0B0B0B),
           body: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF0F0D1A), Color(0xFF0B0B12)],
+                colors: [Color(0xFF0D120F), Color(0xFF0B0B0B)],
               ),
             ),
             child: SafeArea(
@@ -310,7 +310,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF13121E),
+                        color: const Color(0xFF121614),
                         borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(28)),
                         boxShadow: [
