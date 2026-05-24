@@ -18,7 +18,7 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
   await AdManager.instance.initialize();
-  
+
   final prefs = await SharedPreferences.getInstance();
   await Hive.initFlutter();
   final box = await Hive.openBox('image_history');

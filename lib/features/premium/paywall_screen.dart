@@ -178,7 +178,7 @@ class _PaywallScreenState extends State<PaywallScreen>
     return Theme(
       data: AppTheme.darkTheme,
       child: Builder(builder: (context) {
-        const accent = Color(0xFF9D97FF); // Image Resizer accent
+        const accent = Color(0xFF06C974); // Image Resizer accent
         const accentGold = Color(0xFFFFD700);
         final theme = Theme.of(context);
         return Scaffold(
@@ -450,7 +450,7 @@ class _PaywallScreenState extends State<PaywallScreen>
           ),
           const Icon(
             Icons.check_rounded,
-            color: Color(0xFF9D97FF),
+            color: Color(0xFF06C974),
             size: 20,
           ),
         ],
@@ -526,12 +526,12 @@ class _ImageResizerHeroState extends State<_ImageResizerHero>
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF6C63FF), Color(0xFF9D97FF)],
+                  colors: [Color(0xFF05B267), Color(0xFF06C974)],
                 ),
                 borderRadius: BorderRadius.circular(widget.size * 0.18),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6C63FF).withOpacity(0.45),
+                    color: const Color(0xFF06C974).withOpacity(0.45),
                     blurRadius: 30,
                     spreadRadius: -4,
                     offset: const Offset(0, 10),
@@ -592,21 +592,21 @@ class _HaloPainter extends CustomPainter {
 
     // Outer dashed ring
     final dashPaint = Paint()
-      ..color = const Color(0xFF6C63FF).withOpacity(0.35)
+      ..color = const Color(0xFF06C974).withOpacity(0.35)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     _drawDashedCircle(canvas, center, outerR - 2, dashPaint, 24);
 
     // Inner ring
     final innerPaint = Paint()
-      ..color = const Color(0xFF9D97FF).withOpacity(0.2)
+      ..color = const Color(0xFF06C974).withOpacity(0.2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     canvas.drawCircle(center, outerR * 0.82, innerPaint);
 
     // Dots on outer ring
     final dotPaint = Paint()
-      ..color = const Color(0xFF9D97FF).withOpacity(0.6)
+      ..color = const Color(0xFF06C974).withOpacity(0.6)
       ..style = PaintingStyle.fill;
     for (int i = 0; i < 8; i++) {
       final angle = (i / 8) * 2 * math.pi;
