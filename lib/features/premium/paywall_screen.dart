@@ -294,6 +294,11 @@ class _PaywallScreenState extends State<PaywallScreen>
                                     'All Output Formats',
                                     Colors.orangeAccent,
                                   ),
+                                  _featureRow(
+                                    Icons.swap_horiz_rounded,
+                                    'HEIC/HEIF Conversion',
+                                    Colors.purpleAccent,
+                                  ),
                                 ],
                               ),
                             ),

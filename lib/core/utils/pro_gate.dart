@@ -152,6 +152,7 @@ enum ProFeature {
   unlimitedResize,
   allFormats,
   removeAds,
+  heicConversion,
 }
 
 class _FeatureInfo {
@@ -194,5 +195,12 @@ const _featureInfo = <ProFeature, _FeatureInfo>{
     title: 'Go Completely Ad-Free',
     body:
         'Remove every banner and interstitial ad with a single one-time Pro upgrade.',
+  ),
+  ProFeature.heicConversion: _FeatureInfo(
+    icon: Icons.swap_horiz_rounded,
+    color: Colors.purpleAccent,
+    title: 'HEIC/HEIF Conversion',
+    body:
+        'Converting high-efficiency HEIC or HEIF formats to standard formats is a Pro feature.\nUpgrade to Pro to unlock unlimited format conversions.',
   ),
 };

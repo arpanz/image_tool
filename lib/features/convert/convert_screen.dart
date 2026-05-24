@@ -8,6 +8,7 @@ import '../../core/models/selected_image.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
 import '../../core/utils/image_processor.dart';
+import '../../core/utils/pro_gate.dart';
 import '../../core/widgets/pf_button.dart';
 import '../home/home_screen.dart';
 import '../picker/picker_controller.dart';
@@ -66,6 +67,7 @@ class _ConvertScreenState extends ConsumerState<ConvertScreen> {
 
     final sourceFormat =
         _selectedImage == null ? null : _formatFromPath(_selectedImage!.path);
+    final isHeicInput = sourceFormat == 'HEIC' || sourceFormat == 'HEIF';
 
     return Scaffold(
       appBar: AppBar(
@@ -209,7 +211,9 @@ class _ConvertScreenState extends ConsumerState<ConvertScreen> {
               PfButton(
                 label: _selectedImage == null
                     ? 'Select an image first'
-                    : 'Convert Image',
+                    : (isHeicInput && !AdManager.instance.isPro
+                        ? 'Convert Image (PRO)'
+                        : 'Convert Image'),
                 icon: Icons.swap_horiz_rounded,
                 backgroundColor: AppColors.convert,
                 isLoading: _isProcessing,
@@ -230,6 +234,14 @@ class _ConvertScreenState extends ConsumerState<ConvertScreen> {
   Future<void> _convert() async {
     final image = _selectedImage;
     if (image == null) return;
+
+    final isHeic = _formatFromPath(image.path) == 'HEIC' ||
+        _formatFromPath(image.path) == 'HEIF';
+    if (isHeic) {
+      if (!ProGate.guard(context, ProFeature.heicConversion)) {
+        return;
+      }
+    }
 
     setState(() => _isProcessing = true);
 
@@ -302,6 +314,11 @@ class _PickImageCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
+    final pathLower = selectedImage?.path.toLowerCase();
+    final isHeic = pathLower != null &&
+        (pathLower.endsWith('.heic') || pathLower.endsWith('.heif'));
+    final isPro = AdManager.instance.isPro;
+
     return GestureDetector(
       onTap: isLoading ? null : onPick,
       child: Container(
@@ -336,13 +353,32 @@ class _PickImageCard extends StatelessWidget {
                     child: SizedBox(
                       width: 74,
                       height: 74,
-                      child: Image.file(
-                        File(selectedImage!.path),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: cs.surface,
-                          child: const Icon(Icons.image_outlined),
-                        ),
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Image.file(
+                              File(selectedImage!.path),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: cs.surface,
+                                child: const Icon(Icons.image_outlined),
+                              ),
+                            ),
+                          ),
+                          if (isHeic && !isPro)
+                            Positioned.fill(
+                              child: Container(
+                                color: Colors.black.withOpacity(0.4),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.lock_outline_rounded,
+                                    color: Color(0xFFFFD700),
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -351,10 +387,39 @@ class _PickImageCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Image selected',
-                          style: tt.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
+                        Row(
+                          children: [
+                            Text(
+                              'Image selected',
+                              style: tt.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            if (isHeic && !isPro) ...[
+                              const Gap(6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color:
+                                      const Color(0xFFFFD700).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: const Color(0xFFFFD700)
+                                        .withOpacity(0.5),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'PRO',
+                                  style: TextStyle(
+                                    color: Color(0xFFFFD700),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         const Gap(4),
                         Text(
@@ -365,6 +430,34 @@ class _PickImageCard extends StatelessWidget {
                           formatBytes(selectedImage!.originalSize),
                           style: tt.bodySmall,
                         ),
+                        if (isHeic) ...[
+                          const Gap(4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.workspace_premium_rounded,
+                                size: 12,
+                                color: isPro
+                                    ? Colors.green
+                                    : const Color(0xFFFFD700),
+                              ),
+                              const Gap(4),
+                              Expanded(
+                                child: Text(
+                                  'HEIC Format ${isPro ? "(Unlocked)" : "(Premium)"}',
+                                  style: tt.bodySmall?.copyWith(
+                                    color: isPro
+                                        ? Colors.green
+                                        : const Color(0xFFFFD700),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),

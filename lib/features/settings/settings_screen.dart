@@ -104,6 +104,13 @@ class SettingsScreen extends ConsumerWidget {
                 label: 'Full Quality Control',
                 description: 'Export at any quality level, 1–100',
               ),
+              const Gap(12),
+              _ProFeatureRow(
+                icon: Icons.swap_horiz_rounded,
+                color: Colors.purpleAccent,
+                label: 'HEIC/HEIF Conversion',
+                description: 'Convert HEIC/HEIF images without limits',
+              ),
               const Gap(20),
               SizedBox(
                 width: double.infinity,
