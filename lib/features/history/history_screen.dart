@@ -206,40 +206,35 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 
   Widget _buildProBanner(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFD700), Color(0xFFF5B041)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: cs.surfaceContainerHighest.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.25),
+          width: 1,
         ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFFD700).withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.1),
+              color: const Color(0xFFFFD700).withOpacity(0.12),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.workspace_premium_rounded,
-              color: Color(0xFF6B4C0A),
-              size: 24,
+              color: Color(0xFFFFD700),
+              size: 20,
             ),
           ),
-          const Gap(12),
+          const Gap(10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,17 +242,17 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 const Text(
                   'Unlock Unlimited History',
                   style: TextStyle(
-                    color: Color(0xFF6B4C0A),
+                    color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 13.5,
+                    fontSize: 13,
                   ),
                 ),
-                const Gap(2),
+                const Gap(1),
                 Text(
                   'Free users are limited to 3 items.',
                   style: TextStyle(
-                    color: const Color(0xFF6B4C0A).withOpacity(0.85),
-                    fontSize: 11,
+                    color: cs.onSurfaceVariant.withOpacity(0.7),
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -271,16 +266,16 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
+              backgroundColor: const Color(0xFFFFD700),
               foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: const Size(0, 30),
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
               ),
               textStyle: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
             ),
