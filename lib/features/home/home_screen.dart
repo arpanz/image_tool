@@ -11,6 +11,7 @@ import '../convert/convert_screen.dart';
 import '../mode_entry/mode_entry_screen.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/utils/image_processor.dart';
+import 'dart:io';
 import '../history/history_screen.dart';
 
 enum ImageMode { compress, resize, convert }
@@ -155,97 +156,105 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Consumer(
                 builder: (context, ref, child) {
                   final historyState = ref.watch(historyProvider);
-                  final historyNotifier = ref.read(historyProvider.notifier);
+                  final entries = historyState.entries;
+
                   return Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 14),
                     decoration: BoxDecoration(
                       color: cs.surfaceContainerHighest.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(20),
                       border:
                           Border.all(color: cs.outlineVariant.withOpacity(0.3)),
                     ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: cs.primary.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(12),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => const HistoryScreen()),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.history_rounded,
+                                color: cs.primary,
+                                size: 20,
                               ),
-                              child: Icon(Icons.history_rounded,
-                                  color: cs.primary, size: 22),
-                            ),
-                            const Gap(14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              const Gap(8),
+                              Text(
+                                'History',
+                                style: tt.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                              const Gap(12),
+                              if (entries.isEmpty)
+                                Text(
+                                  'No items yet',
+                                  style: tt.bodySmall?.copyWith(
+                                    color: cs.onSurfaceVariant.withOpacity(0.6),
+                                  ),
+                                )
+                              else
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: entries.take(3).map((entry) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 6),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Image.file(
+                                          File(entry.outputPath),
+                                          width: 32,
+                                          height: 32,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              Container(
+                                            width: 32,
+                                            height: 32,
+                                            color: cs.surfaceContainerHighest,
+                                            child: Icon(
+                                              Icons.broken_image_rounded,
+                                              size: 14,
+                                              color: cs.onSurfaceVariant
+                                                  .withOpacity(0.5),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              const Spacer(),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    'Processing History',
-                                    style: tt.titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                    'View all',
+                                    style: tt.bodySmall?.copyWith(
+                                      color: cs.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   const Gap(2),
-                                  Text(
-                                    historyState.isEnabled
-                                        ? 'Saving processed images locally'
-                                        : 'History recording is paused',
-                                    style: tt.bodySmall?.copyWith(
-                                      color: cs.onSurfaceVariant
-                                          .withOpacity(0.7),
-                                    ),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: cs.primary,
+                                    size: 16,
                                   ),
                                 ],
                               ),
-                            ),
-                            Switch(
-                              value: historyState.isEnabled,
-                              onChanged: (val) {
-                                historyNotifier.setEnabled(val);
-                              },
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        const Divider(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              historyState.entries.isNotEmpty
-                                  ? '${historyState.entries.length} items saved (${formatBytes(historyNotifier.totalDiskUsage)})'
-                                  : 'No items saved yet',
-                              style: tt.bodySmall?.copyWith(
-                                fontWeight: historyState.entries.isNotEmpty
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                            TextButton.icon(
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                      builder: (_) => const HistoryScreen()),
-                                );
-                              },
-                              icon: const Icon(Icons.arrow_forward_rounded,
-                                  size: 16),
-                              label: Text(historyState.entries.isNotEmpty
-                                  ? 'View History'
-                                  : 'Open History'),
-                              style: TextButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 10),
-                                foregroundColor: cs.primary,
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
                   );
                 },
