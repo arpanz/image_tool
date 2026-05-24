@@ -43,7 +43,7 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.idle();
     await tester.pump();
 
     expect(find.text('Image Resizer'), findsWidgets);
