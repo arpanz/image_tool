@@ -125,10 +125,17 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
     await notifier.processAll();
 
     if (mounted && ref.read(batchProvider).isDone) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => BatchResultScreen(mode: widget.mode),
-        ),
+      AdManager.instance.showInterstitial(
+        context,
+        onAdDismissed: () {
+          if (mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => BatchResultScreen(mode: widget.mode),
+              ),
+            );
+          }
+        },
       );
     }
   }
