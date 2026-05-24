@@ -448,24 +448,10 @@ class _PaywallScreenState extends State<PaywallScreen>
                     color: Colors.white,
                     letterSpacing: -0.2)),
           ),
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: const Color(0xFF4ADE80).withOpacity(0.15),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFF4ADE80).withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.check_rounded,
-                color: Color(0xFF4ADE80),
-                size: 14,
-              ),
-            ),
+          const Icon(
+            Icons.check_rounded,
+            color: Color(0xFF9D97FF),
+            size: 20,
           ),
         ],
       ),
