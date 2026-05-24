@@ -287,9 +287,71 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
           state.entries.where((element) => element.id != id).toList();
       state = state.copyWith(entries: updatedList);
     } catch (e) {
+      // ignore
+    }
+  }
+
+  Future<void> deleteBatchItem(String entryId, String itemPath) async {
+    try {
+      final entry = state.entries.firstWhere((element) => element.id == entryId);
+      if (!entry.isBatch || entry.batchItems == null) return;
+
+      // Delete the file from local storage
+      final file = File(itemPath);
+      if (file.existsSync()) {
+        await file.delete();
+      }
+
+      // Filter out the deleted item
+      final updatedBatchItems = entry.batchItems!
+          .where((item) => item['outputPath'] != itemPath)
+          .toList();
+
+      if (updatedBatchItems.isEmpty) {
+        // If no items left, delete the entire entry
+        await deleteEntry(entryId);
+        return;
+      }
+
+      // Recalculate sizes
+      int totalOriginalSize = 0;
+      int totalNewSize = 0;
+      for (var item in updatedBatchItems) {
+        totalOriginalSize += item['originalSize'] as int;
+        totalNewSize += item['newSize'] as int;
+      }
+      final double savedPercent = totalOriginalSize > 0
+          ? ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100)
+          : 0.0;
+
+      // Create updated entry
+      final updatedEntry = HistoryEntry(
+        id: entry.id,
+        timestamp: entry.timestamp,
+        originalSize: totalOriginalSize,
+        newSize: totalNewSize,
+        savedPercent: savedPercent,
+        outputPath: updatedBatchItems.first['outputPath'] as String,
+        width: 0,
+        height: 0,
+        mode: entry.mode,
+        isBatch: true,
+        batchItems: updatedBatchItems,
+      );
+
+      // Save to Hive
+      await _box.put(entryId, updatedEntry.toJson());
+
+      // Update State
+      final updatedList = state.entries.map((e) {
+        return e.id == entryId ? updatedEntry : e;
+      }).toList();
+      state = state.copyWith(entries: updatedList);
+    } catch (e) {
       // ignore errors gracefully
     }
   }
+
 
   Future<void> clearAll() async {
     try {

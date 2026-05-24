@@ -21,6 +21,7 @@ class HistoryScreen extends ConsumerStatefulWidget {
 
 class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   String _selectedFilter = 'all';
+  bool _isGridView = false;
 
   String _formatDate(int timestamp) {
     final dt = DateTime.fromMillisecondsSinceEpoch(timestamp);
@@ -42,6 +43,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     final ampm = dt.hour >= 12 ? 'PM' : 'AM';
     final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year} \u2022 $hour:$minutes $ampm';
+  }
+
+  String _formatDimension(HistoryEntry entry) {
+    if (entry.width > 0 && entry.height > 0) {
+      return '${entry.width}x${entry.height}';
+    }
+    return '';
   }
 
   Color _getModeColor(String mode) {
@@ -176,7 +184,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Cancel',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ),
           FilledButton(
@@ -302,6 +311,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         ),
         title: const Text('Processing History'),
         actions: [
+          IconButton(
+            icon: Icon(_isGridView
+                ? Icons.view_list_rounded
+                : Icons.grid_view_rounded),
+            tooltip:
+                _isGridView ? 'Switch to List View' : 'Switch to Grid View',
+            onPressed: () {
+              setState(() {
+                _isGridView = !_isGridView;
+              });
+            },
+          ),
           if (historyState.entries.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep_rounded),
@@ -323,7 +344,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   decoration: BoxDecoration(
                     color: cs.surfaceContainerHighest.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+                    border:
+                        Border.all(color: cs.outlineVariant.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
@@ -388,22 +410,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                             style: tt.bodyMedium,
                           ),
                         )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                          itemCount: filteredEntries.length,
-                          separatorBuilder: (_, __) => const Gap(12),
-                          itemBuilder: (context, index) {
-                            final entry = filteredEntries[index];
-                            if (entry.isBatch) {
-                              return _buildBatchCard(context, entry, cs, tt);
-                            }
-                            return _buildSingleCard(context, entry, cs, tt);
-                          },
-                        ),
+                      : _isGridView
+                          ? _buildGridView(filteredEntries, cs, tt)
+                          : _buildListView(filteredEntries, cs, tt),
             ),
-            
+
             // ── Pro Banner (fixed at the bottom) ───────────────────────────
-            if (!AdManager.instance.isPro && historyState.entries.isNotEmpty) ...[
+            if (!AdManager.instance.isPro &&
+                historyState.entries.isNotEmpty) ...[
               _buildProBanner(context),
             ],
           ],
@@ -412,11 +426,328 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     );
   }
 
+  // ─── List Layout builder ────────────────────────────────────────────────────
+  Widget _buildListView(
+      List<HistoryEntry> entries, ColorScheme cs, TextTheme tt) {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      itemCount: entries.length,
+      separatorBuilder: (_, __) => const Gap(12),
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        if (entry.isBatch) {
+          return _buildBatchCard(context, entry, cs, tt);
+        }
+        return _buildSingleCard(context, entry, cs, tt);
+      },
+    );
+  }
+
+  // ─── Grid Layout builder ────────────────────────────────────────────────────
+  Widget _buildGridView(
+      List<HistoryEntry> entries, ColorScheme cs, TextTheme tt) {
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.0,
+      ),
+      itemCount: entries.length,
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        final modeColor = _getModeColor(entry.mode);
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => _HistoryEntryViewer(entry: entry),
+              ),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+              color: cs.surfaceContainerHighest.withOpacity(0.15),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Thumbnail image / Collage
+                _buildGridThumbnail(entry, cs),
+
+                // Mode overlay circle top-right
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                        color: modeColor,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.25),
+                            blurRadius: 4,
+                          )
+                        ]),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (entry.isBatch) ...[
+                          const Icon(Icons.style_rounded,
+                              size: 9, color: Colors.black87),
+                          const Gap(3),
+                        ],
+                        Text(
+                          entry.isBatch
+                              ? 'BATCH'
+                              : _getModeLabel(entry.mode).toUpperCase(),
+                          style: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Bottom banner overlay with clean gradient
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withOpacity(0.85),
+                          Colors.black.withOpacity(0.4),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                entry.isBatch
+                                    ? 'Batch (${entry.batchItems?.length} items)'
+                                    : entry.outputPath.split('/').last,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const Gap(1),
+                              Text(
+                                entry.isBatch
+                                    ? '${formatBytes(entry.newSize)} total'
+                                    : '${formatBytes(entry.newSize)} \u2022 ${_formatDimension(entry)}',
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.75),
+                                    fontSize: 9),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (entry.originalSize > entry.newSize &&
+                            entry.savedPercent > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '-${entry.savedPercent.toStringAsFixed(0)}%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGridThumbnail(HistoryEntry entry, ColorScheme cs) {
+    if (!entry.isBatch ||
+        entry.batchItems == null ||
+        entry.batchItems!.isEmpty) {
+      return Image.file(
+        File(entry.outputPath),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: cs.surfaceContainerHighest,
+          child: const Icon(Icons.broken_image_outlined,
+              size: 36, color: Colors.white30),
+        ),
+      );
+    }
+
+    final items = entry.batchItems!;
+    if (items.length == 1) {
+      final path = items[0]['outputPath'] as String;
+      return Image.file(
+        File(path),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: cs.surfaceContainerHighest,
+          child: const Icon(Icons.broken_image_outlined,
+              size: 36, color: Colors.white30),
+        ),
+      );
+    } else if (items.length == 2) {
+      return Row(
+        children: [
+          Expanded(
+            child: Image.file(
+              File(items[0]['outputPath'] as String),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Container(color: cs.surfaceContainerHighest),
+            ),
+          ),
+          const VerticalDivider(width: 2, thickness: 2, color: Colors.black26),
+          Expanded(
+            child: Image.file(
+              File(items[1]['outputPath'] as String),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Container(color: cs.surfaceContainerHighest),
+            ),
+          ),
+        ],
+      );
+    } else if (items.length == 3) {
+      return Row(
+        children: [
+          Expanded(
+            child: Image.file(
+              File(items[0]['outputPath'] as String),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Container(color: cs.surfaceContainerHighest),
+            ),
+          ),
+          const VerticalDivider(width: 2, thickness: 2, color: Colors.black26),
+          Expanded(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Image.file(
+                    File(items[1]['outputPath'] as String),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: cs.surfaceContainerHighest),
+                  ),
+                ),
+                const Divider(height: 2, thickness: 2, color: Colors.black26),
+                Expanded(
+                  child: Image.file(
+                    File(items[2]['outputPath'] as String),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: cs.surfaceContainerHighest),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else {
+      // 4 or more items
+      return Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Image.file(
+                    File(items[0]['outputPath'] as String),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: cs.surfaceContainerHighest),
+                  ),
+                ),
+                const VerticalDivider(
+                    width: 2, thickness: 2, color: Colors.black26),
+                Expanded(
+                  child: Image.file(
+                    File(items[1]['outputPath'] as String),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: cs.surfaceContainerHighest),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 2, thickness: 2, color: Colors.black26),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Image.file(
+                    File(items[2]['outputPath'] as String),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: cs.surfaceContainerHighest),
+                  ),
+                ),
+                const VerticalDivider(
+                    width: 2, thickness: 2, color: Colors.black26),
+                Expanded(
+                  child: Image.file(
+                    File(items[3]['outputPath'] as String),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: cs.surfaceContainerHighest),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+  }
+
   // ─── Single Item Layout ─────────────────────────────────────────────────────
   Widget _buildSingleCard(
       BuildContext context, HistoryEntry entry, ColorScheme cs, TextTheme tt) {
     final modeColor = _getModeColor(entry.mode);
-    final savedPercent = entry.savedPercent;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -432,7 +763,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               if (File(entry.outputPath).existsSync()) {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => _FullscreenViewer(path: entry.outputPath),
+                    builder: (_) => _HistoryEntryViewer(entry: entry),
                   ),
                 );
               } else {
@@ -495,8 +826,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                             decoration: BoxDecoration(
                               color: modeColor.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                  color: modeColor.withOpacity(0.3)),
+                              border:
+                                  Border.all(color: modeColor.withOpacity(0.3)),
                             ),
                             child: Text(
                               _getModeLabel(entry.mode),
@@ -637,12 +968,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           const Gap(4),
           Text(
             'Output File Size: ${formatBytes(entry.newSize)}',
-            style: tt.bodySmall?.copyWith(fontSize: 10.5, fontWeight: FontWeight.w500),
+            style: tt.bodySmall
+                ?.copyWith(fontSize: 10.5, fontWeight: FontWeight.w500),
           ),
         ],
       );
     } else if (entry.mode == 'convert') {
-      final origFmt = entry.originalFormat.isNotEmpty ? entry.originalFormat : 'IMG';
+      final origFmt =
+          entry.originalFormat.isNotEmpty ? entry.originalFormat : 'IMG';
       final newFmt = entry.newFormat.isNotEmpty ? entry.newFormat : 'JPG';
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -688,7 +1021,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           const Gap(4),
           Text(
             'Output File Size: ${formatBytes(entry.newSize)}',
-            style: tt.bodySmall?.copyWith(fontSize: 10.5, fontWeight: FontWeight.w500),
+            style: tt.bodySmall
+                ?.copyWith(fontSize: 10.5, fontWeight: FontWeight.w500),
           ),
         ],
       );
@@ -766,7 +1100,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     if (File(path).existsSync()) {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => _FullscreenViewer(path: path),
+                          builder: (_) => _HistoryEntryViewer(
+                              entry: entry, initialIndex: i),
                         ),
                       );
                     } else {
@@ -814,50 +1149,59 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ),
           ),
           const Gap(12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Grouped Batch: ${entry.batchItems!.length} images',
-                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const Gap(3),
-              Row(
-                children: [
-                  Text(
-                    formatBytes(entry.originalSize),
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: cs.onSurfaceVariant.withOpacity(0.6),
-                      decoration: TextDecoration.lineThrough,
-                    ),
-                  ),
-                  const Gap(6),
-                  Icon(Icons.east_rounded,
-                      size: 11, color: cs.onSurfaceVariant.withOpacity(0.5)),
-                  const Gap(6),
-                  Text(
-                    formatBytes(entry.newSize),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  if (positiveReduction && entry.savedPercent > 0) ...[
-                    const Gap(8),
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => _HistoryEntryViewer(entry: entry),
+                ),
+              );
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Grouped Batch: ${entry.batchItems!.length} images',
+                  style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const Gap(3),
+                Row(
+                  children: [
                     Text(
-                      '-${entry.savedPercent.toStringAsFixed(1)}%',
-                      style: const TextStyle(
-                        color: AppColors.success,
+                      formatBytes(entry.originalSize),
+                      style: TextStyle(
                         fontSize: 12.5,
-                        fontWeight: FontWeight.w800,
+                        color: cs.onSurfaceVariant.withOpacity(0.6),
+                        decoration: TextDecoration.lineThrough,
                       ),
                     ),
+                    const Gap(6),
+                    Icon(Icons.east_rounded,
+                        size: 11, color: cs.onSurfaceVariant.withOpacity(0.5)),
+                    const Gap(6),
+                    Text(
+                      formatBytes(entry.newSize),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    if (positiveReduction && entry.savedPercent > 0) ...[
+                      const Gap(8),
+                      Text(
+                        '-${entry.savedPercent.toStringAsFixed(1)}%',
+                        style: const TextStyle(
+                          color: AppColors.success,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
           const Divider(height: 20),
           Row(
@@ -1084,32 +1428,821 @@ class _ItemActionButton extends StatelessWidget {
   }
 }
 
-class _FullscreenViewer extends StatelessWidget {
-  final String path;
-  const _FullscreenViewer({required this.path});
+class _HistoryEntryViewer extends ConsumerStatefulWidget {
+  final HistoryEntry entry;
+  final int initialIndex;
+  const _HistoryEntryViewer({required this.entry, this.initialIndex = 0});
+
+  @override
+  ConsumerState<_HistoryEntryViewer> createState() =>
+      _HistoryEntryViewerState();
+}
+
+class _HistoryEntryViewerState extends ConsumerState<_HistoryEntryViewer> {
+  late int _currentBatchIndex;
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentBatchIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  Color _getModeColor(String mode) {
+    switch (mode) {
+      case 'compress':
+        return AppColors.compress;
+      case 'resize':
+        return AppColors.resize;
+      case 'convert':
+        return AppColors.convert;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  String _getModeLabel(String mode) {
+    switch (mode) {
+      case 'compress':
+        return 'Compress';
+      case 'resize':
+        return 'Resize';
+      case 'convert':
+        return 'Convert';
+      default:
+        return mode.toUpperCase();
+    }
+  }
+
+  String _formatDate(int timestamp) {
+    final dt = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    final minutes = dt.minute.toString().padLeft(2, '0');
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year} \u2022 $hour:$minutes $ampm';
+  }
+
+  void _shareIndividual(HistoryEntry entry) async {
+    final file = File(entry.outputPath);
+    if (file.existsSync()) {
+      await Share.shareXFiles([XFile(entry.outputPath)]);
+    } else {
+      _showErrorSnackBar('Original file not found on disk.');
+    }
+  }
+
+  void _saveIndividual(HistoryEntry entry) async {
+    try {
+      final file = File(entry.outputPath);
+      if (!file.existsSync()) {
+        _showErrorSnackBar('Original file not found on disk.');
+        return;
+      }
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        await Gal.requestAccess();
+      }
+      await Gal.putImage(entry.outputPath, album: 'ImageResizer');
+      _showSuccessSnackBar('Saved to photos gallery!');
+    } catch (e) {
+      _showErrorSnackBar('Save failed: $e');
+    }
+  }
+
+  void _shareBatch(HistoryEntry entry) async {
+    if (entry.batchItems == null) return;
+    final List<XFile> files = [];
+    for (var item in entry.batchItems!) {
+      final path = item['outputPath'] as String?;
+      if (path != null && File(path).existsSync()) {
+        files.add(XFile(path));
+      }
+    }
+    if (files.isNotEmpty) {
+      await Share.shareXFiles(files);
+    } else {
+      _showErrorSnackBar('No files found on disk for this batch.');
+    }
+  }
+
+  void _saveBatch(HistoryEntry entry) async {
+    if (entry.batchItems == null) return;
+    try {
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        await Gal.requestAccess();
+      }
+      int saved = 0;
+      for (var item in entry.batchItems!) {
+        final path = item['outputPath'] as String?;
+        if (path != null && File(path).existsSync()) {
+          await Gal.putImage(path, album: 'ImageResizer');
+          saved++;
+        }
+      }
+      if (saved > 0) {
+        _showSuccessSnackBar('$saved images saved to gallery!');
+      } else {
+        _showErrorSnackBar('No files found on disk to save.');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Save failed: $e');
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _showBatchActionOptions({
+    required BuildContext context,
+    required String title,
+    required String activeLabel,
+    required VoidCallback onActive,
+    required String batchLabel,
+    required VoidCallback onBatch,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: const Color(0xFF1E1E1E),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const Divider(color: Colors.white12),
+              ListTile(
+                leading:
+                    const Icon(Icons.photo_outlined, color: Colors.white70),
+                title: Text(activeLabel,
+                    style: const TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onActive();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.style_rounded, color: Colors.white70),
+                title: Text(batchLabel,
+                    style: const TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onBatch();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    final historyState = ref.watch(historyProvider);
+    final entry = historyState.entries.firstWhere(
+      (e) => e.id == widget.entry.id,
+      orElse: () => widget.entry,
+    );
+
+    final modeColor = _getModeColor(entry.mode);
+
+    final isBatch = entry.isBatch &&
+        entry.batchItems != null &&
+        entry.batchItems!.isNotEmpty;
+    final totalItems = isBatch ? entry.batchItems!.length : 1;
+
+    // Clamp _currentBatchIndex to ensure it's not out of bounds
+    final displayIndex = _currentBatchIndex.clamp(0, totalItems - 1);
+    final currentItem = isBatch ? entry.batchItems![displayIndex] : null;
+
     return Scaffold(
       backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Preview', style: TextStyle(color: Colors.white)),
-      ),
-      body: InteractiveViewer(
-        minScale: 0.5,
-        maxScale: 6.0,
-        child: Center(
-          child: Image.file(
-            File(path),
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Icon(
-              Icons.broken_image_outlined,
-              color: Colors.white54,
-              size: 64,
+        backgroundColor: Colors.black.withOpacity(0.4),
+        elevation: 0,
+        leading: IconButton(
+          icon:
+              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isBatch
+                  ? 'Batch Preview (${displayIndex + 1} of $totalItems)'
+                  : 'Image Preview',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold),
+            ),
+            Text(
+              _formatDate(entry.timestamp),
+              style:
+                  TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
+            ),
+          ],
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: modeColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: modeColor.withOpacity(0.4)),
+            ),
+            child: Text(
+              isBatch
+                  ? 'BATCH ${_getModeLabel(entry.mode).toUpperCase()}'
+                  : _getModeLabel(entry.mode).toUpperCase(),
+              style: TextStyle(
+                  color: modeColor, fontSize: 10, fontWeight: FontWeight.w900),
             ),
           ),
+        ],
+      ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background/Interactive viewer
+          Positioned.fill(
+            child: isBatch
+                ? PageView.builder(
+                    controller: _pageController,
+                    itemCount: totalItems,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentBatchIndex = index;
+                      });
+                    },
+                    itemBuilder: (context, i) {
+                      final path = entry.batchItems![i]['outputPath'] as String;
+                      return _buildInteractiveImage(path);
+                    },
+                  )
+                : _buildInteractiveImage(entry.outputPath),
+          ),
+
+          // Bottom Details & Actions Panel
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.0),
+                    Colors.black.withOpacity(0.7),
+                    Colors.black.withOpacity(0.95),
+                  ],
+                  stops: const [0.0, 0.3, 1.0],
+                ),
+              ),
+              padding: EdgeInsets.fromLTRB(
+                  20, 40, 20, MediaQuery.of(context).padding.bottom + 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Metadata stats overlay
+                  _buildStatsOverlay(entry, currentItem, cs, tt),
+                  const Gap(16),
+
+                  // Divider
+                  Container(
+                    height: 1,
+                    color: Colors.white.withOpacity(0.15),
+                  ),
+                  const Gap(16),
+
+                  // Three action buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _ViewerActionButton(
+                        icon: Icons.share_rounded,
+                        label: 'Share',
+                        onTap: () {
+                          if (isBatch) {
+                            _showBatchActionOptions(
+                              context: context,
+                              title: 'Share Options',
+                              activeLabel: 'Share current image only',
+                              onActive: () {
+                                final path =
+                                    currentItem!['outputPath'] as String;
+                                if (File(path).existsSync()) {
+                                  Share.shareXFiles([XFile(path)]);
+                                } else {
+                                  _showErrorSnackBar('File not found on disk.');
+                                }
+                              },
+                              batchLabel: 'Share entire batch ($totalItems)',
+                              onBatch: () => _shareBatch(entry),
+                            );
+                          } else {
+                            _shareIndividual(entry);
+                          }
+                        },
+                      ),
+                      _ViewerActionButton(
+                        icon: Icons.download_rounded,
+                        label: 'Save Gallery',
+                        onTap: () {
+                          if (isBatch) {
+                            _showBatchActionOptions(
+                              context: context,
+                              title: 'Save Options',
+                              activeLabel: 'Save current image to gallery',
+                              onActive: () async {
+                                try {
+                                  final path =
+                                      currentItem!['outputPath'] as String;
+                                  if (!File(path).existsSync()) {
+                                    _showErrorSnackBar(
+                                        'File not found on disk.');
+                                    return;
+                                  }
+                                  final hasAccess = await Gal.hasAccess();
+                                  if (!hasAccess) {
+                                    await Gal.requestAccess();
+                                  }
+                                  await Gal.putImage(path,
+                                      album: 'ImageResizer');
+                                  _showSuccessSnackBar(
+                                      'Saved to photos gallery!');
+                                } catch (e) {
+                                  _showErrorSnackBar('Save failed: $e');
+                                }
+                              },
+                              batchLabel: 'Save entire batch ($totalItems)',
+                              onBatch: () => _saveBatch(entry),
+                            );
+                          } else {
+                            _saveIndividual(entry);
+                          }
+                        },
+                      ),
+                      _ViewerActionButton(
+                        icon: Icons.delete_outline_rounded,
+                        label: 'Delete',
+                        color: AppColors.error,
+                        onTap: () {
+                          if (isBatch) {
+                            _showBatchActionOptions(
+                              context: context,
+                              title: 'Delete Options',
+                              activeLabel: 'Remove current image from batch',
+                              onActive: () {
+                                final messenger = ScaffoldMessenger.of(context);
+                                final itemPath =
+                                    currentItem!['outputPath'] as String;
+                                final isLast = entry.batchItems!.length <= 1;
+                                if (isLast) {
+                                  Navigator.pop(context);
+                                  ref
+                                      .read(historyProvider.notifier)
+                                      .deleteEntry(entry.id);
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: const Text('Item removed.'),
+                                      backgroundColor: AppColors.success,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                    ),
+                                  );
+                                } else {
+                                  ref
+                                      .read(historyProvider.notifier)
+                                      .deleteBatchItem(entry.id, itemPath);
+                                  setState(() {
+                                    if (_currentBatchIndex >=
+                                        entry.batchItems!.length - 1) {
+                                      _currentBatchIndex =
+                                          entry.batchItems!.length - 2;
+                                    }
+                                  });
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: const Text(
+                                          'Image removed from batch.'),
+                                      backgroundColor: AppColors.success,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                    ),
+                                  );
+                                }
+                              },
+                              batchLabel: 'Delete entire batch group',
+                              onBatch: () {
+                                final messenger = ScaffoldMessenger.of(context);
+                                Navigator.pop(context);
+                                ref
+                                    .read(historyProvider.notifier)
+                                    .deleteEntry(entry.id);
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content:
+                                        const Text('Grouped batch removed.'),
+                                    backgroundColor: AppColors.success,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                  ),
+                                );
+                              },
+                            );
+                          } else {
+                            final messenger = ScaffoldMessenger.of(context);
+                            Navigator.pop(context);
+                            ref
+                                .read(historyProvider.notifier)
+                                .deleteEntry(entry.id);
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: const Text('Item removed.'),
+                                backgroundColor: AppColors.success,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10)),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInteractiveImage(String path) {
+    return InteractiveViewer(
+      minScale: 0.5,
+      maxScale: 6.0,
+      child: Center(
+        child: Image.file(
+          File(path),
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const Icon(
+            Icons.broken_image_outlined,
+            color: Colors.white54,
+            size: 64,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsOverlay(HistoryEntry entry,
+      Map<String, dynamic>? currentItem, ColorScheme cs, TextTheme tt) {
+    // For single item
+    if (currentItem == null) {
+      if (entry.mode == 'compress') {
+        final percent = entry.savedPercent;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  formatBytes(entry.originalSize),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.white60,
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ),
+                const Gap(8),
+                const Icon(Icons.east_rounded, size: 12, color: Colors.white54),
+                const Gap(8),
+                Text(
+                  formatBytes(entry.newSize),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                if (entry.originalSize > entry.newSize && percent > 0) ...[
+                  const Gap(10),
+                  Text(
+                    '-${percent.toStringAsFixed(1)}%',
+                    style: const TextStyle(
+                      color: AppColors.success,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const Gap(4),
+            const Text(
+              'Compression Optimization',
+              style: TextStyle(color: Colors.white38, fontSize: 11),
+            ),
+          ],
+        );
+      } else if (entry.mode == 'resize') {
+        final hasOrigDims = entry.originalWidth > 0 && entry.originalHeight > 0;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (hasOrigDims) ...[
+                  Text(
+                    '${entry.originalWidth}x${entry.originalHeight}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white60,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                  const Gap(8),
+                  const Icon(Icons.east_rounded,
+                      size: 12, color: Colors.white54),
+                  const Gap(8),
+                ],
+                Text(
+                  '${entry.width} x ${entry.height}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.resize,
+                  ),
+                ),
+              ],
+            ),
+            const Gap(4),
+            Text(
+              'Output File Size: ${formatBytes(entry.newSize)}',
+              style: const TextStyle(color: Colors.white38, fontSize: 11),
+            ),
+          ],
+        );
+      } else if (entry.mode == 'convert') {
+        final origFmt =
+            entry.originalFormat.isNotEmpty ? entry.originalFormat : 'IMG';
+        final newFmt = entry.newFormat.isNotEmpty ? entry.newFormat : 'JPG';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white12,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    origFmt,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ),
+                const Gap(8),
+                const Icon(Icons.east_rounded, size: 12, color: Colors.white54),
+                const Gap(8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.convert.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    newFmt,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.convert,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Gap(4),
+            Text(
+              'Output File Size: ${formatBytes(entry.newSize)}',
+              style: const TextStyle(color: Colors.white38, fontSize: 11),
+            ),
+          ],
+        );
+      }
+      return Text(
+        'File size: ${formatBytes(entry.newSize)}',
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+      );
+    } else {
+      // For batch items
+      final itemSize = currentItem['newSize'] as int? ?? 0;
+      final itemWidth = currentItem['width'] as int? ?? 0;
+      final itemHeight = currentItem['height'] as int? ?? 0;
+
+      final totalReduction = entry.originalSize > entry.newSize;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Current Image Info',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    'Size: ${formatBytes(itemSize)}' +
+                        (itemWidth > 0
+                            ? ' \u2022 ${itemWidth}x$itemHeight px'
+                            : ''),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Batch Total',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    formatBytes(entry.newSize) +
+                        (totalReduction
+                            ? ' (-${entry.savedPercent.toStringAsFixed(0)}%)'
+                            : ''),
+                    style: const TextStyle(
+                      color: AppColors.batch,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+  }
+}
+
+class _ViewerActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+
+  const _ViewerActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final displayColor = color ?? Colors.white.withOpacity(0.9);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 100,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color != null
+              ? color!.withOpacity(0.1)
+              : Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: color != null
+                ? color!.withOpacity(0.3)
+                : Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: displayColor, size: 22),
+            const Gap(6),
+            Text(
+              label,
+              style: TextStyle(
+                color: displayColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );
