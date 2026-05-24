@@ -63,6 +63,8 @@ class PickerNotifier extends Notifier<PickerState> {
   }
 
   void reset() => state = PickerIdle();
+
+  void setImage(SelectedImage image) => state = PickerLoaded(image);
 }
 
 final pickerProvider = NotifierProvider<PickerNotifier, PickerState>(

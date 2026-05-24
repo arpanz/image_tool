@@ -9,6 +9,7 @@ import '../../core/utils/ad_manager.dart';
 import '../../core/utils/app_review_service.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/widgets/pf_button.dart';
+import '../../core/providers/history_provider.dart';
 import '../home/home_screen.dart';
 import 'batch_controller.dart';
 
@@ -33,6 +34,19 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
           state.items.any((i) => i.status == BatchItemStatus.done);
       if (hasSuccess) {
         AppReviewService.registerSuccessfulAction();
+        for (final item in state.items) {
+          if (item.status == BatchItemStatus.done && item.result != null) {
+            ref.read(historyProvider.notifier).addEntry(
+                  originalSize: item.image.originalSize,
+                  newSize: item.result!.newSize,
+                  savedPercent: item.result!.savedPercent,
+                  tempOutputPath: item.result!.outputPath,
+                  width: item.result!.outWidth,
+                  height: item.result!.outHeight,
+                  mode: mode.name,
+                );
+          }
+        }
       }
     });
   }

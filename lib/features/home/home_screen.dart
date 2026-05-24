@@ -9,6 +9,9 @@ import '../../features/settings/settings_screen.dart';
 import '../batch/batch_entry_screen.dart';
 import '../convert/convert_screen.dart';
 import '../mode_entry/mode_entry_screen.dart';
+import '../../core/providers/history_provider.dart';
+import '../../core/utils/image_processor.dart';
+import '../history/history_screen.dart';
 
 enum ImageMode { compress, resize, convert }
 
@@ -146,6 +149,106 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 itemBuilder: (context, index) =>
                     _ModeGridTile(data: tiles[index]),
+              ),
+              const Gap(16),
+              // ── History Control Card ─────────────────────────────────────────
+              Consumer(
+                builder: (context, ref, child) {
+                  final historyState = ref.watch(historyProvider);
+                  final historyNotifier = ref.read(historyProvider.notifier);
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(24),
+                      border:
+                          Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: cs.primary.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(Icons.history_rounded,
+                                  color: cs.primary, size: 22),
+                            ),
+                            const Gap(14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Processing History',
+                                    style: tt.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const Gap(2),
+                                  Text(
+                                    historyState.isEnabled
+                                        ? 'Saving processed images locally'
+                                        : 'History recording is paused',
+                                    style: tt.bodySmall?.copyWith(
+                                      color: cs.onSurfaceVariant
+                                          .withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: historyState.isEnabled,
+                              onChanged: (val) {
+                                historyNotifier.setEnabled(val);
+                              },
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              historyState.entries.isNotEmpty
+                                  ? '${historyState.entries.length} items saved (${formatBytes(historyNotifier.totalDiskUsage)})'
+                                  : 'No items saved yet',
+                              style: tt.bodySmall?.copyWith(
+                                fontWeight: historyState.entries.isNotEmpty
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) => const HistoryScreen()),
+                                );
+                              },
+                              icon: const Icon(Icons.arrow_forward_rounded,
+                                  size: 16),
+                              label: Text(historyState.entries.isNotEmpty
+                                  ? 'View History'
+                                  : 'Open History'),
+                              style: TextButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 10),
+                                foregroundColor: cs.primary,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
               const Gap(16),
               AdManager.instance.getMediumNativeAdWidget(),

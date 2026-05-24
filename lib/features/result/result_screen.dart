@@ -10,6 +10,7 @@ import '../../core/utils/ad_manager.dart';
 import '../../core/utils/app_review_service.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/widgets/pf_button.dart';
+import '../../core/providers/history_provider.dart';
 import '../editor/editor_controller.dart';
 import '../home/home_screen.dart';
 import '../picker/picker_controller.dart';
@@ -37,6 +38,15 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AppReviewService.registerSuccessfulAction();
+      ref.read(historyProvider.notifier).addEntry(
+        originalSize: result.originalSize,
+        newSize: result.newSize,
+        savedPercent: result.savedPercent,
+        tempOutputPath: result.outputPath,
+        width: result.outWidth,
+        height: result.outHeight,
+        mode: mode.name,
+      );
     });
   }
 
