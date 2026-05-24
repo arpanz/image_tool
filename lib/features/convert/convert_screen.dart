@@ -228,7 +228,7 @@ class _ConvertScreenState extends ConsumerState<ConvertScreen> {
   }
 
   Future<void> _pickImage() async {
-    await ref.read(pickerProvider.notifier).pickImage();
+    await ref.read(pickerProvider.notifier).pickImageWithFilePicker();
   }
 
   Future<void> _convert() async {
