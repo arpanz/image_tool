@@ -15,6 +15,39 @@ import 'package:image_resizer/main.dart';
 import 'package:image_resizer/core/providers/history_provider.dart';
 import 'package:image_resizer/core/utils/ad_manager.dart';
 
+class FakeHiveBox extends Fake implements Box {
+  final Map<dynamic, dynamic> _map = {};
+
+  @override
+  Iterable<dynamic> get keys => _map.keys;
+
+  @override
+  dynamic get(dynamic key, {dynamic defaultValue}) => _map[key] ?? defaultValue;
+
+  @override
+  Future<void> put(dynamic key, dynamic value) async {
+    _map[key] = value;
+  }
+
+  @override
+  Future<void> delete(dynamic key) async {
+    _map.remove(key);
+  }
+
+  @override
+  Future<int> clear() async {
+    final len = _map.length;
+    _map.clear();
+    return len;
+  }
+
+  @override
+  bool containsKey(dynamic key) => _map.containsKey(key);
+
+  @override
+  Future<void> close() async {}
+}
+
 void main() {
   testWidgets('app shows the Image Resizer home screen',
       (WidgetTester tester) async {
@@ -28,16 +61,13 @@ void main() {
     // Set AdManager premium state to disable ads and platform channel calls
     await AdManager.instance.enableProVersion();
 
-    // Initialize Hive in a temporary directory for tests
-    final tempDir = Directory.systemTemp.createTempSync();
-    Hive.init(tempDir.path);
-    final box = await Hive.openBox('image_history');
+    final fakeBox = FakeHiveBox();
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
-          hiveBoxProvider.overrideWithValue(box),
+          hiveBoxProvider.overrideWithValue(fakeBox),
         ],
         child: const ImageResizerApp(),
       ),
@@ -47,9 +77,5 @@ void main() {
     await tester.pump();
 
     expect(find.text('Image Resizer'), findsWidgets);
-
-    // Clean up temporary Hive files
-    await box.close();
-    tempDir.deleteSync(recursive: true);
   });
 }
