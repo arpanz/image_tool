@@ -81,7 +81,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   void _shareIndividual(HistoryEntry entry) async {
     final file = File(entry.outputPath);
     if (file.existsSync()) {
-      await Share.shareXFiles([XFile(entry.outputPath)]);
+      AdManager.instance.showHistoryInterstitial(
+        context,
+        onAdDismissed: () async {
+          await Share.shareXFiles([XFile(entry.outputPath)]);
+        },
+      );
     } else {
       _showErrorSnackBar('Original file not found on disk.');
     }
@@ -94,12 +99,21 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         _showErrorSnackBar('Original file not found on disk.');
         return;
       }
-      final hasAccess = await Gal.hasAccess();
-      if (!hasAccess) {
-        await Gal.requestAccess();
-      }
-      await Gal.putImage(entry.outputPath, album: 'ImageResizer');
-      _showSuccessSnackBar('Saved to photos gallery!');
+      AdManager.instance.showHistoryInterstitial(
+        context,
+        onAdDismissed: () async {
+          try {
+            final hasAccess = await Gal.hasAccess();
+            if (!hasAccess) {
+              await Gal.requestAccess();
+            }
+            await Gal.putImage(entry.outputPath, album: 'ImageResizer');
+            _showSuccessSnackBar('Saved to photos gallery!');
+          } catch (e) {
+            _showErrorSnackBar('Save failed: $e');
+          }
+        },
+      );
     } catch (e) {
       _showErrorSnackBar('Save failed: $e');
     }
@@ -115,7 +129,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       }
     }
     if (files.isNotEmpty) {
-      await Share.shareXFiles(files);
+      AdManager.instance.showHistoryInterstitial(
+        context,
+        onAdDismissed: () async {
+          await Share.shareXFiles(files);
+        },
+      );
     } else {
       _showErrorSnackBar('No files found on disk for this batch.');
     }
@@ -128,19 +147,28 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       if (!hasAccess) {
         await Gal.requestAccess();
       }
-      int saved = 0;
-      for (var item in entry.batchItems!) {
-        final path = item['outputPath'] as String?;
-        if (path != null && File(path).existsSync()) {
-          await Gal.putImage(path, album: 'ImageResizer');
-          saved++;
-        }
-      }
-      if (saved > 0) {
-        _showSuccessSnackBar('$saved images saved to gallery!');
-      } else {
-        _showErrorSnackBar('No files found on disk to save.');
-      }
+      AdManager.instance.showHistoryInterstitial(
+        context,
+        onAdDismissed: () async {
+          try {
+            int saved = 0;
+            for (var item in entry.batchItems!) {
+              final path = item['outputPath'] as String?;
+              if (path != null && File(path).existsSync()) {
+                await Gal.putImage(path, album: 'ImageResizer');
+                saved++;
+              }
+            }
+            if (saved > 0) {
+              _showSuccessSnackBar('$saved images saved to gallery!');
+            } else {
+              _showErrorSnackBar('No files found on disk to save.');
+            }
+          } catch (e) {
+            _showErrorSnackBar('Save failed: $e');
+          }
+        },
+      );
     } catch (e) {
       _showErrorSnackBar('Save failed: $e');
     }
@@ -1501,7 +1529,12 @@ class _HistoryEntryViewerState extends ConsumerState<_HistoryEntryViewer> {
   void _shareIndividual(HistoryEntry entry) async {
     final file = File(entry.outputPath);
     if (file.existsSync()) {
-      await Share.shareXFiles([XFile(entry.outputPath)]);
+      AdManager.instance.showHistoryInterstitial(
+        context,
+        onAdDismissed: () async {
+          await Share.shareXFiles([XFile(entry.outputPath)]);
+        },
+      );
     } else {
       _showErrorSnackBar('Original file not found on disk.');
     }
@@ -1514,12 +1547,21 @@ class _HistoryEntryViewerState extends ConsumerState<_HistoryEntryViewer> {
         _showErrorSnackBar('Original file not found on disk.');
         return;
       }
-      final hasAccess = await Gal.hasAccess();
-      if (!hasAccess) {
-        await Gal.requestAccess();
-      }
-      await Gal.putImage(entry.outputPath, album: 'ImageResizer');
-      _showSuccessSnackBar('Saved to photos gallery!');
+      AdManager.instance.showHistoryInterstitial(
+        context,
+        onAdDismissed: () async {
+          try {
+            final hasAccess = await Gal.hasAccess();
+            if (!hasAccess) {
+              await Gal.requestAccess();
+            }
+            await Gal.putImage(entry.outputPath, album: 'ImageResizer');
+            _showSuccessSnackBar('Saved to photos gallery!');
+          } catch (e) {
+            _showErrorSnackBar('Save failed: $e');
+          }
+        },
+      );
     } catch (e) {
       _showErrorSnackBar('Save failed: $e');
     }
@@ -1535,7 +1577,12 @@ class _HistoryEntryViewerState extends ConsumerState<_HistoryEntryViewer> {
       }
     }
     if (files.isNotEmpty) {
-      await Share.shareXFiles(files);
+      AdManager.instance.showHistoryInterstitial(
+        context,
+        onAdDismissed: () async {
+          await Share.shareXFiles(files);
+        },
+      );
     } else {
       _showErrorSnackBar('No files found on disk for this batch.');
     }
@@ -1548,19 +1595,28 @@ class _HistoryEntryViewerState extends ConsumerState<_HistoryEntryViewer> {
       if (!hasAccess) {
         await Gal.requestAccess();
       }
-      int saved = 0;
-      for (var item in entry.batchItems!) {
-        final path = item['outputPath'] as String?;
-        if (path != null && File(path).existsSync()) {
-          await Gal.putImage(path, album: 'ImageResizer');
-          saved++;
-        }
-      }
-      if (saved > 0) {
-        _showSuccessSnackBar('$saved images saved to gallery!');
-      } else {
-        _showErrorSnackBar('No files found on disk to save.');
-      }
+      AdManager.instance.showHistoryInterstitial(
+        context,
+        onAdDismissed: () async {
+          try {
+            int saved = 0;
+            for (var item in entry.batchItems!) {
+              final path = item['outputPath'] as String?;
+              if (path != null && File(path).existsSync()) {
+                await Gal.putImage(path, album: 'ImageResizer');
+                saved++;
+              }
+            }
+            if (saved > 0) {
+              _showSuccessSnackBar('$saved images saved to gallery!');
+            } else {
+              _showErrorSnackBar('No files found on disk to save.');
+            }
+          } catch (e) {
+            _showErrorSnackBar('Save failed: $e');
+          }
+        },
+      );
     } catch (e) {
       _showErrorSnackBar('Save failed: $e');
     }
@@ -1794,7 +1850,12 @@ class _HistoryEntryViewerState extends ConsumerState<_HistoryEntryViewer> {
                                 final path =
                                     currentItem!['outputPath'] as String;
                                 if (File(path).existsSync()) {
-                                  Share.shareXFiles([XFile(path)]);
+                                  AdManager.instance.showHistoryInterstitial(
+                                    context,
+                                    onAdDismissed: () async {
+                                      await Share.shareXFiles([XFile(path)]);
+                                    },
+                                  );
                                 } else {
                                   _showErrorSnackBar('File not found on disk.');
                                 }
@@ -1817,25 +1878,29 @@ class _HistoryEntryViewerState extends ConsumerState<_HistoryEntryViewer> {
                               title: 'Save Options',
                               activeLabel: 'Save current image to gallery',
                               onActive: () async {
-                                try {
-                                  final path =
-                                      currentItem!['outputPath'] as String;
-                                  if (!File(path).existsSync()) {
-                                    _showErrorSnackBar(
-                                        'File not found on disk.');
-                                    return;
-                                  }
-                                  final hasAccess = await Gal.hasAccess();
-                                  if (!hasAccess) {
-                                    await Gal.requestAccess();
-                                  }
-                                  await Gal.putImage(path,
-                                      album: 'ImageResizer');
-                                  _showSuccessSnackBar(
-                                      'Saved to photos gallery!');
-                                } catch (e) {
-                                  _showErrorSnackBar('Save failed: $e');
+                                final path =
+                                    currentItem!['outputPath'] as String;
+                                if (!File(path).existsSync()) {
+                                  _showErrorSnackBar('File not found on disk.');
+                                  return;
                                 }
+                                AdManager.instance.showHistoryInterstitial(
+                                  context,
+                                  onAdDismissed: () async {
+                                    try {
+                                      final hasAccess = await Gal.hasAccess();
+                                      if (!hasAccess) {
+                                        await Gal.requestAccess();
+                                      }
+                                      await Gal.putImage(path,
+                                          album: 'ImageResizer');
+                                      _showSuccessSnackBar(
+                                          'Saved to photos gallery!');
+                                    } catch (e) {
+                                      _showErrorSnackBar('Save failed: $e');
+                                    }
+                                  },
+                                );
                               },
                               batchLabel: 'Save entire batch ($totalItems)',
                               onBatch: () => _saveBatch(entry),

@@ -12,6 +12,9 @@ class AdManager {
   InterstitialAd? _interstitialAd;
   bool _isInterstitialLoading = false;
   int _interstitialRetryAttempt = 0;
+  InterstitialAd? _historyInterstitialAd;
+  bool _isHistoryInterstitialLoading = false;
+  int _historyInterstitialRetryAttempt = 0;
   static const int _maxRetryAttempts = 5;
 
   bool _isPro = false;
@@ -31,15 +34,19 @@ class AdManager {
   // Ad unit IDs
   final String _realBannerId = 'ca-app-pub-4397005408366648/4695380015';
   final String _realInterstitialId = 'ca-app-pub-4397005408366648/5186334601';
+  final String _realHistoryInterstitialId = 'ca-app-pub-4397005408366648/2295812260';
   final String _realNativeId = 'ca-app-pub-4397005408366648/4850604320';
 
   final String _testBannerId = 'ca-app-pub-3940256099942544/6300978111';
   final String _testInterstitialId = 'ca-app-pub-3940256099942544/1033173712';
+  final String _testHistoryInterstitialId = 'ca-app-pub-3940256099942544/1033173712';
   final String _testNativeId = 'ca-app-pub-3940256099942544/2247696110';
 
   String get _bannerId => kDebugMode ? _testBannerId : _realBannerId;
   String get _interstitialId =>
       kDebugMode ? _testInterstitialId : _realInterstitialId;
+  String get _historyInterstitialId =>
+      kDebugMode ? _testHistoryInterstitialId : _realHistoryInterstitialId;
   String get _nativeId => kDebugMode ? _testNativeId : _realNativeId;
 
   static const List<String> _testDeviceIds = [];
@@ -60,6 +67,7 @@ class AdManager {
       }
       await MobileAds.instance.initialize();
       _loadInterstitial();
+      _loadHistoryInterstitial();
     }
   }
 
@@ -98,12 +106,15 @@ class AdManager {
     }
     await MobileAds.instance.initialize();
     _loadInterstitial();
+    _loadHistoryInterstitial();
   }
 
   Future<void> enableProVersion() async {
     _isPro = true;
     _interstitialAd?.dispose();
     _interstitialAd = null;
+    _historyInterstitialAd?.dispose();
+    _historyInterstitialAd = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_premium_user', true);
     debugPrint('AdManager: Premium enabled!');
@@ -136,6 +147,35 @@ class AdManager {
     _interstitialRetryAttempt++;
     final delay = Duration(seconds: 1 << _interstitialRetryAttempt);
     Future.delayed(delay, () => _loadInterstitial());
+  }
+
+  void _loadHistoryInterstitial() {
+    if (_isPro || _isHistoryInterstitialLoading) return;
+    _isHistoryInterstitialLoading = true;
+    InterstitialAd.load(
+      adUnitId: _historyInterstitialId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _historyInterstitialAd = ad;
+          _isHistoryInterstitialLoading = false;
+          _historyInterstitialRetryAttempt = 0;
+        },
+        onAdFailedToLoad: (error) {
+          debugPrint('AdManager: History Interstitial failed: ${error.message}');
+          _historyInterstitialAd = null;
+          _isHistoryInterstitialLoading = false;
+          _retryHistoryInterstitialLoad();
+        },
+      ),
+    );
+  }
+
+  void _retryHistoryInterstitialLoad() {
+    if (_historyInterstitialRetryAttempt >= _maxRetryAttempts) return;
+    _historyInterstitialRetryAttempt++;
+    final delay = Duration(seconds: 1 << _historyInterstitialRetryAttempt);
+    Future.delayed(delay, () => _loadHistoryInterstitial());
   }
 
   void showInterstitial(BuildContext context, {VoidCallback? onAdDismissed}) {
@@ -172,6 +212,44 @@ class AdManager {
       _interstitialAd!.show();
     } else {
       _loadInterstitial();
+      onAdDismissed?.call();
+    }
+  }
+
+  void showHistoryInterstitial(BuildContext context, {VoidCallback? onAdDismissed}) {
+    if (_isPro) {
+      onAdDismissed?.call();
+      return;
+    }
+    if (_historyInterstitialAd != null) {
+      _historyInterstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          _historyInterstitialAd = null;
+          _loadHistoryInterstitial();
+          _interstitialCount++;
+          if (_interstitialCount >= _paywallThreshold) {
+            _interstitialCount = 0;
+            _paywallThreshold++;
+            if (context.mounted && onShowPaywall != null) {
+              onShowPaywall!(context).then((_) => onAdDismissed?.call());
+            } else {
+              onAdDismissed?.call();
+            }
+          } else {
+            onAdDismissed?.call();
+          }
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          _historyInterstitialAd = null;
+          _loadHistoryInterstitial();
+          onAdDismissed?.call();
+        },
+      );
+      _historyInterstitialAd!.show();
+    } else {
+      _loadHistoryInterstitial();
       onAdDismissed?.call();
     }
   }
