@@ -13,13 +13,20 @@ import 'package:hive/hive.dart';
 
 import 'package:image_resizer/main.dart';
 import 'package:image_resizer/core/providers/history_provider.dart';
+import 'package:image_resizer/core/utils/ad_manager.dart';
 
 void main() {
   testWidgets('app shows the Image Resizer home screen',
       (WidgetTester tester) async {
     // Initialize SharedPreferences mock values
-    SharedPreferences.setMockInitialValues({'onboarding_seen_v1': true});
+    SharedPreferences.setMockInitialValues({
+      'onboarding_seen_v1': true,
+      'is_premium_user': true,
+    });
     final prefs = await SharedPreferences.getInstance();
+    
+    // Set AdManager premium state to disable ads and platform channel calls
+    await AdManager.instance.enableProVersion();
 
     // Initialize Hive in a temporary directory for tests
     final tempDir = Directory.systemTemp.createTempSync();

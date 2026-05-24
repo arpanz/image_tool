@@ -25,13 +25,28 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
   final _widthCtrl = TextEditingController();
   final _heightCtrl = TextEditingController();
   final _percentCtrl = TextEditingController(text: '75');
+  late final TextEditingController _targetSizeCtrl;
   bool _usePercentage = false;
+  bool _useTargetSize = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final settings = ref.read(batchProvider).settings;
+    _useTargetSize = settings.targetSizeKB != null;
+    _targetSizeCtrl = TextEditingController(
+      text: settings.targetSizeKB != null
+          ? settings.targetSizeKB.toString()
+          : '',
+    );
+  }
 
   @override
   void dispose() {
     _widthCtrl.dispose();
     _heightCtrl.dispose();
     _percentCtrl.dispose();
+    _targetSizeCtrl.dispose();
     super.dispose();
   }
 
@@ -41,27 +56,71 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
   Color get _accent =>
       _isCompress ? AppColors.compress : AppColors.resize;
 
+  void _updateTargetSizeSettings() {
+    final notifier = ref.read(batchProvider.notifier);
+    final settings = ref.read(batchProvider).settings;
+    if (_useTargetSize) {
+      final kb = int.tryParse(_targetSizeCtrl.text.trim());
+      notifier.updateSettings(settings.copyWith(
+        targetSizeKB: kb != null && kb > 0 ? kb : null,
+        clearTargetSizeKB: kb == null || kb <= 0,
+      ));
+    } else {
+      notifier.updateSettings(settings.copyWith(clearTargetSizeKB: true));
+    }
+  }
+
   Future<void> _processAll() async {
     final notifier = ref.read(batchProvider.notifier);
     final state = ref.read(batchProvider);
 
-    if (!_isCompress) {
-      final current = state.settings;
+    var finalSettings = state.settings;
+
+    if (_isCompress) {
+      if (_useTargetSize) {
+        final kb = int.tryParse(_targetSizeCtrl.text.trim());
+        finalSettings = finalSettings.copyWith(
+          targetSizeKB: kb != null && kb > 0 ? kb : null,
+          clearTargetSizeKB: kb == null || kb <= 0,
+        );
+      } else {
+        finalSettings = finalSettings.copyWith(clearTargetSizeKB: true);
+      }
+      finalSettings = finalSettings.copyWith(
+        clearWidth: true,
+        clearHeight: true,
+        clearResizePercentage: true,
+      );
+    } else {
       if (_usePercentage) {
-        final pct = double.tryParse(_percentCtrl.text.trim()) ?? 75;
-        notifier.updateSettings(current.copyWith(
-          width: null,
-          height: null,
-          targetSizeKB: -(pct.round()),
-          clearTargetSizeKB: false,
-        ));
+        final pct = int.tryParse(_percentCtrl.text.trim()) ?? 75;
+        finalSettings = finalSettings.copyWith(
+          resizePercentage: pct,
+          clearWidth: true,
+          clearHeight: true,
+        );
       } else {
         final w = int.tryParse(_widthCtrl.text.trim());
         final h = int.tryParse(_heightCtrl.text.trim());
-        notifier.updateSettings(
-            current.copyWith(width: w, height: h, clearTargetSizeKB: true));
+        finalSettings = finalSettings.copyWith(
+          width: w,
+          height: h,
+          clearResizePercentage: true,
+        );
+      }
+
+      if (_useTargetSize) {
+        final kb = int.tryParse(_targetSizeCtrl.text.trim());
+        finalSettings = finalSettings.copyWith(
+          targetSizeKB: kb != null && kb > 0 ? kb : null,
+          clearTargetSizeKB: kb == null || kb <= 0,
+        );
+      } else {
+        finalSettings = finalSettings.copyWith(clearTargetSizeKB: true);
       }
     }
+
+    notifier.updateSettings(finalSettings);
 
     await notifier.processAll();
 
@@ -125,6 +184,106 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                             setState(() => _usePercentage = v),
                         onChanged: (s) => notifier.updateSettings(s),
                       ),
+              ),
+              const Gap(12),
+
+              // ── Target file size ─────────────────────────────────
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Target Size', style: tt.labelLarge),
+                        Switch(
+                          value: _useTargetSize,
+                          onChanged: (v) {
+                            setState(() => _useTargetSize = v);
+                            _updateTargetSizeSettings();
+                          },
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'Compress to a specific file size (quality is set automatically)',
+                      style: tt.bodySmall,
+                    ),
+                    if (_useTargetSize) ...[
+                      const Gap(12),
+                      TextField(
+                        controller: _targetSizeCtrl,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          labelText: 'Max file size',
+                          suffixText: 'KB',
+                          hintText: 'e.g. 500',
+                          helperText: _targetSizeCtrl.text.isNotEmpty
+                              ? '≈ ${(int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024 > 1 ? '${((int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024).toStringAsFixed(1)} MB' : '${_targetSizeCtrl.text} KB'}'
+                              : null,
+                        ),
+                        onChanged: (_) {
+                          setState(() {});
+                          _updateTargetSizeSettings();
+                        },
+                      ),
+                      const Gap(8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _SizePresetChip(
+                            label: '100 KB',
+                            onTap: () {
+                              setState(() => _targetSizeCtrl.text = '100');
+                              _updateTargetSizeSettings();
+                            },
+                          ),
+                          _SizePresetChip(
+                            label: '250 KB',
+                            onTap: () {
+                              setState(() => _targetSizeCtrl.text = '250');
+                              _updateTargetSizeSettings();
+                            },
+                          ),
+                          _SizePresetChip(
+                            label: '500 KB',
+                            onTap: () {
+                              setState(() => _targetSizeCtrl.text = '500');
+                              _updateTargetSizeSettings();
+                            },
+                          ),
+                          _SizePresetChip(
+                            label: '1 MB',
+                            onTap: () {
+                              setState(() => _targetSizeCtrl.text = '1024');
+                              _updateTargetSizeSettings();
+                            },
+                          ),
+                          _SizePresetChip(
+                            label: '2 MB',
+                            onTap: () {
+                              setState(() => _targetSizeCtrl.text = '2048');
+                              _updateTargetSizeSettings();
+                            },
+                          ),
+                        ],
+                      ),
+                      if (settings.format.toUpperCase() == 'PNG')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Target size is not supported for PNG. Switch to JPG or WEBP.',
+                            style: tt.bodySmall
+                                ?.copyWith(color: AppColors.error),
+                          ),
+                        ),
+                    ],
+                  ],
+                ),
               ),
               const Gap(12),
 
@@ -815,6 +974,29 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
       ),
       child: child,
+    );
+  }
+}
+
+class _SizePresetChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _SizePresetChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Chip(
+        label: Text(label,
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600)),
+        backgroundColor: cs.surfaceContainerHighest.withOpacity(0.5),
+        side: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+      ),
     );
   }
 }

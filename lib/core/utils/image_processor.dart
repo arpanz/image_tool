@@ -172,7 +172,9 @@ class ImageProcessor {
       final dir = await getTemporaryDirectory();
       final outputPath = '${dir.path}/pf_$timestamp.$ext';
 
-      final bool hasResize = settings.width != null || settings.height != null;
+      final bool hasResize = settings.width != null ||
+          settings.height != null ||
+          settings.resizePercentage != null;
       Uint8List resultBytes;
       int outW = activeOriginalWidth;
       int outH = activeOriginalHeight;
@@ -197,7 +199,11 @@ class ImageProcessor {
         int targetW = settings.width ?? activeOriginalWidth;
         int targetH = settings.height ?? activeOriginalHeight;
 
-        if (settings.keepAspectRatio) {
+        if (settings.resizePercentage != null) {
+          final pct = settings.resizePercentage! / 100.0;
+          targetW = (activeOriginalWidth * pct).round();
+          targetH = (activeOriginalHeight * pct).round();
+        } else if (settings.keepAspectRatio) {
           if (settings.width != null && settings.height == null) {
             targetH =
                 (activeOriginalHeight * targetW / activeOriginalWidth).round();

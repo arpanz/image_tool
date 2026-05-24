@@ -181,20 +181,9 @@ class BatchNotifier extends StateNotifier<BatchState> {
       state = state.copyWith(items: List.from(updatedItems));
 
       try {
-        var itemSettings = state.settings;
-        if (itemSettings.targetSizeKB != null &&
-            itemSettings.targetSizeKB! < 0) {
-          final pct = (-itemSettings.targetSizeKB!) / 100.0;
-          itemSettings = itemSettings.copyWith(
-            width: (updatedItems[i].image.width * pct).round(),
-            height: (updatedItems[i].image.height * pct).round(),
-            clearTargetSizeKB: true,
-          );
-        }
-
         final result = await ImageProcessor.process(
           inputPath: updatedItems[i].image.path,
-          settings: itemSettings,
+          settings: state.settings,
           originalWidth: updatedItems[i].image.width,
           originalHeight: updatedItems[i].image.height,
         );

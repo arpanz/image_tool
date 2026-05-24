@@ -8,6 +8,7 @@ class CompressionSettings {
   final String format;
   final ResizeFitMode fitMode;
   final int? targetSizeKB;
+  final int? resizePercentage;
 
   const CompressionSettings({
     this.quality = 80,
@@ -17,6 +18,7 @@ class CompressionSettings {
     this.format = 'JPG',
     this.fitMode = ResizeFitMode.fit,
     this.targetSizeKB,
+    this.resizePercentage,
   });
 
   CompressionSettings copyWith({
@@ -28,16 +30,22 @@ class CompressionSettings {
     ResizeFitMode? fitMode,
     int? targetSizeKB,
     bool clearTargetSizeKB = false,
+    int? resizePercentage,
+    bool clearResizePercentage = false,
+    bool clearWidth = false,
+    bool clearHeight = false,
   }) {
     return CompressionSettings(
       quality: quality ?? this.quality,
-      width: width ?? this.width,
-      height: height ?? this.height,
+      width: clearWidth ? null : (width ?? this.width),
+      height: clearHeight ? null : (height ?? this.height),
       keepAspectRatio: keepAspectRatio ?? this.keepAspectRatio,
       format: format ?? this.format,
       fitMode: fitMode ?? this.fitMode,
       targetSizeKB:
           clearTargetSizeKB ? null : (targetSizeKB ?? this.targetSizeKB),
+      resizePercentage:
+          clearResizePercentage ? null : (resizePercentage ?? this.resizePercentage),
     );
   }
 }
