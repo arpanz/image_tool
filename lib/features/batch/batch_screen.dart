@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/widgets/pf_button.dart';
+import '../../core/widgets/tool_ui.dart';
 import '../home/home_screen.dart';
 import 'batch_controller.dart';
 import 'batch_result_screen.dart';
@@ -35,9 +36,8 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
     final settings = ref.read(batchProvider).settings;
     _useTargetSize = settings.targetSizeKB != null;
     _targetSizeCtrl = TextEditingController(
-      text: settings.targetSizeKB != null
-          ? settings.targetSizeKB.toString()
-          : '',
+      text:
+          settings.targetSizeKB != null ? settings.targetSizeKB.toString() : '',
     );
   }
 
@@ -53,8 +53,7 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
   bool get _isCompress => widget.mode == ImageMode.compress;
 
   // Mode accent — compress=teal, resize=blue (consistent with editor/result)
-  Color get _accent =>
-      _isCompress ? AppColors.compress : AppColors.resize;
+  Color get _accent => _isCompress ? AppColors.compress : AppColors.resize;
 
   void _updateTargetSizeSettings() {
     final notifier = ref.read(batchProvider.notifier);
@@ -161,281 +160,304 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
               onPressed: state.isProcessing ? null : notifier.clearAll,
               child: Text('Clear all',
                   style: TextStyle(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.w600)),
+                      color: AppColors.error, fontWeight: FontWeight.w600)),
             ),
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Settings card ──────────────────────────────────────────
+                  _SectionCard(
+                    child: _isCompress
+                        ? _CompressSettings(
+                            settings: settings,
+                            accent: _accent,
+                            onChanged: (s) => notifier.updateSettings(s),
+                          )
+                        : _ResizeSettings(
+                            settings: settings,
+                            accent: _accent,
+                            widthCtrl: _widthCtrl,
+                            heightCtrl: _heightCtrl,
+                            percentCtrl: _percentCtrl,
+                            usePercentage: _usePercentage,
+                            onToggle: (v) => setState(() => _usePercentage = v),
+                            onChanged: (s) => notifier.updateSettings(s),
+                          ),
+                  ),
+                  const Gap(12),
 
-              // ── Settings card ──────────────────────────────────────────
-              _SectionCard(
-                child: _isCompress
-                    ? _CompressSettings(
-                        settings: settings,
-                        accent: _accent,
-                        onChanged: (s) => notifier.updateSettings(s),
-                      )
-                    : _ResizeSettings(
-                        settings: settings,
-                        widthCtrl: _widthCtrl,
-                        heightCtrl: _heightCtrl,
-                        percentCtrl: _percentCtrl,
-                        usePercentage: _usePercentage,
-                        onToggle: (v) =>
-                            setState(() => _usePercentage = v),
-                        onChanged: (s) => notifier.updateSettings(s),
-                      ),
-              ),
-              const Gap(12),
-
-              // ── Target file size ─────────────────────────────────
-              _SectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  // ── Target file size ─────────────────────────────────
+                  _SectionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Target Size', style: tt.labelLarge),
-                        Switch(
-                          value: _useTargetSize,
-                          onChanged: (v) {
-                            setState(() => _useTargetSize = v);
-                            _updateTargetSizeSettings();
-                          },
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Target Size', style: tt.labelLarge),
+                            ToolSwitch(
+                              value: _useTargetSize,
+                              accent: _accent,
+                              onChanged: (v) {
+                                setState(() => _useTargetSize = v);
+                                _updateTargetSizeSettings();
+                              },
+                            ),
+                          ],
+                        ),
+                        Text(
+                          'Compress to a specific file size (quality is set automatically)',
+                          style: tt.bodySmall,
+                        ),
+                        if (_useTargetSize) ...[
+                          const Gap(12),
+                          ToolTextField(
+                            controller: _targetSizeCtrl,
+                            accent: _accent,
+                            label: 'Max file size',
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            suffixText: 'KB',
+                            hintText: 'e.g. 500',
+                            helperText: _targetSizeCtrl.text.isNotEmpty
+                                ? '≈ ${(int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024 > 1 ? '${((int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024).toStringAsFixed(1)} MB' : '${_targetSizeCtrl.text} KB'}'
+                                : null,
+                            onChanged: (_) {
+                              setState(() {});
+                              _updateTargetSizeSettings();
+                            },
+                          ),
+                          const Gap(8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _SizePresetChip(
+                                label: '100 KB',
+                                onTap: () {
+                                  setState(() => _targetSizeCtrl.text = '100');
+                                  _updateTargetSizeSettings();
+                                },
+                              ),
+                              _SizePresetChip(
+                                label: '250 KB',
+                                onTap: () {
+                                  setState(() => _targetSizeCtrl.text = '250');
+                                  _updateTargetSizeSettings();
+                                },
+                              ),
+                              _SizePresetChip(
+                                label: '500 KB',
+                                onTap: () {
+                                  setState(() => _targetSizeCtrl.text = '500');
+                                  _updateTargetSizeSettings();
+                                },
+                              ),
+                              _SizePresetChip(
+                                label: '1 MB',
+                                onTap: () {
+                                  setState(() => _targetSizeCtrl.text = '1024');
+                                  _updateTargetSizeSettings();
+                                },
+                              ),
+                              _SizePresetChip(
+                                label: '2 MB',
+                                onTap: () {
+                                  setState(() => _targetSizeCtrl.text = '2048');
+                                  _updateTargetSizeSettings();
+                                },
+                              ),
+                            ],
+                          ),
+                          if (settings.format.toUpperCase() == 'PNG' ||
+                              settings.format.toUpperCase() == 'BMP' ||
+                              settings.format.toUpperCase() == 'TIFF')
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                'Target size is not supported for ${settings.format.toUpperCase()}. Switch to JPG or WEBP.',
+                                style: tt.bodySmall
+                                    ?.copyWith(color: AppColors.error),
+                              ),
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const Gap(12),
+
+                  // ── Format card ─────────────────────────────────────────────
+                  _SectionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Output Format', style: tt.labelLarge),
+                        const Gap(12),
+                        // Wrap prevents overflow on narrow screens
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: AppConstants.supportedFormats.map((f) {
+                            final sel = f == settings.format;
+                            return GestureDetector(
+                              onTap: () => notifier
+                                  .updateSettings(settings.copyWith(format: f)),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 150),
+                                curve: Curves.easeOutCubic,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: sel
+                                      ? _accent
+                                      : cs.surfaceContainerHighest
+                                          .withOpacity(0.58),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: sel
+                                        ? _accent
+                                        : cs.outlineVariant.withOpacity(0.46),
+                                  ),
+                                  boxShadow: sel
+                                      ? [
+                                          BoxShadow(
+                                            color: _accent.withOpacity(0.22),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 5),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Text(f,
+                                    style: TextStyle(
+                                      color: sel
+                                          ? Colors.white
+                                          : cs.onSurfaceVariant,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    )),
+                              ),
+                            );
+                          }).toList(),
                         ),
                       ],
                     ),
-                    Text(
-                      'Compress to a specific file size (quality is set automatically)',
-                      style: tt.bodySmall,
-                    ),
-                    if (_useTargetSize) ...[
-                      const Gap(12),
-                      TextField(
-                        controller: _targetSizeCtrl,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        decoration: InputDecoration(
-                          labelText: 'Max file size',
-                          suffixText: 'KB',
-                          hintText: 'e.g. 500',
-                          helperText: _targetSizeCtrl.text.isNotEmpty
-                              ? '≈ ${(int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024 > 1 ? '${((int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024).toStringAsFixed(1)} MB' : '${_targetSizeCtrl.text} KB'}'
-                              : null,
-                        ),
-                        onChanged: (_) {
-                          setState(() {});
-                          _updateTargetSizeSettings();
-                        },
+                  ),
+                  const Gap(20),
+
+                  // ── Image grid header ──────────────────────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        state.items.isEmpty
+                            ? 'No images selected'
+                            : '${state.items.length} image${state.items.length > 1 ? "s" : ""} selected',
+                        style: tt.labelLarge,
                       ),
-                      const Gap(8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _SizePresetChip(
-                            label: '100 KB',
-                            onTap: () {
-                              setState(() => _targetSizeCtrl.text = '100');
-                              _updateTargetSizeSettings();
-                            },
-                          ),
-                          _SizePresetChip(
-                            label: '250 KB',
-                            onTap: () {
-                              setState(() => _targetSizeCtrl.text = '250');
-                              _updateTargetSizeSettings();
-                            },
-                          ),
-                          _SizePresetChip(
-                            label: '500 KB',
-                            onTap: () {
-                              setState(() => _targetSizeCtrl.text = '500');
-                              _updateTargetSizeSettings();
-                            },
-                          ),
-                          _SizePresetChip(
-                            label: '1 MB',
-                            onTap: () {
-                              setState(() => _targetSizeCtrl.text = '1024');
-                              _updateTargetSizeSettings();
-                            },
-                          ),
-                          _SizePresetChip(
-                            label: '2 MB',
-                            onTap: () {
-                              setState(() => _targetSizeCtrl.text = '2048');
-                              _updateTargetSizeSettings();
-                            },
-                          ),
-                        ],
+                      TextButton.icon(
+                        onPressed:
+                            state.isProcessing ? null : notifier.pickImages,
+                        icon: const Icon(Icons.add_photo_alternate_outlined,
+                            size: 18),
+                        label: const Text('Add images'),
+                        style:
+                            TextButton.styleFrom(foregroundColor: cs.primary),
                       ),
-                      if (settings.format.toUpperCase() == 'PNG' ||
-                          settings.format.toUpperCase() == 'BMP' ||
-                          settings.format.toUpperCase() == 'TIFF')
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            'Target size is not supported for ${settings.format.toUpperCase()}. Switch to JPG or WEBP.',
-                            style: tt.bodySmall
-                                ?.copyWith(color: AppColors.error),
-                          ),
-                        ),
                     ],
-                  ],
-                ),
-              ),
-              const Gap(12),
+                  ),
+                  const Gap(8),
 
-              // ── Format card ─────────────────────────────────────────────
-              _SectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Output Format', style: tt.labelLarge),
-                    const Gap(12),
-                    // Wrap prevents overflow on narrow screens
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: AppConstants.supportedFormats.map((f) {
-                        final sel = f == settings.format;
-                        return GestureDetector(
-                          onTap: () => notifier.updateSettings(
-                              settings.copyWith(format: f)),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: sel
-                                  ? cs.primary
-                                  : cs.surfaceContainerHighest
-                                      .withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: sel
-                                    ? cs.primary
-                                    : cs.outlineVariant.withOpacity(0.3),
-                              ),
-                            ),
-                            child: Text(f,
-                                style: TextStyle(
-                                  color: sel
-                                      ? Colors.white
-                                      : cs.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                )),
-                          ),
-                        );
-                      }).toList(),
+                  // ── Image grid / empty state ──────────────────────────────
+                  if (state.items.isEmpty)
+                    _EmptyPicker(
+                      accent: _accent,
+                      onTap: notifier.pickImages,
+                    )
+                  else
+                    _ImageGrid(
+                      items: state.items,
+                      isProcessing: state.isProcessing,
+                      accent: _accent,
+                      onRemove: (i) => notifier.removeItem(i),
+                    ),
+
+                  // ── Progress bar ───────────────────────────────────────────
+                  if (state.isProcessing) ...[
+                    const Gap(16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Processing ${state.doneCount + state.failedCount} of ${state.totalCount}…',
+                          style: tt.bodySmall,
+                        ),
+                        Text(
+                          '${(state.progress * 100).round()}%',
+                          style: TextStyle(
+                              color: _accent,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13),
+                        ),
+                      ],
+                    ),
+                    const Gap(8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: state.progress,
+                        minHeight: 8,
+                        backgroundColor:
+                            cs.surfaceContainerHighest.withOpacity(0.5),
+                        valueColor: AlwaysStoppedAnimation(_accent),
+                      ),
                     ),
                   ],
-                ),
-              ),
-              const Gap(20),
 
-              // ── Image grid header ──────────────────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    state.items.isEmpty
-                        ? 'No images selected'
-                        : '${state.items.length} image${state.items.length > 1 ? "s" : ""} selected',
-                    style: tt.labelLarge,
-                  ),
-                  TextButton.icon(
-                    onPressed:
-                        state.isProcessing ? null : notifier.pickImages,
-                    icon: const Icon(Icons.add_photo_alternate_outlined,
-                        size: 18),
-                    label: const Text('Add images'),
-                    style: TextButton.styleFrom(
-                        foregroundColor: cs.primary),
-                  ),
+                  const Gap(20),
+
+                  // ── Ad ──────────────────────────────────────────────────────
+                  Center(child: AdManager.instance.getBannerAdWidget()),
+                  const Gap(20),
+
+                  // ── Process button ─────────────────────────────────────────
+                  if (state.items.isNotEmpty)
+                    PfButton(
+                      label: _isCompress
+                          ? 'Compress ${state.items.length} Image${state.items.length > 1 ? "s" : ""}'
+                          : 'Resize ${state.items.length} Image${state.items.length > 1 ? "s" : ""}',
+                      isLoading: state.isProcessing,
+                      icon: _isCompress
+                          ? Icons.compress_rounded
+                          : Icons.photo_size_select_large_rounded,
+                      backgroundColor: _accent,
+                      onPressed: _processAll,
+                    ),
+                  const Gap(16),
                 ],
               ),
-              const Gap(8),
-
-              // ── Image grid / empty state ──────────────────────────────
-              if (state.items.isEmpty)
-                _EmptyPicker(
-                  accent: _accent,
-                  onTap: notifier.pickImages,
-                )
-              else
-                _ImageGrid(
-                  items: state.items,
-                  isProcessing: state.isProcessing,
-                  accent: _accent,
-                  onRemove: (i) => notifier.removeItem(i),
-                ),
-
-              // ── Progress bar ───────────────────────────────────────────
-              if (state.isProcessing) ...[
-                const Gap(16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Processing ${state.doneCount + state.failedCount} of ${state.totalCount}…',
-                      style: tt.bodySmall,
-                    ),
-                    Text(
-                      '${(state.progress * 100).round()}%',
-                      style: TextStyle(
-                          color: _accent,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13),
-                    ),
-                  ],
-                ),
-                const Gap(8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: state.progress,
-                    minHeight: 8,
-                    backgroundColor:
-                        cs.surfaceContainerHighest.withOpacity(0.5),
-                    valueColor: AlwaysStoppedAnimation(_accent),
-                  ),
-                ),
-              ],
-
-              const Gap(20),
-
-              // ── Ad ──────────────────────────────────────────────────────
-              Center(child: AdManager.instance.getBannerAdWidget()),
-              const Gap(20),
-
-              // ── Process button ─────────────────────────────────────────
-              if (state.items.isNotEmpty)
-                PfButton(
-                  label: _isCompress
-                      ? 'Compress ${state.items.length} Image${state.items.length > 1 ? "s" : ""}'
-                      : 'Resize ${state.items.length} Image${state.items.length > 1 ? "s" : ""}',
-                  isLoading: state.isProcessing,
-                  icon: _isCompress
-                      ? Icons.compress_rounded
-                      : Icons.photo_size_select_large_rounded,
-                  backgroundColor: _accent,
-                  onPressed: _processAll,
-                ),
-              const Gap(16),
-            ],
-          ),
+            ),
+            ToolProcessingOverlay(
+              visible: state.isProcessing,
+              accent: _accent,
+              icon: _isCompress
+                  ? Icons.compress_rounded
+                  : Icons.photo_size_select_large_rounded,
+              title: _isCompress ? 'Compressing batch' : 'Resizing batch',
+              subtitle:
+                  'Processing ${state.doneCount + state.failedCount} of ${state.totalCount} images.',
+              progress: state.totalCount == 0 ? null : state.progress,
+            ),
+          ],
         ),
       ),
     );
@@ -464,39 +486,20 @@ class _CompressSettings extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Quality', style: tt.labelLarge),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: accent.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text('${settings.quality}%',
-                  style: TextStyle(
-                      color: accent,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14)),
-            ),
+            ToolBadge(label: '${settings.quality}%', color: accent),
           ],
         ),
         const Gap(4),
         Text(_qualityLabel(settings.quality), style: tt.bodySmall),
         const Gap(8),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            activeTrackColor: accent,
-            thumbColor: accent,
-            overlayColor: accent.withOpacity(0.15),
-          ),
-          child: Slider(
-            value: settings.quality.toDouble(),
-            min: 5,
-            max: 95,
-            divisions: 18,
-            label: '${settings.quality}%',
-            onChanged: (v) =>
-                onChanged(settings.copyWith(quality: v.round())),
-          ),
+        ToolSlider(
+          value: settings.quality.toDouble(),
+          min: 5,
+          max: 95,
+          divisions: 18,
+          label: '${settings.quality}%',
+          accent: accent,
+          onChanged: (v) => onChanged(settings.copyWith(quality: v.round())),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -527,12 +530,14 @@ class _ResizeSettings extends StatelessWidget {
   final TextEditingController widthCtrl;
   final TextEditingController heightCtrl;
   final TextEditingController percentCtrl;
+  final Color accent;
   final bool usePercentage;
   final ValueChanged<bool> onToggle;
   final ValueChanged<CompressionSettings> onChanged;
 
   const _ResizeSettings({
     required this.settings,
+    required this.accent,
     required this.widthCtrl,
     required this.heightCtrl,
     required this.percentCtrl,
@@ -552,7 +557,10 @@ class _ResizeSettings extends StatelessWidget {
           children: [
             Text('Dimensions', style: tt.labelLarge),
             _SegmentPill(
-                selected: usePercentage, onChanged: onToggle),
+              selected: usePercentage,
+              accent: accent,
+              onChanged: onToggle,
+            ),
           ],
         ),
         const Gap(12),
@@ -563,16 +571,16 @@ class _ResizeSettings extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: TextField(
+                child: ToolTextField(
                   controller: percentCtrl,
+                  accent: accent,
+                  label: 'Percentage',
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                        RegExp(r'[0-9.]'))
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
                   ],
-                  decoration: const InputDecoration(
-                      labelText: 'Percentage', suffixText: '%'),
+                  suffixText: '%',
                 ),
               ),
               const Gap(10),
@@ -584,32 +592,29 @@ class _ResizeSettings extends StatelessWidget {
             ],
           ),
         ] else ...[
-          Text('Set a fixed width, height, or both',
-              style: tt.bodySmall),
+          Text('Set a fixed width, height, or both', style: tt.bodySmall),
           const Gap(10),
           Row(
             children: [
               Expanded(
-                child: TextField(
+                child: ToolTextField(
                   controller: widthCtrl,
+                  accent: accent,
+                  label: 'Width',
                   keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly
-                  ],
-                  decoration: const InputDecoration(
-                      labelText: 'Width', suffixText: 'px'),
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  suffixText: 'px',
                 ),
               ),
               const Gap(12),
               Expanded(
-                child: TextField(
+                child: ToolTextField(
                   controller: heightCtrl,
+                  accent: accent,
+                  label: 'Height',
                   keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly
-                  ],
-                  decoration: const InputDecoration(
-                      labelText: 'Height', suffixText: 'px'),
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  suffixText: 'px',
                 ),
               ),
             ],
@@ -618,8 +623,9 @@ class _ResizeSettings extends StatelessWidget {
         const Gap(12),
         Row(
           children: [
-            Switch(
+            ToolSwitch(
               value: settings.keepAspectRatio,
+              accent: accent,
               onChanged: (_) => onChanged(settings.copyWith(
                   keepAspectRatio: !settings.keepAspectRatio)),
             ),
@@ -636,60 +642,24 @@ class _ResizeSettings extends StatelessWidget {
 
 class _SegmentPill extends StatelessWidget {
   final bool selected;
+  final Color accent;
   final ValueChanged<bool> onChanged;
-  const _SegmentPill({required this.selected, required this.onChanged});
+  const _SegmentPill({
+    required this.selected,
+    required this.accent,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      height: 32,
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _PillTab(
-              label: 'px', active: !selected, onTap: () => onChanged(false)),
-          _PillTab(
-              label: '%', active: selected, onTap: () => onChanged(true)),
-        ],
-      ),
-    );
-  }
-}
-
-class _PillTab extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _PillTab(
-      {required this.label, required this.active, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: active ? cs.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Text(label,
-            style: TextStyle(
-              color: active
-                  ? Colors.white
-                  : Theme.of(context).textTheme.bodySmall?.color,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            )),
-      ),
+    return ToolSegmentedControl<bool>(
+      value: selected,
+      accent: accent,
+      onChanged: onChanged,
+      segments: const [
+        ToolSegment(value: false, label: 'px'),
+        ToolSegment(value: true, label: '%'),
+      ],
     );
   }
 }
@@ -703,22 +673,7 @@ class _Preset extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
-        ),
-        child: Text(label,
-            style: const TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600)),
-      ),
-    );
+    return ToolPresetChip(label: label, onTap: onTap);
   }
 }
 
@@ -755,8 +710,7 @@ class _EmptyPickerState extends State<_EmptyPicker> {
               : cs.surfaceContainerHighest.withOpacity(0.3),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: widget.accent
-                .withOpacity(_pressed ? 0.6 : 0.25),
+            color: widget.accent.withOpacity(_pressed ? 0.6 : 0.25),
             width: 1.5,
           ),
         ),
@@ -779,8 +733,7 @@ class _EmptyPickerState extends State<_EmptyPicker> {
               ),
               const Gap(12),
               const Text('Tap to select images',
-                  style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600)),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
               const Gap(4),
               Text('Pick multiple images at once',
                   style: Theme.of(context).textTheme.bodySmall),
@@ -854,9 +807,7 @@ class _GridTile extends StatelessWidget {
             File(item.image.path),
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: const Icon(Icons.broken_image_outlined,
                   color: Colors.white38),
             ),
@@ -874,8 +825,7 @@ class _GridTile extends StatelessWidget {
           bottom: 4,
           left: 4,
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.6),
               borderRadius: BorderRadius.circular(6),
@@ -911,8 +861,7 @@ class _GridTile extends StatelessWidget {
             bottom: 4,
             right: 4,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
                 color: AppColors.success.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(6),
@@ -949,15 +898,13 @@ class _GridTile extends StatelessWidget {
         return SizedBox(
           width: 26,
           height: 26,
-          child: CircularProgressIndicator(
-              color: accent, strokeWidth: 2.5),
+          child: CircularProgressIndicator(color: accent, strokeWidth: 2.5),
         );
       case BatchItemStatus.done:
         return const Icon(Icons.check_circle_rounded,
             color: Colors.white, size: 30);
       case BatchItemStatus.failed:
-        return const Icon(Icons.error_rounded,
-            color: Colors.white, size: 30);
+        return const Icon(Icons.error_rounded, color: Colors.white, size: 30);
       default:
         return const SizedBox();
     }
@@ -973,17 +920,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
-      ),
-      child: child,
-    );
+    return ToolSurface(child: child);
   }
 }
 
@@ -994,18 +931,6 @@ class _SizePresetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Chip(
-        label: Text(label,
-            style: const TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600)),
-        backgroundColor: cs.surfaceContainerHighest.withOpacity(0.5),
-        side: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        visualDensity: VisualDensity.compact,
-      ),
-    );
+    return ToolPresetChip(label: label, onTap: onTap);
   }
 }

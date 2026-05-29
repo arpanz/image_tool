@@ -10,6 +10,7 @@ import '../../core/models/selected_image.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/utils/ad_manager.dart';
 import '../../core/widgets/pf_button.dart';
+import '../../core/widgets/tool_ui.dart';
 import '../home/home_screen.dart';
 import '../result/result_screen.dart';
 import 'editor_controller.dart';
@@ -107,8 +108,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           if (mounted) {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) =>
-                    ResultScreen(result: result, mode: widget.mode),
+                builder: (_) => ResultScreen(result: result, mode: widget.mode),
               ),
             );
           }
@@ -123,7 +123,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final settings = state.settings;
     final isProcessing = state.compressionState is AsyncLoading;
     final isCompress = widget.mode == ImageMode.compress;
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     ref.listen<EditorState>(editorProvider, (_, next) {
@@ -134,8 +133,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             content: Text('Failed: $err'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -152,449 +151,445 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         title: Text(isCompress ? 'Compress' : 'Resize'),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Image preview ───────────────────────────────────────
-              _ImagePreview(
-                path: widget.image.path,
-                originalSize: widget.image.originalSize,
-                width: widget.image.width,
-                height: widget.image.height,
-              ),
-              const Gap(24),
-
-              if (isCompress) ...[
-                // ── Output format (before quality — format affects target-size compat) ──
-                _SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const _SectionLabel('Output Format'),
-                      const Gap(12),
-                      _FormatSelector(
-                        current: settings.format,
-                        onChanged: (f) =>
-                            ref.read(editorProvider.notifier).setFormat(f),
-                      ),
-                    ],
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Image preview ───────────────────────────────────────
+                  _ImagePreview(
+                    path: widget.image.path,
+                    originalSize: widget.image.originalSize,
+                    width: widget.image.width,
+                    height: widget.image.height,
                   ),
-                ),
-                const Gap(14),
+                  const Gap(24),
 
-                // ── Quality slider ──────────────────────────────────
-                _SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  if (isCompress) ...[
+                    // ── Output format (before quality — format affects target-size compat) ──
+                    _SectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const _SectionLabel('Quality'),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _accent.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '${settings.quality}%',
-                              style: TextStyle(
-                                color: _accent,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Gap(4),
-                      Text(_qualityLabel(settings.quality),
-                          style: tt.bodySmall),
-                      const Gap(8),
-                      SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          activeTrackColor: _accent,
-                          thumbColor: _accent,
-                          overlayColor: _accent.withOpacity(0.15),
-                        ),
-                        child: Slider(
-                          value: settings.quality.toDouble(),
-                          min: AppConstants.minQuality.toDouble(),
-                          max: AppConstants.maxQuality.toDouble(),
-                          // step of 5 from minQuality to maxQuality
-                          divisions: ((AppConstants.maxQuality -
-                                      AppConstants.minQuality) ~/
-                                  5),
-                          label: '${settings.quality}%',
-                          onChanged: (v) => ref
-                              .read(editorProvider.notifier)
-                              .setQuality(v.round()),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Smallest', style: tt.bodySmall),
-                            Text('Best quality', style: tt.bodySmall),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Gap(14),
-
-                // ── Target file size ─────────────────────────────────
-                _SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const _SectionLabel('Target Size'),
-                          Switch(
-                            value: _useTargetSize,
-                            onChanged: (v) =>
-                                setState(() => _useTargetSize = v),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        'Compress to a specific file size (quality is set automatically)',
-                        style: tt.bodySmall,
-                      ),
-                      if (_useTargetSize) ...[
-                        const Gap(12),
-                        TextField(
-                          controller: _targetSizeCtrl,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          decoration: InputDecoration(
-                            labelText: 'Max file size',
-                            suffixText: 'KB',
-                            hintText: 'e.g. 500',
-                            helperText: _targetSizeCtrl.text.isNotEmpty
-                                ? '≈ ${(int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024 > 1 ? '${((int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024).toStringAsFixed(1)} MB' : '${_targetSizeCtrl.text} KB'}'
-                                : null,
-                          ),
-                          onChanged: (_) => setState(() {}),
-                        ),
-                        const Gap(8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _SizePresetChip(
-                                label: '100 KB',
-                                onTap: () => setState(
-                                    () => _targetSizeCtrl.text = '100')),
-                            _SizePresetChip(
-                                label: '250 KB',
-                                onTap: () => setState(
-                                    () => _targetSizeCtrl.text = '250')),
-                            _SizePresetChip(
-                                label: '500 KB',
-                                onTap: () => setState(
-                                    () => _targetSizeCtrl.text = '500')),
-                            _SizePresetChip(
-                                label: '1 MB',
-                                onTap: () => setState(
-                                    () => _targetSizeCtrl.text = '1024')),
-                            _SizePresetChip(
-                                label: '2 MB',
-                                onTap: () => setState(
-                                    () => _targetSizeCtrl.text = '2048')),
-                          ],
-                        ),
-                        if (settings.format.toUpperCase() == 'PNG')
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              'Target size is not supported for PNG. Switch to JPG or WEBP.',
-                              style: tt.bodySmall
-                                  ?.copyWith(color: AppColors.error),
-                            ),
-                          ),
-                      ],
-                    ],
-                  ),
-                ),
-                const Gap(14),
-              ] else ...[
-                // ── Dimensions ─────────────────────────────────────────
-                _SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const _SectionLabel('Dimensions'),
-                          _UnitSelector(
-                            current: _dimUnit,
-                            onChanged: (u) {
-                              setState(() {
-                                _dimUnit = u;
-                                _widthCtrl.clear();
-                                _heightCtrl.clear();
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                      const Gap(16),
-                      if (_dimUnit == _DimUnit.percent) ...[
-                        Text(
-                          'Scale to ${_percentCtrl.text.isNotEmpty ? _percentCtrl.text : '?'}% of original',
-                          style: tt.bodySmall,
-                        ),
-                        const Gap(10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _percentCtrl,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                        decimal: true),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'[0-9.]')),
-                                ],
-                                decoration: const InputDecoration(
-                                  labelText: 'Percentage',
-                                  suffixText: '%',
-                                ),
-                                onChanged: (_) => setState(() {}),
-                              ),
-                            ),
-                            const Gap(12),
-                            _PercentPreset(
-                                percent: 75,
-                                onTap: () =>
-                                    setState(() => _percentCtrl.text = '75')),
-                            const Gap(6),
-                            _PercentPreset(
-                                percent: 50,
-                                onTap: () =>
-                                    setState(() => _percentCtrl.text = '50')),
-                            const Gap(6),
-                            _PercentPreset(
-                                percent: 25,
-                                onTap: () =>
-                                    setState(() => _percentCtrl.text = '25')),
-                          ],
-                        ),
-                        if (_percentCtrl.text.isNotEmpty) ...[
+                          const _SectionLabel('Output Format'),
                           const Gap(12),
-                          _DimensionPreview(
-                            originalW: widget.image.width,
-                            originalH: widget.image.height,
-                            pct: double.tryParse(_percentCtrl.text) ?? 100,
+                          _FormatSelector(
+                            current: settings.format,
+                            accent: _accent,
+                            onChanged: (f) =>
+                                ref.read(editorProvider.notifier).setFormat(f),
                           ),
                         ],
-                      ] else ...[
-                        if (_dimUnit == _DimUnit.cm ||
-                            _dimUnit == _DimUnit.mm) ...[
+                      ),
+                    ),
+                    const Gap(14),
+
+                    // ── Quality slider ──────────────────────────────────
+                    _SectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _dpiCtrl,
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                  ],
-                                  decoration: const InputDecoration(
-                                    labelText: 'DPI / PPI',
-                                    hintText: '72',
-                                    helperText: 'Print: 300  Screen: 72',
-                                  ),
-                                  onChanged: (_) => setState(() {}),
-                                ),
+                              const _SectionLabel('Quality'),
+                              ToolBadge(
+                                label: '${settings.quality}%',
+                                color: _accent,
                               ),
-                              const Gap(8),
-                              _DpiPreset(
-                                  label: '72',
-                                  onTap: () =>
-                                      setState(() => _dpiCtrl.text = '72')),
-                              const Gap(4),
-                              _DpiPreset(
-                                  label: '150',
-                                  onTap: () =>
-                                      setState(() => _dpiCtrl.text = '150')),
-                              const Gap(4),
-                              _DpiPreset(
-                                  label: '300',
-                                  onTap: () =>
-                                      setState(() => _dpiCtrl.text = '300')),
                             ],
                           ),
-                          const Gap(12),
-                        ],
-                        Text(
-                          _dimUnit == _DimUnit.px
-                              ? 'Enter width, height, or both'
-                              : 'Enter dimensions in ${_dimUnit == _DimUnit.cm ? 'centimeters' : 'millimeters'}',
-                          style: tt.bodySmall,
-                        ),
-                        const Gap(10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _widthCtrl,
-                                keyboardType: _dimUnit == _DimUnit.px
-                                    ? TextInputType.number
-                                    : const TextInputType.numberWithOptions(
-                                        decimal: true),
-                                inputFormatters: _dimUnit == _DimUnit.px
-                                    ? [
-                                        FilteringTextInputFormatter.digitsOnly
-                                      ]
-                                    : [
-                                        FilteringTextInputFormatter.allow(
-                                            RegExp(r'[0-9.]'))
-                                      ],
-                                decoration: InputDecoration(
-                                  labelText: 'Width',
-                                  suffixText: _dimUnitLabel(_dimUnit),
-                                  hintText: _dimUnit == _DimUnit.px
-                                      ? '${widget.image.width}'
-                                      : null,
-                                ),
-                                onChanged: (_) => setState(() {}),
-                              ),
+                          const Gap(4),
+                          Text(_qualityLabel(settings.quality),
+                              style: tt.bodySmall),
+                          const Gap(8),
+                          ToolSlider(
+                            value: settings.quality.toDouble(),
+                            min: AppConstants.minQuality.toDouble(),
+                            max: AppConstants.maxQuality.toDouble(),
+                            divisions: ((AppConstants.maxQuality -
+                                    AppConstants.minQuality) ~/
+                                5),
+                            label: '${settings.quality}%',
+                            accent: _accent,
+                            onChanged: (v) => ref
+                                .read(editorProvider.notifier)
+                                .setQuality(v.round()),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Smallest', style: tt.bodySmall),
+                                Text('Best quality', style: tt.bodySmall),
+                              ],
                             ),
-                            const Gap(12),
-                            Expanded(
-                              child: TextField(
-                                controller: _heightCtrl,
-                                keyboardType: _dimUnit == _DimUnit.px
-                                    ? TextInputType.number
-                                    : const TextInputType.numberWithOptions(
-                                        decimal: true),
-                                inputFormatters: _dimUnit == _DimUnit.px
-                                    ? [
-                                        FilteringTextInputFormatter.digitsOnly
-                                      ]
-                                    : [
-                                        FilteringTextInputFormatter.allow(
-                                            RegExp(r'[0-9.]'))
-                                      ],
-                                decoration: InputDecoration(
-                                  labelText: 'Height',
-                                  suffixText: _dimUnitLabel(_dimUnit),
-                                  hintText: _dimUnit == _DimUnit.px
-                                      ? '${widget.image.height}'
-                                      : null,
-                                ),
-                                onChanged: (_) => setState(() {}),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Gap(14),
+
+                    // ── Target file size ─────────────────────────────────
+                    _SectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const _SectionLabel('Target Size'),
+                              ToolSwitch(
+                                value: _useTargetSize,
+                                accent: _accent,
+                                onChanged: (v) =>
+                                    setState(() => _useTargetSize = v),
                               ),
+                            ],
+                          ),
+                          Text(
+                            'Compress to a specific file size (quality is set automatically)',
+                            style: tt.bodySmall,
+                          ),
+                          if (_useTargetSize) ...[
+                            const Gap(12),
+                            ToolTextField(
+                              controller: _targetSizeCtrl,
+                              accent: _accent,
+                              label: 'Max file size',
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              suffixText: 'KB',
+                              hintText: 'e.g. 500',
+                              helperText: _targetSizeCtrl.text.isNotEmpty
+                                  ? '≈ ${(int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024 > 1 ? '${((int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024).toStringAsFixed(1)} MB' : '${_targetSizeCtrl.text} KB'}'
+                                  : null,
+                              onChanged: (_) => setState(() {}),
+                            ),
+                            const Gap(8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _SizePresetChip(
+                                    label: '100 KB',
+                                    onTap: () => setState(
+                                        () => _targetSizeCtrl.text = '100')),
+                                _SizePresetChip(
+                                    label: '250 KB',
+                                    onTap: () => setState(
+                                        () => _targetSizeCtrl.text = '250')),
+                                _SizePresetChip(
+                                    label: '500 KB',
+                                    onTap: () => setState(
+                                        () => _targetSizeCtrl.text = '500')),
+                                _SizePresetChip(
+                                    label: '1 MB',
+                                    onTap: () => setState(
+                                        () => _targetSizeCtrl.text = '1024')),
+                                _SizePresetChip(
+                                    label: '2 MB',
+                                    onTap: () => setState(
+                                        () => _targetSizeCtrl.text = '2048')),
+                              ],
+                            ),
+                            if (settings.format.toUpperCase() == 'PNG')
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'Target size is not supported for PNG. Switch to JPG or WEBP.',
+                                  style: tt.bodySmall
+                                      ?.copyWith(color: AppColors.error),
+                                ),
+                              ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const Gap(14),
+                  ] else ...[
+                    // ── Dimensions ─────────────────────────────────────────
+                    _SectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const _SectionLabel('Dimensions'),
+                              _UnitSelector(
+                                current: _dimUnit,
+                                onChanged: (u) {
+                                  setState(() {
+                                    _dimUnit = u;
+                                    _widthCtrl.clear();
+                                    _heightCtrl.clear();
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                          const Gap(16),
+                          if (_dimUnit == _DimUnit.percent) ...[
+                            Text(
+                              'Scale to ${_percentCtrl.text.isNotEmpty ? _percentCtrl.text : '?'}% of original',
+                              style: tt.bodySmall,
+                            ),
+                            const Gap(10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ToolTextField(
+                                    controller: _percentCtrl,
+                                    accent: _accent,
+                                    label: 'Percentage',
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(
+                                          RegExp(r'[0-9.]')),
+                                    ],
+                                    suffixText: '%',
+                                    onChanged: (_) => setState(() {}),
+                                  ),
+                                ),
+                                const Gap(12),
+                                _PercentPreset(
+                                    percent: 75,
+                                    onTap: () => setState(
+                                        () => _percentCtrl.text = '75')),
+                                const Gap(6),
+                                _PercentPreset(
+                                    percent: 50,
+                                    onTap: () => setState(
+                                        () => _percentCtrl.text = '50')),
+                                const Gap(6),
+                                _PercentPreset(
+                                    percent: 25,
+                                    onTap: () => setState(
+                                        () => _percentCtrl.text = '25')),
+                              ],
+                            ),
+                            if (_percentCtrl.text.isNotEmpty) ...[
+                              const Gap(12),
+                              _DimensionPreview(
+                                originalW: widget.image.width,
+                                originalH: widget.image.height,
+                                pct: double.tryParse(_percentCtrl.text) ?? 100,
+                              ),
+                            ],
+                          ] else ...[
+                            if (_dimUnit == _DimUnit.cm ||
+                                _dimUnit == _DimUnit.mm) ...[
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ToolTextField(
+                                      controller: _dpiCtrl,
+                                      accent: _accent,
+                                      label: 'DPI / PPI',
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      hintText: '72',
+                                      helperText: 'Print: 300  Screen: 72',
+                                      onChanged: (_) => setState(() {}),
+                                    ),
+                                  ),
+                                  const Gap(8),
+                                  _DpiPreset(
+                                      label: '72',
+                                      onTap: () =>
+                                          setState(() => _dpiCtrl.text = '72')),
+                                  const Gap(4),
+                                  _DpiPreset(
+                                      label: '150',
+                                      onTap: () => setState(
+                                          () => _dpiCtrl.text = '150')),
+                                  const Gap(4),
+                                  _DpiPreset(
+                                      label: '300',
+                                      onTap: () => setState(
+                                          () => _dpiCtrl.text = '300')),
+                                ],
+                              ),
+                              const Gap(12),
+                            ],
+                            Text(
+                              _dimUnit == _DimUnit.px
+                                  ? 'Enter width, height, or both'
+                                  : 'Enter dimensions in ${_dimUnit == _DimUnit.cm ? 'centimeters' : 'millimeters'}',
+                              style: tt.bodySmall,
+                            ),
+                            const Gap(10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ToolTextField(
+                                    controller: _widthCtrl,
+                                    accent: _accent,
+                                    label: 'Width',
+                                    keyboardType: _dimUnit == _DimUnit.px
+                                        ? TextInputType.number
+                                        : const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    inputFormatters: _dimUnit == _DimUnit.px
+                                        ? [
+                                            FilteringTextInputFormatter
+                                                .digitsOnly
+                                          ]
+                                        : [
+                                            FilteringTextInputFormatter.allow(
+                                                RegExp(r'[0-9.]'))
+                                          ],
+                                    suffixText: _dimUnitLabel(_dimUnit),
+                                    hintText: _dimUnit == _DimUnit.px
+                                        ? '${widget.image.width}'
+                                        : null,
+                                    onChanged: (_) => setState(() {}),
+                                  ),
+                                ),
+                                const Gap(12),
+                                Expanded(
+                                  child: ToolTextField(
+                                    controller: _heightCtrl,
+                                    accent: _accent,
+                                    label: 'Height',
+                                    keyboardType: _dimUnit == _DimUnit.px
+                                        ? TextInputType.number
+                                        : const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    inputFormatters: _dimUnit == _DimUnit.px
+                                        ? [
+                                            FilteringTextInputFormatter
+                                                .digitsOnly
+                                          ]
+                                        : [
+                                            FilteringTextInputFormatter.allow(
+                                                RegExp(r'[0-9.]'))
+                                          ],
+                                    suffixText: _dimUnitLabel(_dimUnit),
+                                    hintText: _dimUnit == _DimUnit.px
+                                        ? '${widget.image.height}'
+                                        : null,
+                                    onChanged: (_) => setState(() {}),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (_widthCtrl.text.isNotEmpty ||
+                                _heightCtrl.text.isNotEmpty) ...[
+                              const Gap(12),
+                              _PhysicalDimensionPreview(
+                                originalW: widget.image.width,
+                                originalH: widget.image.height,
+                                widthText: _widthCtrl.text,
+                                heightText: _heightCtrl.text,
+                                unit: _dimUnit,
+                                dpi: double.tryParse(_dpiCtrl.text) ?? 72,
+                                keepAspect: settings.keepAspectRatio,
+                              ),
+                            ],
+                          ],
+                          const Gap(12),
+                          Row(
+                            children: [
+                              ToolSwitch(
+                                value: settings.keepAspectRatio,
+                                accent: _accent,
+                                onChanged: (_) => ref
+                                    .read(editorProvider.notifier)
+                                    .toggleAspectRatio(),
+                              ),
+                              const Gap(8),
+                              Text('Keep aspect ratio', style: tt.bodyMedium),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Gap(14),
+
+                    if (showFitMode) ...[
+                      _SectionCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const _SectionLabel('Fit Mode'),
+                            const Gap(4),
+                            Text(
+                              'How to handle image when it doesn\'t fill the frame',
+                              style: tt.bodySmall,
+                            ),
+                            const Gap(14),
+                            _FitModeSelector(
+                              current: settings.fitMode,
+                              onChanged: (m) => ref
+                                  .read(editorProvider.notifier)
+                                  .setFitMode(m),
                             ),
                           ],
                         ),
-                        if (_widthCtrl.text.isNotEmpty ||
-                            _heightCtrl.text.isNotEmpty) ...[
-                          const Gap(12),
-                          _PhysicalDimensionPreview(
-                            originalW: widget.image.width,
-                            originalH: widget.image.height,
-                            widthText: _widthCtrl.text,
-                            heightText: _heightCtrl.text,
-                            unit: _dimUnit,
-                            dpi: double.tryParse(_dpiCtrl.text) ?? 72,
-                            keepAspect: settings.keepAspectRatio,
-                          ),
-                        ],
-                      ],
-                      const Gap(12),
-                      Row(
+                      ),
+                      const Gap(14),
+                    ],
+
+                    // Output format at bottom for resize mode
+                    _SectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Switch(
-                            value: settings.keepAspectRatio,
-                            onChanged: (_) => ref
-                                .read(editorProvider.notifier)
-                                .toggleAspectRatio(),
+                          const _SectionLabel('Output Format'),
+                          const Gap(12),
+                          _FormatSelector(
+                            current: settings.format,
+                            accent: _accent,
+                            onChanged: (f) =>
+                                ref.read(editorProvider.notifier).setFormat(f),
                           ),
-                          const Gap(8),
-                          Text('Keep aspect ratio', style: tt.bodyMedium),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                const Gap(14),
-
-                if (showFitMode) ...[
-                  _SectionCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _SectionLabel('Fit Mode'),
-                        const Gap(4),
-                        Text(
-                          'How to handle image when it doesn\'t fill the frame',
-                          style: tt.bodySmall,
-                        ),
-                        const Gap(14),
-                        _FitModeSelector(
-                          current: settings.fitMode,
-                          onChanged: (m) => ref
-                              .read(editorProvider.notifier)
-                              .setFitMode(m),
-                        ),
-                      ],
                     ),
+                    const Gap(14),
+                  ],
+
+                  // ── Ad ─────────────────────────────────────────────────────
+                  AdManager.instance.getBannerAdWidget(),
+                  const Gap(16),
+
+                  // ── Process button ─────────────────────────────────────
+                  PfButton(
+                    label: isCompress ? 'Compress Image' : 'Resize Image',
+                    isLoading: isProcessing,
+                    icon: isCompress
+                        ? Icons.compress_rounded
+                        : Icons.photo_size_select_large_rounded,
+                    backgroundColor: _accent,
+                    onPressed: _onProcess,
                   ),
-                  const Gap(14),
+                  const Gap(20),
                 ],
-
-                // Output format at bottom for resize mode
-                _SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const _SectionLabel('Output Format'),
-                      const Gap(12),
-                      _FormatSelector(
-                        current: settings.format,
-                        onChanged: (f) =>
-                            ref.read(editorProvider.notifier).setFormat(f),
-                      ),
-                    ],
-                  ),
-                ),
-                const Gap(14),
-              ],
-
-              // ── Ad ─────────────────────────────────────────────────────
-              AdManager.instance.getBannerAdWidget(),
-              const Gap(16),
-
-              // ── Process button ─────────────────────────────────────
-              PfButton(
-                label:
-                    isCompress ? 'Compress Image' : 'Resize Image',
-                isLoading: isProcessing,
-                icon: isCompress
-                    ? Icons.compress_rounded
-                    : Icons.photo_size_select_large_rounded,
-                backgroundColor: _accent,
-                onPressed: _onProcess,
               ),
-              const Gap(20),
-            ],
-          ),
+            ),
+            ToolProcessingOverlay(
+              visible: isProcessing,
+              accent: _accent,
+              icon: isCompress
+                  ? Icons.compress_rounded
+                  : Icons.photo_size_select_large_rounded,
+              title: isCompress ? 'Compressing image' : 'Resizing image',
+              subtitle: isCompress
+                  ? 'Optimizing file size while preserving the preview.'
+                  : 'Building the new dimensions and preparing export.',
+            ),
+          ],
         ),
       ),
     );
@@ -653,14 +648,9 @@ class _ImagePreview extends StatelessWidget {
             fit: BoxFit.cover,
           ),
         ),
+        Positioned(bottom: 10, left: 10, child: _Badge('${width}×${height}')),
         Positioned(
-            bottom: 10,
-            left: 10,
-            child: _Badge('${width}×${height}')),
-        Positioned(
-            bottom: 10,
-            right: 10,
-            child: _Badge(formatBytes(originalSize))),
+            bottom: 10, right: 10, child: _Badge(formatBytes(originalSize))),
       ],
     );
   }
@@ -680,9 +670,7 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(text,
           style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w600)),
+              color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
     );
   }
 }
@@ -696,17 +684,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
-      ),
-      child: child,
-    );
+    return ToolSurface(child: child);
   }
 }
 
@@ -728,63 +706,19 @@ class _UnitSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      height: 34,
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: _DimUnit.values.map((u) {
-          final label = switch (u) {
-            _DimUnit.px => 'px',
-            _DimUnit.percent => '%',
-            _DimUnit.cm => 'cm',
-            _DimUnit.mm => 'mm',
-          };
-          return _ToggleTab(
-            label: label,
-            active: current == u,
-            onTap: () => onChanged(u),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _ToggleTab extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _ToggleTab(
-      {required this.label, required this.active, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: active ? cs.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: active
-                ? Colors.white
-                : Theme.of(context).textTheme.bodySmall?.color,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
-      ),
+    return ToolSegmentedControl<_DimUnit>(
+      value: current,
+      accent: Theme.of(context).colorScheme.primary,
+      onChanged: onChanged,
+      segments: _DimUnit.values.map((u) {
+        final label = switch (u) {
+          _DimUnit.px => 'px',
+          _DimUnit.percent => '%',
+          _DimUnit.cm => 'cm',
+          _DimUnit.mm => 'mm',
+        };
+        return ToolSegment(value: u, label: label);
+      }).toList(),
     );
   }
 }
@@ -798,20 +732,7 @@ class _PercentPreset extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text('$percent%',
-            style: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600)),
-      ),
-    );
+    return ToolPresetChip(label: '$percent%', onTap: onTap);
   }
 }
 
@@ -822,20 +743,7 @@ class _DpiPreset extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(label,
-            style: const TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600)),
-      ),
-    );
+    return ToolPresetChip(label: label, onTap: onTap);
   }
 }
 
@@ -846,19 +754,7 @@ class _SizePresetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Chip(
-        label: Text(label,
-            style: const TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600)),
-        backgroundColor: cs.surfaceContainerHighest.withOpacity(0.5),
-        side: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        visualDensity: VisualDensity.compact,
-      ),
-    );
+    return ToolPresetChip(label: label, onTap: onTap);
   }
 }
 
@@ -869,9 +765,7 @@ class _DimensionPreview extends StatelessWidget {
   final int originalH;
   final double pct;
   const _DimensionPreview(
-      {required this.originalW,
-      required this.originalH,
-      required this.pct});
+      {required this.originalW, required this.originalH, required this.pct});
 
   @override
   Widget build(BuildContext context) {
@@ -970,9 +864,7 @@ class _PreviewChip extends StatelessWidget {
           const Gap(6),
           Text(text,
               style: TextStyle(
-                  color: color,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500)),
+                  color: color, fontSize: 13, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -1037,8 +929,7 @@ class _FitModeSelector extends StatelessWidget {
           onTap: () => onChanged(m.mode),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
                   ? cs.primary.withOpacity(0.12)
@@ -1070,10 +961,7 @@ class _FitModeSelector extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             color: isSelected
                                 ? cs.primary
-                                : Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.color,
+                                : Theme.of(context).textTheme.bodyMedium?.color,
                           )),
                       Text(m.desc,
                           style: Theme.of(context)
@@ -1099,8 +987,13 @@ class _FitModeSelector extends StatelessWidget {
 
 class _FormatSelector extends StatelessWidget {
   final String current;
+  final Color accent;
   final ValueChanged<String> onChanged;
-  const _FormatSelector({required this.current, required this.onChanged});
+  const _FormatSelector({
+    required this.current,
+    required this.accent,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1110,29 +1003,41 @@ class _FormatSelector extends StatelessWidget {
       runSpacing: 10,
       children: AppConstants.supportedFormats.map((f) {
         final isSelected = f == current;
-        return GestureDetector(
-          onTap: () => onChanged(f),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? cs.primary
-                  : cs.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => onChanged(f),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
                 color: isSelected
-                    ? cs.primary
-                    : cs.outlineVariant.withOpacity(0.3),
+                    ? accent
+                    : cs.surfaceContainerHighest.withOpacity(0.58),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color:
+                      isSelected ? accent : cs.outlineVariant.withOpacity(0.46),
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: accent.withOpacity(0.22),
+                          blurRadius: 12,
+                          offset: const Offset(0, 5),
+                        ),
+                      ]
+                    : null,
               ),
+              child: Text(f,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  )),
             ),
-            child: Text(f,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                )),
           ),
         );
       }).toList(),

@@ -10,6 +10,7 @@ import '../../core/utils/ad_manager.dart';
 import '../../core/utils/app_review_service.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/widgets/pf_button.dart';
+import '../../core/widgets/tool_ui.dart';
 import '../../core/providers/history_provider.dart';
 import '../editor/editor_controller.dart';
 import '../home/home_screen.dart';
@@ -37,7 +38,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
 
   void _saveHistoryIfNeeded() {
     if (_isSavedToHistory) return;
-    
+
     final historyNotifier = ref.read(historyProvider.notifier);
     if (!historyNotifier.state.isEnabled) return;
 
@@ -256,16 +257,31 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: _accent.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                  border:
-                      Border.all(color: _accent.withOpacity(0.35), width: 1.5),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.86, end: 1),
+                duration: const Duration(milliseconds: 520),
+                curve: Curves.easeOutBack,
+                builder: (context, scale, child) {
+                  return Transform.scale(scale: scale, child: child);
+                },
+                child: Container(
+                  width: 68,
+                  height: 68,
+                  decoration: BoxDecoration(
+                    color: _accent.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: _accent.withOpacity(0.35), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _accent.withOpacity(0.22),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Icon(_modeIcon, size: 31, color: _accent),
                 ),
-                child: Icon(_modeIcon, size: 30, color: _accent),
               ),
               const Gap(12),
               Text(_title, style: tt.headlineMedium),
@@ -324,14 +340,10 @@ class _ResultHeroMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
+    return ToolSurface(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
+      radius: 16,
+      accent: color,
       child: Row(
         children: [
           Expanded(
@@ -454,14 +466,10 @@ class _StatsCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final savedPositive = result.savedPercent >= 0;
 
-    return Container(
-      width: double.infinity,
+    return ToolSurface(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
-      ),
+      radius: 16,
+      accent: accent,
       child: Column(
         children: [
           if (mode == ImageMode.compress) ...[

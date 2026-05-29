@@ -144,8 +144,8 @@ class _PickZoneState extends ConsumerState<_PickZone> {
             content: Text(next.message),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -165,18 +165,24 @@ class _PickZoneState extends ConsumerState<_PickZone> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOutCubic,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: _pressed
-              ? widget.accent.withOpacity(0.05)
-              : surface,
-          borderRadius: BorderRadius.circular(18),
+          color: _pressed ? widget.accent.withOpacity(0.07) : surface,
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: _pressed
-                ? widget.accent.withOpacity(0.5)
-                : widget.accent.withOpacity(0.2),
+                ? widget.accent.withOpacity(0.58)
+                : widget.accent.withOpacity(0.24),
             width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
         child: Center(
           child: isLoading
@@ -203,7 +209,10 @@ class _PickZoneState extends ConsumerState<_PickZone> {
                       height: 72,
                       decoration: BoxDecoration(
                         color: widget.accent.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: widget.accent.withOpacity(0.18),
+                        ),
                       ),
                       child: Icon(
                         Icons.add_photo_alternate_outlined,

@@ -10,6 +10,7 @@ import '../../core/utils/ad_manager.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/utils/pro_gate.dart';
 import '../../core/widgets/pf_button.dart';
+import '../../core/widgets/tool_ui.dart';
 import '../home/home_screen.dart';
 import '../picker/picker_controller.dart';
 import '../result/result_screen.dart';
@@ -78,150 +79,177 @@ class _ConvertScreenState extends ConsumerState<ConvertScreen> {
         title: const Text('Convert'),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.convert.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
-                  border:
-                      Border.all(color: AppColors.convert.withOpacity(0.28)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.swap_horiz_rounded, color: AppColors.convert),
-                    Gap(10),
-                    Expanded(
-                      child: Text(
-                        'Convert format without leaving the app',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.convert.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: AppColors.convert.withOpacity(0.28)),
                     ),
-                  ],
-                ),
-              ),
-              const Gap(14),
-              _PickImageCard(
-                selectedImage: _selectedImage,
-                isLoading: pickerState is PickerLoading,
-                onPick: _pickImage,
-              ),
-              const Gap(14),
-              _OptionCard(
-                title: 'Output Format',
-                child: Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: AppConstants.supportedFormats.map((f) {
-                    final selected = _format == f;
-                    final sameAsSource =
-                        sourceFormat != null && sourceFormat == f;
-                    return GestureDetector(
-                      onTap: () => setState(() => _format = f),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 170),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? AppColors.convert
-                              : cs.surfaceContainerHighest.withOpacity(0.45),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: selected
-                                ? AppColors.convert
-                                : cs.outlineVariant.withOpacity(0.35),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.swap_horiz_rounded,
+                            color: AppColors.convert),
+                        Gap(10),
+                        Expanded(
+                          child: Text(
+                            'Convert format without leaving the app',
+                            style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              f,
-                              style: TextStyle(
-                                color: selected ? Colors.white : cs.onSurface,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            if (sameAsSource) ...[
-                              const Gap(6),
-                              Text(
-                                '(same)',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: selected
-                                      ? Colors.white70
-                                      : cs.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const Gap(12),
-              _OptionCard(
-                title: 'Quality',
-                trailing: Text(
-                  _format == 'PNG' || _format == 'BMP' || _format == 'TIFF' ? 'Lossless' : '$_quality%',
-                  style: TextStyle(
-                    color: AppColors.convert,
-                    fontWeight: FontWeight.w700,
+                      ],
+                    ),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        activeTrackColor: AppColors.convert,
-                        thumbColor: AppColors.convert,
-                        overlayColor: AppColors.convert.withOpacity(0.12),
-                      ),
-                      child: Slider(
-                        value: _quality.toDouble(),
-                        min: 20,
-                        max: 100,
-                        divisions: 16,
-                        onChanged: _format == 'PNG' || _format == 'BMP' || _format == 'TIFF'
-                            ? null
-                            : (v) => setState(() => _quality = v.round()),
-                      ),
+                  const Gap(14),
+                  _PickImageCard(
+                    selectedImage: _selectedImage,
+                    isLoading: pickerState is PickerLoading,
+                    onPick: _pickImage,
+                  ),
+                  const Gap(14),
+                  _OptionCard(
+                    title: 'Output Format',
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: AppConstants.supportedFormats.map((f) {
+                        final selected = _format == f;
+                        final sameAsSource =
+                            sourceFormat != null && sourceFormat == f;
+                        return GestureDetector(
+                          onTap: () => setState(() => _format = f),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 170),
+                            curve: Curves.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? AppColors.convert
+                                  : cs.surfaceContainerHighest
+                                      .withOpacity(0.58),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: selected
+                                    ? AppColors.convert
+                                    : cs.outlineVariant.withOpacity(0.46),
+                              ),
+                              boxShadow: selected
+                                  ? [
+                                      BoxShadow(
+                                        color:
+                                            AppColors.convert.withOpacity(0.22),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 5),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  f,
+                                  style: TextStyle(
+                                    color:
+                                        selected ? Colors.white : cs.onSurface,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (sameAsSource) ...[
+                                  const Gap(6),
+                                  Text(
+                                    '(same)',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: selected
+                                          ? Colors.white70
+                                          : cs.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
-                    Text(
+                  ),
+                  const Gap(12),
+                  _OptionCard(
+                    title: 'Quality',
+                    trailing: Text(
                       _format == 'PNG' || _format == 'BMP' || _format == 'TIFF'
-                          ? 'Lossless format. Quality settings are not applicable.'
-                          : 'Higher quality gives better visuals but larger file size.',
-                      style: tt.bodySmall,
+                          ? 'Lossless'
+                          : '$_quality%',
+                      style: TextStyle(
+                        color: AppColors.convert,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ],
-                ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ToolSlider(
+                          value: _quality.toDouble(),
+                          min: 20,
+                          max: 100,
+                          divisions: 16,
+                          accent: AppColors.convert,
+                          label: '$_quality%',
+                          onChanged: _format == 'PNG' ||
+                                  _format == 'BMP' ||
+                                  _format == 'TIFF'
+                              ? null
+                              : (v) => setState(() => _quality = v.round()),
+                        ),
+                        Text(
+                          _format == 'PNG' ||
+                                  _format == 'BMP' ||
+                                  _format == 'TIFF'
+                              ? 'Lossless format. Quality settings are not applicable.'
+                              : 'Higher quality gives better visuals but larger file size.',
+                          style: tt.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Gap(12),
+                  AdManager.instance.getSmallNativeAdWidget(),
+                  const Gap(16),
+                  PfButton(
+                    label: _selectedImage == null
+                        ? 'Select an image first'
+                        : (isHeicInput && !AdManager.instance.isPro
+                            ? 'Convert Image (PRO)'
+                            : 'Convert Image'),
+                    icon: Icons.swap_horiz_rounded,
+                    backgroundColor: AppColors.convert,
+                    isLoading: _isProcessing,
+                    onPressed: _selectedImage == null || _isProcessing
+                        ? null
+                        : _convert,
+                  ),
+                ],
               ),
-              const Gap(12),
-              AdManager.instance.getSmallNativeAdWidget(),
-              const Gap(16),
-              PfButton(
-                label: _selectedImage == null
-                    ? 'Select an image first'
-                    : (isHeicInput && !AdManager.instance.isPro
-                        ? 'Convert Image (PRO)'
-                        : 'Convert Image'),
-                icon: Icons.swap_horiz_rounded,
-                backgroundColor: AppColors.convert,
-                isLoading: _isProcessing,
-                onPressed:
-                    _selectedImage == null || _isProcessing ? null : _convert,
-              ),
-            ],
-          ),
+            ),
+            ToolProcessingOverlay(
+              visible: _isProcessing,
+              accent: AppColors.convert,
+              icon: Icons.swap_horiz_rounded,
+              title: 'Converting image',
+              subtitle: 'Preparing the new format and preserving details.',
+            ),
+          ],
         ),
       ),
     );
@@ -323,14 +351,9 @@ class _PickImageCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: isLoading ? null : onPick,
-      child: Container(
-        width: double.infinity,
+      child: ToolSurface(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withOpacity(0.35),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cs.outlineVariant.withOpacity(0.35)),
-        ),
+        accent: AppColors.convert,
         child: selectedImage == null
             ? SizedBox(
                 height: 140,
@@ -469,15 +492,9 @@ class _OptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
+    return ToolSurface(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.35)),
-      ),
+      accent: AppColors.convert,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
