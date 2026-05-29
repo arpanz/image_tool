@@ -426,10 +426,10 @@ class _ToolSliderState extends State<ToolSlider>
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Softer accent for inactive track
+    // Glassmorphic translucent background for inactive pill track
     final inactiveColor = isDark
-        ? cs.surfaceContainerHighest.withOpacity(0.78)
-        : cs.surfaceContainerHighest.withOpacity(0.9);
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.06);
 
     return AnimatedBuilder(
       animation: _glowAnim,
@@ -443,7 +443,7 @@ class _ToolSliderState extends State<ToolSlider>
             thumbColor: widget.accent,
             disabledThumbColor: cs.onSurfaceVariant.withOpacity(0.35),
             overlayColor: widget.accent.withOpacity(0.0),
-            trackHeight: 8,
+            trackHeight: 16,
             trackShape: _PremiumTrackShape(
               accent: widget.accent,
               glowIntensity: _glowAnim.value,
@@ -500,9 +500,11 @@ class _PremiumTrackShape extends RoundedRectSliderTrackShape {
     double additionalActiveTrackHeight = 2,
   }) {
     final canvas = context.canvas;
-    final trackHeight = sliderTheme.trackHeight ?? 5;
-    final trackLeft = offset.dx + 12;
-    final trackRight = parentBox.size.width - 12 + offset.dx;
+    final trackHeight = sliderTheme.trackHeight ?? 16.0;
+    
+    // Slight horizontal inset to prevent clipping at boundaries
+    final trackLeft = offset.dx + 8;
+    final trackRight = parentBox.size.width - 8 + offset.dx;
     final trackTop = thumbCenter.dy - trackHeight / 2;
     final radius = Radius.circular(trackHeight / 2);
 
@@ -522,23 +524,24 @@ class _PremiumTrackShape extends RoundedRectSliderTrackShape {
     canvas.drawRRect(inactiveRect, inactivePaint);
 
     // Active track with gradient
+    final activeWidth = (thumbCenter.dx - trackLeft).clamp(0.0, trackRight - trackLeft);
     final activeRect = RRect.fromLTRBAndCorners(
       trackLeft,
       trackTop,
-      thumbCenter.dx,
+      trackLeft + activeWidth,
       trackTop + trackHeight,
       topLeft: radius,
-      topRight: radius,
       bottomLeft: radius,
-      bottomRight: radius,
+      topRight: activeWidth >= (trackRight - trackLeft - 4) ? radius : Radius.zero,
+      bottomRight: activeWidth >= (trackRight - trackLeft - 4) ? radius : Radius.zero,
     );
 
     // Create a lighter version of accent for the gradient start
-    final lighterAccent = Color.lerp(accent, Colors.white, 0.3)!;
+    final lighterAccent = Color.lerp(accent, Colors.white, 0.25)!;
     final activePaint = Paint()
       ..shader = ui.Gradient.linear(
         Offset(trackLeft, trackTop),
-        Offset(thumbCenter.dx, trackTop),
+        Offset(trackLeft + activeWidth, trackTop),
         [lighterAccent, accent],
       );
     canvas.drawRRect(activeRect, activePaint);
@@ -546,14 +549,14 @@ class _PremiumTrackShape extends RoundedRectSliderTrackShape {
     // Subtle glow under the active track when dragging
     if (glowIntensity > 0) {
       final glowPaint = Paint()
-        ..color = accent.withOpacity(0.18 * glowIntensity)
+        ..color = accent.withOpacity(0.14 * glowIntensity)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-      canvas.drawRRect(activeRect.inflate(2), glowPaint);
+      canvas.drawRRect(activeRect.inflate(1.5), glowPaint);
     }
   }
 }
 
-/// Custom thumb with soft shadow and animated glow ring.
+/// Custom thumb that draws an integrated flush handle inside the track.
 class _PremiumThumbShape extends SliderComponentShape {
   final Color accent;
   final double glowIntensity;
@@ -567,7 +570,7 @@ class _PremiumThumbShape extends SliderComponentShape {
 
   @override
   Size getPreferredSize(bool isEnabled, bool isDiscrete) =>
-      const Size.fromRadius(12);
+      const Size.fromRadius(8); // Flush fit for 16px trackHeight
 
   @override
   void paint(
@@ -586,34 +589,37 @@ class _PremiumThumbShape extends SliderComponentShape {
   }) {
     final canvas = context.canvas;
 
-    // Outer glow ring (animated)
+    // Sleek vertical white pill inside the track (4px wide, 10px high)
+    final handleWidth = 4.0;
+    final handleHeight = 10.0;
+    final handleRect = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: center,
+        width: handleWidth,
+        height: handleHeight,
+      ),
+      const Radius.circular(2.0),
+    );
+
+    // Subtle drag glow around the vertical handle
     if (glowIntensity > 0) {
-      final glowRadius = 12 + 10 * glowIntensity;
       final glowPaint = Paint()
-        ..color = accent.withOpacity(0.15 * glowIntensity)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-      canvas.drawCircle(center, glowRadius, glowPaint);
+        ..color = Colors.white.withOpacity(0.25 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      canvas.drawRRect(handleRect.inflate(3), glowPaint);
     }
 
-    // Drop shadow
+    // Drop shadow under the handle
     final shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(isDark ? 0.35 : 0.18)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-    canvas.drawCircle(center + const Offset(0, 2.0), 11.5, shadowPaint);
+      ..color = Colors.black.withOpacity(0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1);
+    canvas.drawRRect(handleRect.shift(const Offset(0.5, 0.5)), shadowPaint);
 
-    // White ring
-    final ringPaint = Paint()
-      ..color = isDark ? Colors.white.withOpacity(0.95) : Colors.white
+    // Draw the white capsule handle
+    final handlePaint = Paint()
+      ..color = Colors.white
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, 12, ringPaint);
-
-    // Accent fill
-    final thumbPaint = Paint()..color = accent;
-    canvas.drawCircle(center, 9, thumbPaint);
-
-    // Inner highlight dot
-    final highlightPaint = Paint()..color = Colors.white.withOpacity(0.45);
-    canvas.drawCircle(center - const Offset(2.2, 2.2), 2.5, highlightPaint);
+    canvas.drawRRect(handleRect, handlePaint);
   }
 }
 
