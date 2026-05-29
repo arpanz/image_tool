@@ -175,8 +175,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         children: [
                           const _SectionLabel('Output Format'),
                           const Gap(12),
-                          _FormatSelector(
-                            current: settings.format,
+                          ToolChipSelector(
+                            value: settings.format,
+                            options: AppConstants.supportedFormats,
                             accent: _accent,
                             onChanged: (f) =>
                                 ref.read(editorProvider.notifier).setFormat(f),
@@ -548,8 +549,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                         children: [
                           const _SectionLabel('Output Format'),
                           const Gap(12),
-                          _FormatSelector(
-                            current: settings.format,
+                          ToolChipSelector(
+                            value: settings.format,
+                            options: AppConstants.supportedFormats,
                             accent: _accent,
                             onChanged: (f) =>
                                 ref.read(editorProvider.notifier).setFormat(f),
@@ -974,69 +976,6 @@ class _FitModeSelector extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-// ── Format selector ────────────────────────────────────────────────────────
-// Wrap instead of Row — no overflow on small screens
-
-class _FormatSelector extends StatelessWidget {
-  final String current;
-  final Color accent;
-  final ValueChanged<String> onChanged;
-  const _FormatSelector({
-    required this.current,
-    required this.accent,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: AppConstants.supportedFormats.map((f) {
-        final isSelected = f == current;
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => onChanged(f),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? accent
-                    : cs.surfaceContainerHighest.withOpacity(0.58),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color:
-                      isSelected ? accent : cs.outlineVariant.withOpacity(0.46),
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: accent.withOpacity(0.22),
-                          blurRadius: 12,
-                          offset: const Offset(0, 5),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Text(f,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                  )),
             ),
           ),
         );

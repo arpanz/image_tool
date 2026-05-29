@@ -302,52 +302,12 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                       children: [
                         Text('Output Format', style: tt.labelLarge),
                         const Gap(12),
-                        // Wrap prevents overflow on narrow screens
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: AppConstants.supportedFormats.map((f) {
-                            final sel = f == settings.format;
-                            return GestureDetector(
-                              onTap: () => notifier
-                                  .updateSettings(settings.copyWith(format: f)),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 150),
-                                curve: Curves.easeOutCubic,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: sel
-                                      ? _accent
-                                      : cs.surfaceContainerHighest
-                                          .withOpacity(0.58),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: sel
-                                        ? _accent
-                                        : cs.outlineVariant.withOpacity(0.46),
-                                  ),
-                                  boxShadow: sel
-                                      ? [
-                                          BoxShadow(
-                                            color: _accent.withOpacity(0.22),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 5),
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Text(f,
-                                    style: TextStyle(
-                                      color: sel
-                                          ? Colors.white
-                                          : cs.onSurfaceVariant,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    )),
-                              ),
-                            );
-                          }).toList(),
+                        ToolChipSelector(
+                          value: settings.format,
+                          options: AppConstants.supportedFormats,
+                          accent: _accent,
+                          onChanged: (f) => notifier
+                              .updateSettings(settings.copyWith(format: f)),
                         ),
                       ],
                     ),

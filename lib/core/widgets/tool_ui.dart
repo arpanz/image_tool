@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -98,7 +99,11 @@ class ToolBadge extends StatelessWidget {
   }
 }
 
-class ToolSwitch extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// ToolSwitch — premium toggle with spring animation, glow, icon & haptics
+// ─────────────────────────────────────────────────────────────────────────────
+
+class ToolSwitch extends StatefulWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
   final Color accent;
@@ -111,52 +116,139 @@ class ToolSwitch extends StatelessWidget {
   });
 
   @override
+  State<ToolSwitch> createState() => _ToolSwitchState();
+}
+
+class _ToolSwitchState extends State<ToolSwitch>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _position;
+  late final Animation<double> _thumbScale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+      value: widget.value ? 1.0 : 0.0,
+    );
+    _position = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack);
+    _thumbScale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.85), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 0.85, end: 1.1), weight: 40),
+      TweenSequenceItem(tween: Tween(begin: 1.1, end: 1.0), weight: 30),
+    ]).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+  }
+
+  @override
+  void didUpdateWidget(ToolSwitch old) {
+    super.didUpdateWidget(old);
+    if (old.value != widget.value) {
+      widget.value ? _ctrl.forward() : _ctrl.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    if (widget.onChanged == null) return;
+    HapticFeedback.mediumImpact();
+    widget.onChanged!(!widget.value);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final enabled = onChanged != null;
-    final trackColor = value
-        ? accent.withOpacity(enabled ? 0.22 : 0.12)
-        : cs.surfaceContainerHighest.withOpacity(0.72);
-    final borderColor = value
-        ? accent.withOpacity(enabled ? 0.48 : 0.24)
-        : cs.outlineVariant.withOpacity(0.55);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final enabled = widget.onChanged != null;
 
     return Semantics(
-      toggled: value,
+      toggled: widget.value,
       button: true,
       child: GestureDetector(
-        onTap: enabled ? () => onChanged!(!value) : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 190),
-          curve: Curves.easeOutCubic,
-          width: 52,
-          height: 30,
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: trackColor,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: borderColor),
-          ),
-          child: AnimatedAlign(
-            duration: const Duration(milliseconds: 190),
-            curve: Curves.easeOutCubic,
-            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(
-              width: 22,
-              height: 22,
+        onTap: enabled ? _toggle : null,
+        child: AnimatedBuilder(
+          animation: _ctrl,
+          builder: (context, _) {
+            final t = _position.value;
+            final tClamped = t.clamp(
+                0.0, 1.0); // easeOutBack overshoots; clamp for color lerps
+            final trackColor = Color.lerp(
+              isDark
+                  ? Colors.white.withOpacity(0.10)
+                  : cs.surfaceContainerHighest.withOpacity(0.72),
+              widget.accent.withOpacity(enabled ? 0.22 : 0.12),
+              tClamped,
+            )!;
+            final borderColor = Color.lerp(
+              isDark
+                  ? Colors.white.withOpacity(0.18)
+                  : cs.outlineVariant.withOpacity(0.55),
+              widget.accent.withOpacity(enabled ? 0.48 : 0.24),
+              tClamped,
+            )!;
+            final thumbColor = Color.lerp(
+              isDark
+                  ? Colors.white.withOpacity(0.50)
+                  : cs.onSurfaceVariant.withOpacity(0.55),
+              widget.accent,
+              tClamped,
+            )!;
+
+            return Container(
+              width: 52,
+              height: 30,
+              padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
-                color: value ? accent : cs.onSurfaceVariant.withOpacity(0.65),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.22),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                color: trackColor,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: borderColor, width: 1.2),
               ),
-            ),
-          ),
+              child: Align(
+                alignment: Alignment.lerp(
+                  Alignment.centerLeft,
+                  Alignment.centerRight,
+                  t,
+                )!,
+                child: Transform.scale(
+                  scale: _thumbScale.value,
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: thumbColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: thumbColor.withOpacity(0.4 * tClamped),
+                          blurRadius: 10 * tClamped,
+                          spreadRadius: 1 * tClamped,
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.18),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: tClamped > 0.5
+                        ? Icon(
+                            Icons.check_rounded,
+                            size: 13,
+                            color:
+                                Colors.white.withOpacity((tClamped - 0.5) * 2),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -243,7 +335,12 @@ class ToolTextField extends StatelessWidget {
   }
 }
 
-class ToolSlider extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// ToolSlider — custom painted slider with gradient track, glowing thumb,
+//              and premium continuous haptic feedback on drag
+// ─────────────────────────────────────────────────────────────────────────────
+
+class ToolSlider extends StatefulWidget {
   final double value;
   final double min;
   final double max;
@@ -264,41 +361,267 @@ class ToolSlider extends StatelessWidget {
   });
 
   @override
+  State<ToolSlider> createState() => _ToolSliderState();
+}
+
+class _ToolSliderState extends State<ToolSlider>
+    with SingleTickerProviderStateMixin {
+  int? _lastHapticDivision;
+  late final AnimationController _glowCtrl;
+  late final Animation<double> _glowAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _glowAnim = CurvedAnimation(parent: _glowCtrl, curve: Curves.easeOutCubic);
+  }
+
+  @override
+  void dispose() {
+    _glowCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onChangeStart(double v) {
+    _lastHapticDivision = null;
+    _glowCtrl.forward();
+    HapticFeedback.lightImpact();
+  }
+
+  void _onChanged(double v) {
+    if (widget.onChanged == null) return;
+    widget.onChanged!(v);
+
+    // Premium continuous haptics — fire on each discrete division step
+    if (widget.divisions != null) {
+      final step =
+          ((v - widget.min) / (widget.max - widget.min) * widget.divisions!)
+              .round();
+      if (step != _lastHapticDivision) {
+        _lastHapticDivision = step;
+        HapticFeedback.selectionClick();
+      }
+    } else {
+      // For continuous sliders, fire haptics at ~2% intervals
+      final pct = ((v - widget.min) / (widget.max - widget.min) * 50).round();
+      if (pct != _lastHapticDivision) {
+        _lastHapticDivision = pct;
+        HapticFeedback.selectionClick();
+      }
+    }
+  }
+
+  void _onChangeEnd(double v) {
+    _lastHapticDivision = null;
+    _glowCtrl.reverse();
+    HapticFeedback.lightImpact();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final inactive = cs.surfaceContainerHighest.withOpacity(0.78);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return SliderTheme(
-      data: SliderTheme.of(context).copyWith(
-        activeTrackColor: accent,
-        inactiveTrackColor: inactive,
-        disabledActiveTrackColor: accent.withOpacity(0.28),
-        disabledInactiveTrackColor: inactive.withOpacity(0.62),
-        thumbColor: accent,
-        disabledThumbColor: cs.onSurfaceVariant.withOpacity(0.35),
-        overlayColor: accent.withOpacity(0.14),
-        trackHeight: 6,
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
-        overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
-        valueIndicatorColor: accent,
-        valueIndicatorTextStyle: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-      child: Slider(
-        value: value,
-        min: min,
-        max: max,
-        divisions: divisions,
-        label: label,
-        onChanged: onChanged,
-      ),
+    // Softer accent for inactive track
+    final inactiveColor = isDark
+        ? cs.surfaceContainerHighest.withOpacity(0.78)
+        : cs.surfaceContainerHighest.withOpacity(0.9);
+
+    return AnimatedBuilder(
+      animation: _glowAnim,
+      builder: (context, _) {
+        return SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: widget.accent,
+            inactiveTrackColor: inactiveColor,
+            disabledActiveTrackColor: widget.accent.withOpacity(0.28),
+            disabledInactiveTrackColor: inactiveColor.withOpacity(0.62),
+            thumbColor: widget.accent,
+            disabledThumbColor: cs.onSurfaceVariant.withOpacity(0.35),
+            overlayColor: widget.accent.withOpacity(0.0),
+            trackHeight: 8,
+            trackShape: _PremiumTrackShape(
+              accent: widget.accent,
+              glowIntensity: _glowAnim.value,
+            ),
+            thumbShape: _PremiumThumbShape(
+              accent: widget.accent,
+              glowIntensity: _glowAnim.value,
+              isDark: isDark,
+            ),
+            valueIndicatorColor: widget.accent,
+            valueIndicatorTextStyle: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
+            valueIndicatorShape: const PaddleSliderValueIndicatorShape(),
+            showValueIndicator: ShowValueIndicator.onDrag,
+          ),
+          child: Slider(
+            value: widget.value,
+            min: widget.min,
+            max: widget.max,
+            divisions: widget.divisions,
+            label: widget.label,
+            onChanged: widget.onChanged != null ? _onChanged : null,
+            onChangeStart: widget.onChanged != null ? _onChangeStart : null,
+            onChangeEnd: widget.onChanged != null ? _onChangeEnd : null,
+          ),
+        );
+      },
     );
   }
 }
 
-class ToolPresetChip extends StatelessWidget {
+/// Custom rounded track with a subtle gradient on the active portion.
+class _PremiumTrackShape extends RoundedRectSliderTrackShape {
+  final Color accent;
+  final double glowIntensity;
+
+  const _PremiumTrackShape({required this.accent, required this.glowIntensity});
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset offset, {
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required Animation<double> enableAnimation,
+    required TextDirection textDirection,
+    required Offset thumbCenter,
+    Offset? secondaryOffset,
+    bool isDiscrete = false,
+    bool isEnabled = false,
+    double additionalActiveTrackHeight = 2,
+  }) {
+    final canvas = context.canvas;
+    final trackHeight = sliderTheme.trackHeight ?? 5;
+    final trackLeft = offset.dx + 12;
+    final trackRight = parentBox.size.width - 12 + offset.dx;
+    final trackTop = thumbCenter.dy - trackHeight / 2;
+    final radius = Radius.circular(trackHeight / 2);
+
+    // Inactive track
+    final inactiveRect = RRect.fromLTRBAndCorners(
+      trackLeft,
+      trackTop,
+      trackRight,
+      trackTop + trackHeight,
+      topLeft: radius,
+      topRight: radius,
+      bottomLeft: radius,
+      bottomRight: radius,
+    );
+    final inactivePaint = Paint()
+      ..color = sliderTheme.inactiveTrackColor ?? Colors.grey;
+    canvas.drawRRect(inactiveRect, inactivePaint);
+
+    // Active track with gradient
+    final activeRect = RRect.fromLTRBAndCorners(
+      trackLeft,
+      trackTop,
+      thumbCenter.dx,
+      trackTop + trackHeight,
+      topLeft: radius,
+      topRight: radius,
+      bottomLeft: radius,
+      bottomRight: radius,
+    );
+
+    // Create a lighter version of accent for the gradient start
+    final lighterAccent = Color.lerp(accent, Colors.white, 0.3)!;
+    final activePaint = Paint()
+      ..shader = ui.Gradient.linear(
+        Offset(trackLeft, trackTop),
+        Offset(thumbCenter.dx, trackTop),
+        [lighterAccent, accent],
+      );
+    canvas.drawRRect(activeRect, activePaint);
+
+    // Subtle glow under the active track when dragging
+    if (glowIntensity > 0) {
+      final glowPaint = Paint()
+        ..color = accent.withOpacity(0.18 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+      canvas.drawRRect(activeRect.inflate(2), glowPaint);
+    }
+  }
+}
+
+/// Custom thumb with soft shadow and animated glow ring.
+class _PremiumThumbShape extends SliderComponentShape {
+  final Color accent;
+  final double glowIntensity;
+  final bool isDark;
+
+  const _PremiumThumbShape({
+    required this.accent,
+    required this.glowIntensity,
+    required this.isDark,
+  });
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) =>
+      const Size.fromRadius(12);
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final canvas = context.canvas;
+
+    // Outer glow ring (animated)
+    if (glowIntensity > 0) {
+      final glowRadius = 12 + 10 * glowIntensity;
+      final glowPaint = Paint()
+        ..color = accent.withOpacity(0.15 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      canvas.drawCircle(center, glowRadius, glowPaint);
+    }
+
+    // Drop shadow
+    final shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(isDark ? 0.35 : 0.18)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawCircle(center + const Offset(0, 2.0), 11.5, shadowPaint);
+
+    // White ring
+    final ringPaint = Paint()
+      ..color = isDark ? Colors.white.withOpacity(0.95) : Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, 12, ringPaint);
+
+    // Accent fill
+    final thumbPaint = Paint()..color = accent;
+    canvas.drawCircle(center, 9, thumbPaint);
+
+    // Inner highlight dot
+    final highlightPaint = Paint()..color = Colors.white.withOpacity(0.45);
+    canvas.drawCircle(center - const Offset(2.2, 2.2), 2.5, highlightPaint);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ToolPresetChip — scale-bounce micro-interaction with haptics
+// ─────────────────────────────────────────────────────────────────────────────
+
+class ToolPresetChip extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
   final Color? accent;
@@ -311,27 +634,92 @@ class ToolPresetChip extends StatelessWidget {
   });
 
   @override
+  State<ToolPresetChip> createState() => _ToolPresetChipState();
+}
+
+class _ToolPresetChipState extends State<ToolPresetChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+      reverseDuration: const Duration(milliseconds: 200),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.92).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails _) => _ctrl.forward();
+
+  void _onTapUp(TapUpDetails _) {
+    _ctrl.reverse();
+    HapticFeedback.lightImpact();
+    widget.onTap();
+  }
+
+  void _onTapCancel() => _ctrl.reverse();
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final color = accent ?? cs.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = widget.accent ?? cs.primary;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(11),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+    return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: ScaleTransition(
+        scale: _scale,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
           decoration: BoxDecoration(
-            color: Color.alphaBlend(
-              color.withOpacity(0.035),
-              cs.surfaceContainerHighest.withOpacity(0.68),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [
+                      Color.alphaBlend(
+                        color.withOpacity(0.08),
+                        Colors.white.withOpacity(0.08),
+                      ),
+                      Color.alphaBlend(
+                        color.withOpacity(0.04),
+                        Colors.white.withOpacity(0.06),
+                      ),
+                    ]
+                  : [
+                      Color.alphaBlend(
+                        color.withOpacity(0.04),
+                        cs.surfaceContainerHighest.withOpacity(0.8),
+                      ),
+                      Color.alphaBlend(
+                        color.withOpacity(0.02),
+                        cs.surfaceContainerHighest.withOpacity(0.7),
+                      ),
+                    ],
             ),
             borderRadius: BorderRadius.circular(11),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.54)),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.14)
+                  : color.withOpacity(0.14),
+            ),
           ),
           child: Text(
-            label,
+            widget.label,
             style: TextStyle(
               color: cs.onSurface,
               fontSize: 12,
@@ -356,7 +744,11 @@ class ToolSegment<T> {
   });
 }
 
-class ToolSegmentedControl<T> extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// ToolSegmentedControl — animated sliding indicator with haptics
+// ─────────────────────────────────────────────────────────────────────────────
+
+class ToolSegmentedControl<T> extends StatefulWidget {
   final T value;
   final List<ToolSegment<T>> segments;
   final ValueChanged<T> onChanged;
@@ -371,64 +763,194 @@ class ToolSegmentedControl<T> extends StatelessWidget {
   });
 
   @override
+  State<ToolSegmentedControl<T>> createState() =>
+      _ToolSegmentedControlState<T>();
+}
+
+class _ToolSegmentedControlState<T> extends State<ToolSegmentedControl<T>>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late Animation<double> _slideAnim;
+  int _activeIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeIndex = _indexOf(widget.value);
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    );
+    _slideAnim = AlwaysStoppedAnimation(_activeIndex.toDouble());
+  }
+
+  @override
+  void didUpdateWidget(ToolSegmentedControl<T> old) {
+    super.didUpdateWidget(old);
+    final newIndex = _indexOf(widget.value);
+    if (newIndex != _activeIndex) {
+      final oldIndex = _activeIndex;
+      _activeIndex = newIndex;
+      _slideAnim = Tween<double>(
+        begin: oldIndex.toDouble(),
+        end: newIndex.toDouble(),
+      ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+      _ctrl.forward(from: 0);
+    }
+  }
+
+  int _indexOf(T value) {
+    for (int i = 0; i < widget.segments.length; i++) {
+      if (widget.segments[i].value == value) return i;
+    }
+    return 0;
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final count = widget.segments.length;
 
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.58),
+        color: isDark
+            ? Colors.white.withOpacity(0.08)
+            : cs.surfaceContainerHighest.withOpacity(0.7),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.42)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.14)
+              : cs.outlineVariant.withOpacity(0.5),
+        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: segments.map((segment) {
-          final active = segment.value == value;
-          return GestureDetector(
-            onTap: () => onChanged(segment.value),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: active ? accent : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: active
-                    ? [
-                        BoxShadow(
-                          color: accent.withOpacity(0.24),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return AnimatedBuilder(
+            animation: _slideAnim,
+            builder: (context, _) {
+              return Stack(
                 children: [
-                  if (segment.icon != null) ...[
-                    Icon(
-                      segment.icon,
-                      size: 14,
-                      color: active ? Colors.white : cs.onSurfaceVariant,
+                  // ── Sliding indicator ──
+                  if (constraints.maxWidth > 0)
+                    _SlidingIndicator(
+                      slideValue: _slideAnim.value,
+                      segmentCount: count,
+                      accent: widget.accent,
+                      isDark: isDark,
                     ),
-                    const Gap(5),
-                  ],
-                  Text(
-                    segment.label,
-                    style: TextStyle(
-                      color: active ? Colors.white : cs.onSurfaceVariant,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  // ── Segment labels ──
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(count, (i) {
+                      final segment = widget.segments[i];
+                      final active = segment.value == widget.value;
+                      return GestureDetector(
+                        onTap: () {
+                          if (!active) {
+                            HapticFeedback.selectionClick();
+                            widget.onChanged(segment.value);
+                          }
+                        },
+                        behavior: HitTestBehavior.opaque,
+                        child: AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          style: TextStyle(
+                            color: active ? Colors.white : cs.onSurfaceVariant,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 7,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (segment.icon != null) ...[
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    child: Icon(
+                                      segment.icon,
+                                      key: ValueKey(active),
+                                      size: 14,
+                                      color: active
+                                          ? Colors.white
+                                          : cs.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const Gap(5),
+                                ],
+                                Text(segment.label),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ],
-              ),
-            ),
+              );
+            },
           );
-        }).toList(),
+        },
       ),
+    );
+  }
+}
+
+/// Animated indicator that slides behind the active segment.
+class _SlidingIndicator extends StatelessWidget {
+  final double slideValue;
+  final int segmentCount;
+  final Color accent;
+  final bool isDark;
+
+  const _SlidingIndicator({
+    required this.slideValue,
+    required this.segmentCount,
+    required this.accent,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth <= 0 || segmentCount == 0) {
+          return const SizedBox.shrink();
+        }
+        final segmentWidth = constraints.maxWidth / segmentCount;
+        final left = slideValue * segmentWidth;
+
+        return Positioned(
+          left: left,
+          top: 0,
+          bottom: 0,
+          width: segmentWidth,
+          child: Container(
+            decoration: BoxDecoration(
+              color: accent,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withOpacity(isDark ? 0.3 : 0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -581,6 +1103,149 @@ class _ToolProcessingOverlayState extends State<ToolProcessingOverlay>
                   ],
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ToolChipSelector — generic chip selection list (e.g. for formats) with haptics
+// ─────────────────────────────────────────────────────────────────────────────
+
+class ToolChipSelector extends StatelessWidget {
+  final String value;
+  final List<String> options;
+  final Color accent;
+  final ValueChanged<String> onChanged;
+
+  const ToolChipSelector({
+    super.key,
+    required this.value,
+    required this.options,
+    required this.accent,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: options.map((opt) {
+        return _ToolSelectionChip(
+          label: opt,
+          isSelected: opt == value,
+          accent: accent,
+          onTap: () => onChanged(opt),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _ToolSelectionChip extends StatefulWidget {
+  final String label;
+  final bool isSelected;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _ToolSelectionChip({
+    required this.label,
+    required this.isSelected,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  State<_ToolSelectionChip> createState() => _ToolSelectionChipState();
+}
+
+class _ToolSelectionChipState extends State<_ToolSelectionChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+      reverseDuration: const Duration(milliseconds: 180),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.94).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails _) => _ctrl.forward();
+  void _onTapUp(TapUpDetails _) {
+    _ctrl.reverse();
+    HapticFeedback.lightImpact();
+    widget.onTap();
+  }
+
+  void _onTapCancel() => _ctrl.reverse();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: ScaleTransition(
+        scale: _scale,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? widget.accent
+                : (isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : cs.surfaceContainerHighest.withOpacity(0.5)),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: widget.isSelected
+                  ? widget.accent
+                  : (isDark
+                      ? Colors.white.withOpacity(0.14)
+                      : cs.outlineVariant.withOpacity(0.4)),
+              width: 1,
+            ),
+            boxShadow: widget.isSelected
+                ? [
+                    BoxShadow(
+                      color: widget.accent.withOpacity(isDark ? 0.28 : 0.18),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              color: widget.isSelected
+                  ? Colors.white
+                  : (isDark
+                      ? Colors.white.withOpacity(0.7)
+                      : cs.onSurfaceVariant),
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
             ),
           ),
         ),
