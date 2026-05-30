@@ -70,7 +70,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final notifier = ref.read(editorProvider.notifier);
     final settings = ref.read(editorProvider).settings;
 
-    if (widget.mode == ImageMode.compress && _useTargetSize) {
+    if (_useTargetSize) {
       final kb = int.tryParse(_targetSizeCtrl.text.trim());
       notifier.setTargetSizeKB(kb != null && kb > 0 ? kb : null);
     } else {
@@ -685,6 +685,63 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                               Text('Keep aspect ratio', style: tt.bodyMedium),
                             ],
                           ),
+                          const Gap(12),
+                          Row(
+                            children: [
+                              ToolSwitch(
+                                value: _useTargetSize,
+                                accent: _accent,
+                                onChanged: (v) {
+                                  setState(() => _useTargetSize = v);
+                                  final kb = v
+                                      ? int.tryParse(_targetSizeCtrl.text.trim())
+                                      : null;
+                                  ref
+                                      .read(editorProvider.notifier)
+                                      .setTargetSizeKB(kb);
+                                },
+                              ),
+                              const Gap(8),
+                              Text('Limit file size', style: tt.bodyMedium),
+                            ],
+                          ),
+                          if (_useTargetSize) ...[
+                            const Gap(10),
+                            ToolTextField(
+                              controller: _targetSizeCtrl,
+                              accent: _accent,
+                              label: 'Max file size',
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              suffixText: 'KB',
+                              hintText: 'e.g. 500',
+                              helperText: _targetSizeCtrl.text.isNotEmpty
+                                  ? '≈ ${(int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024 > 1 ? '${((int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024).toStringAsFixed(1)} MB' : '${_targetSizeCtrl.text} KB'}'
+                                  : null,
+                              onChanged: (text) {
+                                setState(() {});
+                                final kb = _useTargetSize
+                                    ? int.tryParse(text.trim())
+                                    : null;
+                                ref
+                                    .read(editorProvider.notifier)
+                                    .setTargetSizeKB(kb);
+                              },
+                            ),
+                            if (settings.format.toUpperCase() == 'PNG' ||
+                                settings.format.toUpperCase() == 'BMP' ||
+                                settings.format.toUpperCase() == 'TIFF')
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'Target size is not supported for ${settings.format.toUpperCase()}. Switch to JPG or WEBP.',
+                                  style: tt.bodySmall
+                                      ?.copyWith(color: AppColors.error),
+                                ),
+                              ),
+                          ],
                         ],
                       ),
                     ),

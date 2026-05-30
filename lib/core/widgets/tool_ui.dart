@@ -1158,17 +1158,22 @@ class ToolChipSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: options.map((opt) {
-        return _ToolSelectionChip(
-          label: opt,
-          isSelected: opt == value,
-          accent: accent,
-          onTap: () => onChanged(opt),
-        );
-      }).toList(),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: options.map((opt) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: _ToolSelectionChip(
+              label: opt,
+              isSelected: opt == value,
+              accent: accent,
+              onTap: () => onChanged(opt),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }

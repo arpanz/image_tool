@@ -119,70 +119,75 @@ class _ConvertScreenState extends ConsumerState<ConvertScreen> {
                   const Gap(14),
                   _OptionCard(
                     title: 'Output Format',
-                    child: Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: AppConstants.supportedFormats.map((f) {
-                        final selected = _format == f;
-                        final sameAsSource =
-                            sourceFormat != null && sourceFormat == f;
-                        return GestureDetector(
-                          onTap: () => setState(() => _format = f),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 170),
-                            curve: Curves.easeOutCubic,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? AppColors.convert
-                                  : cs.surfaceContainerHighest
-                                      .withOpacity(0.58),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: selected
-                                    ? AppColors.convert
-                                    : cs.outlineVariant.withOpacity(0.46),
-                              ),
-                              boxShadow: selected
-                                  ? [
-                                      BoxShadow(
-                                        color:
-                                            AppColors.convert.withOpacity(0.22),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 5),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  f,
-                                  style: TextStyle(
-                                    color:
-                                        selected ? Colors.white : cs.onSurface,
-                                    fontWeight: FontWeight.w700,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: AppConstants.supportedFormats.map((f) {
+                          final selected = _format == f;
+                          final sameAsSource =
+                              sourceFormat != null && sourceFormat == f;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: GestureDetector(
+                              onTap: () => setState(() => _format = f),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 170),
+                                curve: Curves.easeOutCubic,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? AppColors.convert
+                                      : cs.surfaceContainerHighest
+                                          .withOpacity(0.58),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: selected
+                                        ? AppColors.convert
+                                        : cs.outlineVariant.withOpacity(0.46),
                                   ),
+                                  boxShadow: selected
+                                      ? [
+                                          BoxShadow(
+                                            color:
+                                                AppColors.convert.withOpacity(0.22),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 5),
+                                          ),
+                                        ]
+                                      : null,
                                 ),
-                                if (sameAsSource) ...[
-                                  const Gap(6),
-                                  Text(
-                                    '(same)',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: selected
-                                          ? Colors.white70
-                                          : cs.onSurfaceVariant,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      f,
+                                      style: TextStyle(
+                                        color:
+                                            selected ? Colors.white : cs.onSurface,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ],
+                                    if (sameAsSource) ...[
+                                      const Gap(6),
+                                      Text(
+                                        '(same)',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: selected
+                                              ? Colors.white70
+                                              : cs.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        );
-                      }).toList(),
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
                   const Gap(12),
