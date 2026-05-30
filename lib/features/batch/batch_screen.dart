@@ -210,6 +210,44 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Image grid header ──────────────────────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        state.items.isEmpty
+                            ? 'No images selected'
+                            : '${state.items.length} image${state.items.length > 1 ? "s" : ""} selected',
+                        style: tt.labelLarge,
+                      ),
+                      TextButton.icon(
+                        onPressed:
+                            state.isProcessing ? null : notifier.pickImages,
+                        icon: const Icon(Icons.add_photo_alternate_outlined,
+                            size: 18),
+                        label: const Text('Add images'),
+                        style:
+                            TextButton.styleFrom(foregroundColor: cs.primary),
+                      ),
+                    ],
+                  ),
+                  const Gap(8),
+
+                  // ── Image grid / empty state ──────────────────────────────
+                  if (state.items.isEmpty)
+                    _EmptyPicker(
+                      accent: _accent,
+                      onTap: notifier.pickImages,
+                    )
+                  else
+                    _ImageGrid(
+                      items: state.items,
+                      isProcessing: state.isProcessing,
+                      accent: _accent,
+                      onRemove: (i) => notifier.removeItem(i),
+                    ),
+                  const Gap(20),
+
                   // ── Settings card ──────────────────────────────────────────
                   _SectionCard(
                     child: (_isCompress || _isConvert)
@@ -423,43 +461,6 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                     ),
                   ),
                   const Gap(20),
-
-                  // ── Image grid header ──────────────────────────────────────
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        state.items.isEmpty
-                            ? 'No images selected'
-                            : '${state.items.length} image${state.items.length > 1 ? "s" : ""} selected',
-                        style: tt.labelLarge,
-                      ),
-                      TextButton.icon(
-                        onPressed:
-                            state.isProcessing ? null : notifier.pickImages,
-                        icon: const Icon(Icons.add_photo_alternate_outlined,
-                            size: 18),
-                        label: const Text('Add images'),
-                        style:
-                            TextButton.styleFrom(foregroundColor: cs.primary),
-                      ),
-                    ],
-                  ),
-                  const Gap(8),
-
-                  // ── Image grid / empty state ──────────────────────────────
-                  if (state.items.isEmpty)
-                    _EmptyPicker(
-                      accent: _accent,
-                      onTap: notifier.pickImages,
-                    )
-                  else
-                    _ImageGrid(
-                      items: state.items,
-                      isProcessing: state.isProcessing,
-                      accent: _accent,
-                      onRemove: (i) => notifier.removeItem(i),
-                    ),
 
                   // ── Progress bar ───────────────────────────────────────────
                   if (state.isProcessing) ...[
