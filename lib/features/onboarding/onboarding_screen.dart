@@ -263,34 +263,36 @@ class _IllustrationCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Outer ring
-              Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: page.accentColor.withOpacity(isDark ? 0.08 : 0.06),
-                ),
-                child: Center(
-                  // Inner filled circle with icon
-                  child: Container(
-                    width: 96,
-                    height: 96,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          page.accentColor,
-                          page.secondaryColor,
-                        ],
+              // Outer ring (wrapped in a gentle floating animation)
+              _FloatingIllustration(
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: page.accentColor.withOpacity(isDark ? 0.08 : 0.06),
+                  ),
+                  child: Center(
+                    // Inner filled circle with icon
+                    child: Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            page.accentColor,
+                            page.secondaryColor,
+                          ],
+                        ),
                       ),
-                    ),
-                    child: Icon(
-                      page.icon,
-                      size: 44,
-                      color: Colors.white,
+                      child: Icon(
+                        page.icon,
+                        size: 44,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -322,6 +324,52 @@ class _IllustrationCard extends StatelessWidget {
         shape: BoxShape.circle,
         color: color,
       ),
+    );
+  }
+}
+
+class _FloatingIllustration extends StatefulWidget {
+  final Widget child;
+  const _FloatingIllustration({required this.child});
+
+  @override
+  State<_FloatingIllustration> createState() => _FloatingIllustrationState();
+}
+
+class _FloatingIllustrationState extends State<_FloatingIllustration>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: -4.0, end: 4.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOutSine),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _animation.value),
+          child: child,
+        );
+      },
+      child: widget.child,
     );
   }
 }

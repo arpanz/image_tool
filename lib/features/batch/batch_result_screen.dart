@@ -12,6 +12,8 @@ import '../../core/widgets/pf_button.dart';
 import '../../core/providers/history_provider.dart';
 import '../home/home_screen.dart';
 import 'batch_controller.dart';
+import '../../core/widgets/premium_page_route.dart';
+import '../../core/widgets/fade_in_slide.dart';
 
 class BatchResultScreen extends ConsumerStatefulWidget {
   final ImageMode mode;
@@ -116,161 +118,188 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // ── Hero ────────────────────────────────────────────────────
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isCompress
-                        ? [const Color(0xFF6C63FF), const Color(0xFF9D97FF)]
-                        : [const Color(0xFF11998E), const Color(0xFF38EF7D)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isCompress
-                              ? const Color(0xFF6C63FF)
-                              : const Color(0xFF11998E))
-                          .withOpacity(0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 6),
+              FadeInSlide(
+                delay: Duration.zero,
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isCompress
+                          ? [const Color(0xFF6C63FF), const Color(0xFF9D97FF)]
+                          : [const Color(0xFF11998E), const Color(0xFF38EF7D)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
-                ),
-                child: Icon(
-                  isCompress
-                      ? Icons.compress_rounded
-                      : Icons.photo_size_select_large_rounded,
-                  size: 34,
-                  color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isCompress
+                                ? const Color(0xFF6C63FF)
+                                : const Color(0xFF11998E))
+                            .withOpacity(0.35),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    isCompress
+                        ? Icons.compress_rounded
+                        : Icons.photo_size_select_large_rounded,
+                    size: 34,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const Gap(14),
-              Text(
-                isCompress ? 'Batch compression done!' : 'Batch resize done!',
-                style: tt.headlineMedium,
+              FadeInSlide(
+                delay: const Duration(milliseconds: 60),
+                child: Text(
+                  isCompress ? 'Batch compression done!' : 'Batch resize done!',
+                  style: tt.headlineMedium,
+                ),
               ),
               const Gap(4),
-              Text(
-                '${done.length} of ${state.totalCount} images processed successfully.',
-                style: tt.bodyMedium,
-                textAlign: TextAlign.center,
+              FadeInSlide(
+                delay: const Duration(milliseconds: 120),
+                child: Text(
+                  '${done.length} of ${state.totalCount} images processed successfully.',
+                  style: tt.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
               ),
               const Gap(20),
 
               // ── Per-image results grid/list ───────────────────────────────
               if (done.isNotEmpty) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Processed Images', style: tt.labelLarge),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.list_rounded,
-                              color: _isListView
-                                  ? cs.primary
-                                  : cs.onSurfaceVariant),
-                          onPressed: () => setState(() => _isListView = true),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        const Gap(12),
-                        IconButton(
-                          icon: Icon(Icons.grid_view_rounded,
-                              color: !_isListView
-                                  ? cs.primary
-                                  : cs.onSurfaceVariant),
-                          onPressed: () => setState(() => _isListView = false),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                  ],
+                FadeInSlide(
+                  delay: const Duration(milliseconds: 180),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Processed Images', style: tt.labelLarge),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.list_rounded,
+                                color: _isListView
+                                    ? cs.primary
+                                    : cs.onSurfaceVariant),
+                            onPressed: () => setState(() => _isListView = true),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                          const Gap(12),
+                          IconButton(
+                            icon: Icon(Icons.grid_view_rounded,
+                                color: !_isListView
+                                    ? cs.primary
+                                    : cs.onSurfaceVariant),
+                            onPressed: () => setState(() => _isListView = false),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 const Gap(12),
-                _isListView
-                    ? _ResultList(items: done)
-                    : _ResultGrid(items: done),
+                FadeInSlide(
+                  delay: const Duration(milliseconds: 240),
+                  child: _isListView
+                      ? _ResultList(items: done)
+                      : _ResultGrid(items: done),
+                ),
                 const Gap(20),
               ],
 
               // ── History Group Card ─────────────────────────────────────────
               if (done.isNotEmpty && ref.watch(historyProvider).isEnabled) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: cs.primary.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
+                FadeInSlide(
+                  delay: const Duration(milliseconds: 300),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: cs.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.history_rounded, color: cs.primary, size: 20),
                         ),
-                        child: Icon(Icons.history_rounded, color: cs.primary, size: 20),
-                      ),
-                      const Gap(12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Save Batch to History',
-                              style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            const Gap(2),
-                            Text(
-                              'Group these ${done.length} images in your history log',
-                              style: tt.bodySmall?.copyWith(fontSize: 11),
-                            ),
-                          ],
+                        const Gap(12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Save Batch to History',
+                                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const Gap(2),
+                              Text(
+                                'Group these ${done.length} images in your history log',
+                                style: tt.bodySmall?.copyWith(fontSize: 11),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      FilledButton(
-                        onPressed: _isSavedToHistory ? null : () => _saveBatchToHistory(done),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: _isSavedToHistory ? cs.surfaceContainerHighest : cs.primary,
-                          foregroundColor: _isSavedToHistory ? cs.onSurfaceVariant : Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          minimumSize: const Size(0, 36),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        FilledButton(
+                          onPressed: _isSavedToHistory ? null : () => _saveBatchToHistory(done),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _isSavedToHistory ? cs.surfaceContainerHighest : cs.primary,
+                            foregroundColor: _isSavedToHistory ? cs.onSurfaceVariant : Colors.black,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            minimumSize: const Size(0, 36),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: Text(_isSavedToHistory ? 'Saved' : 'Save'),
                         ),
-                        child: Text(_isSavedToHistory ? 'Saved' : 'Save'),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 const Gap(16),
               ],
 
               // ── Ad ────────────────────────────────────────────────────────
-              Center(child: AdManager.instance.getBannerAdWidget()),
+              FadeInSlide(
+                delay: const Duration(milliseconds: 360),
+                child: Center(child: AdManager.instance.getBannerAdWidget()),
+              ),
               const Gap(16),
 
               // ── Actions ──────────────────────────────────────────────────
               if (done.isNotEmpty) ...[
-                PfButton(
-                  label: 'Share All (${done.length})',
-                  icon: Icons.share_outlined,
-                  onPressed: () => _shareAll(done),
+                FadeInSlide(
+                  delay: const Duration(milliseconds: 420),
+                  child: PfButton(
+                    label: 'Share All (${done.length})',
+                    icon: Icons.share_outlined,
+                    onPressed: () => _shareAll(done),
+                  ),
                 ),
                 const Gap(12),
-                PfButton(
-                  label: 'Save All to Device',
-                  icon: Icons.download_outlined,
-                  backgroundColor: isDark
-                      ? AppColors.surface
-                      : AppColors.lightSurfaceElevated,
-                  onPressed: () => _saveAll(context, done),
+                FadeInSlide(
+                  delay: const Duration(milliseconds: 480),
+                  child: PfButton(
+                    label: 'Save All to Device',
+                    icon: Icons.download_outlined,
+                    backgroundColor: isDark
+                        ? AppColors.surface
+                        : AppColors.lightSurfaceElevated,
+                    onPressed: () => _saveAll(context, done),
+                  ),
                 ),
               ],
               const Gap(8),
@@ -373,9 +402,8 @@ class _ResultGrid extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               child: GestureDetector(
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        _FullscreenViewer(path: item.result!.outputPath),
+                  PremiumPageRoute(
+                    child: _FullscreenViewer(path: item.result!.outputPath),
                   ),
                 ),
                 child: Image.file(
@@ -490,8 +518,8 @@ class _ResultList extends StatelessWidget {
 
         return GestureDetector(
           onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => _FullscreenViewer(path: item.result!.outputPath),
+            PremiumPageRoute(
+              child: _FullscreenViewer(path: item.result!.outputPath),
             ),
           ),
           child: Container(

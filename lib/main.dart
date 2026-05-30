@@ -69,18 +69,20 @@ class _LaunchGateState extends State<_LaunchGate> {
 
   @override
   Widget build(BuildContext context) {
+    final Widget child;
+
     if (_isLoading) {
-      return Scaffold(
+      child = Scaffold(
+        key: const ValueKey('loading'),
         body: Center(
           child: CircularProgressIndicator(
             color: Theme.of(context).colorScheme.primary,
           ),
         ),
       );
-    }
-
-    if (_showOnboarding) {
-      return OnboardingScreen(
+    } else if (_showOnboarding) {
+      child = OnboardingScreen(
+        key: const ValueKey('onboarding'),
         onCompleted: () {
           if (!mounted) return;
           setState(() {
@@ -88,9 +90,16 @@ class _LaunchGateState extends State<_LaunchGate> {
           });
         },
       );
+    } else {
+      child = const HomeScreen(key: ValueKey('home'));
     }
 
-    return const HomeScreen();
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 450),
+      switchInCurve: Curves.easeInOutCubic,
+      switchOutCurve: Curves.easeInOutCubic,
+      child: child,
+    );
   }
 
   Future<void> _checkOnboardingSeen() async {

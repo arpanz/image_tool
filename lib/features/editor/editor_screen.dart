@@ -11,6 +11,7 @@ import '../../core/utils/image_processor.dart';
 import '../../core/utils/ad_manager.dart';
 import '../../core/widgets/pf_button.dart';
 import '../../core/widgets/tool_ui.dart';
+import '../../core/widgets/premium_page_route.dart';
 import '../home/home_screen.dart';
 import '../result/result_screen.dart';
 import 'editor_controller.dart';
@@ -108,8 +109,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         onAdDismissed: () {
           if (mounted) {
             Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ResultScreen(result: result, mode: widget.mode),
+              PremiumPageRoute(
+                child: ResultScreen(result: result, mode: widget.mode),
               ),
             );
           }

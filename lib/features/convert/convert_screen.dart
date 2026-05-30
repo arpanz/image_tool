@@ -14,6 +14,7 @@ import '../../core/widgets/tool_ui.dart';
 import '../home/home_screen.dart';
 import '../picker/picker_controller.dart';
 import '../result/result_screen.dart';
+import '../../core/widgets/premium_page_route.dart';
 
 class ConvertScreen extends ConsumerStatefulWidget {
   const ConvertScreen({super.key});
@@ -291,9 +292,8 @@ class _ConvertScreenState extends ConsumerState<ConvertScreen> {
         onAdDismissed: () {
           if (!mounted) return;
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) =>
-                  ResultScreen(result: result, mode: ImageMode.convert),
+            PremiumPageRoute(
+              child: ResultScreen(result: result, mode: ImageMode.convert),
             ),
           );
         },

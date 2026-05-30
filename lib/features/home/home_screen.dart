@@ -13,6 +13,8 @@ import '../../core/providers/history_provider.dart';
 import '../../core/utils/image_processor.dart';
 import 'dart:io';
 import '../history/history_screen.dart';
+import '../../core/widgets/premium_page_route.dart';
+import '../../core/widgets/fade_in_slide.dart';
 
 enum ImageMode { compress, resize, convert }
 
@@ -29,7 +31,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     AdManager.onShowPaywall = (ctx) async {
       await Navigator.of(ctx).push(
-        MaterialPageRoute(builder: (_) => const PaywallScreen()),
+        PremiumPageRoute(child: const PaywallScreen(), slideFromBottom: true),
       );
     };
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -64,7 +66,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: 'Convert',
         subtitle: 'Change format',
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ConvertScreen()),
+          PremiumPageRoute(child: const ConvertScreen()),
         ),
       ),
       _ModeGridTileData(
@@ -73,7 +75,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: 'Batch',
         subtitle: 'Process many files',
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const BatchEntryScreen()),
+          PremiumPageRoute(child: const BatchEntryScreen()),
         ),
       ),
     ];
@@ -85,56 +87,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Image Resizer',
-                      style: tt.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                        color: cs.onSurface,
-                      ),
-                    ),
-                  ),
-                  if (!AdManager.instance.isPro)
-                    _ProBadge(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const PaywallScreen(),
+              FadeInSlide(
+                delay: Duration.zero,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Image Resizer',
+                        style: tt.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: cs.onSurface,
                         ),
                       ),
-                    )
-                  else
-                    _ActiveProBadge(),
-                  const Gap(8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest,
-                      shape: BoxShape.circle,
                     ),
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const SettingsScreen()),
+                    if (!AdManager.instance.isPro)
+                      _ProBadge(
+                        onTap: () => Navigator.of(context).push(
+                          PremiumPageRoute(
+                            child: const PaywallScreen(),
+                            slideFromBottom: true,
+                          ),
+                        ),
+                      )
+                    else
+                      _ActiveProBadge(),
+                    const Gap(8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHighest,
+                        shape: BoxShape.circle,
                       ),
-                      icon: const Icon(Icons.settings_rounded),
-                      iconSize: 24,
-                      color: cs.onSurfaceVariant,
-                      padding: const EdgeInsets.all(12),
-                      constraints: const BoxConstraints(),
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).push(
+                          PremiumPageRoute(child: const SettingsScreen()),
+                        ),
+                        icon: const Icon(Icons.settings_rounded),
+                        iconSize: 24,
+                        color: cs.onSurfaceVariant,
+                        padding: const EdgeInsets.all(12),
+                        constraints: const BoxConstraints(),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const Gap(8),
-              Text(
-                'What would you like to edit today?',
-                style: tt.titleMedium?.copyWith(
-                  color: cs.onSurfaceVariant.withOpacity(0.8),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.1,
+              FadeInSlide(
+                delay: const Duration(milliseconds: 50),
+                child: Text(
+                  'What would you like to edit today?',
+                  style: tt.titleMedium?.copyWith(
+                    color: cs.onSurfaceVariant.withOpacity(0.8),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.1,
+                  ),
                 ),
               ),
               const Gap(24),
@@ -148,116 +156,120 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   mainAxisSpacing: 16,
                   childAspectRatio: 0.95,
                 ),
-                itemBuilder: (context, index) =>
-                    _ModeGridTile(data: tiles[index]),
+                itemBuilder: (context, index) => FadeInSlide(
+                  delay: Duration(milliseconds: 100 + index * 50),
+                  child: _ModeGridTile(data: tiles[index]),
+                ),
               ),
               const Gap(16),
               // ── History Control Card ─────────────────────────────────────────
-              Consumer(
-                builder: (context, ref, child) {
-                  final historyState = ref.watch(historyProvider);
-                  final entries = historyState.entries;
+              FadeInSlide(
+                delay: const Duration(milliseconds: 320),
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final historyState = ref.watch(historyProvider);
+                    final entries = historyState.entries;
 
-                  return Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(20),
-                      border:
-                          Border.all(color: cs.outlineVariant.withOpacity(0.3)),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                                builder: (_) => const HistoryScreen()),
-                          );
-                        },
+                    return Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHighest.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.history_rounded,
-                                color: cs.primary,
-                                size: 20,
-                              ),
-                              const Gap(8),
-                              Text(
-                                'History',
-                                style: tt.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.onSurface,
+                        border:
+                            Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              PremiumPageRoute(child: const HistoryScreen()),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.history_rounded,
+                                  color: cs.primary,
+                                  size: 20,
                                 ),
-                              ),
-                              const Gap(12),
-                              if (entries.isEmpty)
+                                const Gap(8),
                                 Text(
-                                  'No items yet',
-                                  style: tt.bodySmall?.copyWith(
-                                    color: cs.onSurfaceVariant.withOpacity(0.6),
+                                  'History',
+                                  style: tt.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: cs.onSurface,
                                   ),
-                                )
-                              else
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: entries.take(3).map((entry) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 6),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(6),
-                                        child: Image.file(
-                                          File(entry.outputPath),
-                                          width: 32,
-                                          height: 32,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              Container(
+                                ),
+                                const Gap(12),
+                                if (entries.isEmpty)
+                                  Text(
+                                    'No items yet',
+                                    style: tt.bodySmall?.copyWith(
+                                      color: cs.onSurfaceVariant.withOpacity(0.6),
+                                    ),
+                                  )
+                                else
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: entries.take(3).map((entry) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 6),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(6),
+                                          child: Image.file(
+                                            File(entry.outputPath),
                                             width: 32,
                                             height: 32,
-                                            color: cs.surfaceContainerHighest,
-                                            child: Icon(
-                                              Icons.broken_image_rounded,
-                                              size: 14,
-                                              color: cs.onSurfaceVariant
-                                                  .withOpacity(0.5),
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                Container(
+                                              width: 32,
+                                              height: 32,
+                                              color: cs.surfaceContainerHighest,
+                                              child: Icon(
+                                                Icons.broken_image_rounded,
+                                                size: 14,
+                                                color: cs.onSurfaceVariant
+                                                    .withOpacity(0.5),
+                                              ),
                                             ),
                                           ),
                                         ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                const Spacer(),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'View all',
+                                      style: tt.bodySmall?.copyWith(
+                                        color: cs.primary,
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                    );
-                                  }).toList(),
-                                ),
-                              const Spacer(),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'View all',
-                                    style: tt.bodySmall?.copyWith(
-                                      color: cs.primary,
-                                      fontWeight: FontWeight.w600,
                                     ),
-                                  ),
-                                  const Gap(2),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: cs.primary,
-                                    size: 16,
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    const Gap(2),
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: cs.primary,
+                                      size: 16,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
               const Gap(16),
               AdManager.instance.getMediumNativeAdWidget(),
@@ -270,7 +282,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _navigateMode(BuildContext context, ImageMode mode) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ModeEntryScreen(mode: mode)),
+      PremiumPageRoute(child: ModeEntryScreen(mode: mode)),
     );
   }
 }
@@ -291,71 +303,89 @@ class _ModeGridTileData {
   });
 }
 
-class _ModeGridTile extends StatelessWidget {
+class _ModeGridTile extends StatefulWidget {
   final _ModeGridTileData data;
 
   const _ModeGridTile({required this.data});
 
   @override
+  State<_ModeGridTile> createState() => _ModeGridTileState();
+}
+
+class _ModeGridTileState extends State<_ModeGridTile> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final data = widget.data;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: data.accentColor.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: data.accentColor.withOpacity(0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(24),
-          onTap: data.onTap,
-          splashColor: Colors.white.withOpacity(0.15),
-          highlightColor: Colors.white.withOpacity(0.05),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    data.icon,
-                    color: Colors.white,
-                    size: 26,
-                  ),
+    return Listener(
+      onPointerDown: (_) => setState(() => _pressed = true),
+      onPointerUp: (_) => setState(() => _pressed = false),
+      onPointerCancel: (_) => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOutCubic,
+        child: Container(
+          decoration: BoxDecoration(
+            color: data.accentColor.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: data.accentColor.withOpacity(0.25),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(24),
+              onTap: data.onTap,
+              splashColor: Colors.white.withOpacity(0.15),
+              highlightColor: Colors.white.withOpacity(0.05),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        data.icon,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      data.title,
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const Gap(4),
+                    Text(
+                      data.subtitle,
+                      style: tt.bodySmall?.copyWith(
+                        color: Colors.white.withOpacity(0.75),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                Text(
-                  data.title,
-                  style: tt.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    color: Colors.white,
-                  ),
-                ),
-                const Gap(4),
-                Text(
-                  data.subtitle,
-                  style: tt.bodySmall?.copyWith(
-                    color: Colors.white.withOpacity(0.75),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

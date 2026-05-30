@@ -11,6 +11,7 @@ import '../../core/models/history_entry.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/utils/ad_manager.dart';
 import '../premium/paywall_screen.dart';
+import '../../core/widgets/premium_page_route.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
@@ -290,7 +291,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                PremiumPageRoute(
+                  child: const PaywallScreen(),
+                  slideFromBottom: true,
+                ),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -485,8 +489,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         return GestureDetector(
           onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => _HistoryEntryViewer(entry: entry),
+              PremiumPageRoute(
+                child: _HistoryEntryViewer(entry: entry),
               ),
             );
           },
@@ -785,8 +789,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             onTap: () {
               if (File(entry.outputPath).existsSync()) {
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => _HistoryEntryViewer(entry: entry),
+                  PremiumPageRoute(
+                    child: _HistoryEntryViewer(entry: entry),
                   ),
                 );
               } else {
@@ -1122,8 +1126,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   onTap: () {
                     if (File(path).existsSync()) {
                       Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => _HistoryEntryViewer(
+                        PremiumPageRoute(
+                          child: _HistoryEntryViewer(
                               entry: entry, initialIndex: i),
                         ),
                       );
@@ -1175,8 +1179,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           GestureDetector(
             onTap: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => _HistoryEntryViewer(entry: entry),
+                PremiumPageRoute(
+                  child: _HistoryEntryViewer(entry: entry),
                 ),
               );
             },

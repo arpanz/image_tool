@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'ad_manager.dart';
 import '../../features/premium/paywall_screen.dart';
+import '../widgets/premium_page_route.dart';
 
 /// Synchronous Pro-feature gate.
 /// Returns true if user can proceed; false + shows upgrade dialog otherwise.
@@ -105,8 +106,10 @@ class ProGate {
                         Navigator.pop(dialogCtx);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                              builder: (_) => const PaywallScreen()),
+                          PremiumPageRoute(
+                            child: const PaywallScreen(),
+                            slideFromBottom: true,
+                          ),
                         );
                       },
                       style: FilledButton.styleFrom(

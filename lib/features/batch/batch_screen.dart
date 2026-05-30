@@ -13,6 +13,7 @@ import '../../core/widgets/tool_ui.dart';
 import '../home/home_screen.dart';
 import 'batch_controller.dart';
 import 'batch_result_screen.dart';
+import '../../core/widgets/premium_page_route.dart';
 
 class BatchScreen extends ConsumerStatefulWidget {
   final ImageMode mode;
@@ -129,8 +130,8 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
         onAdDismissed: () {
           if (mounted) {
             Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => BatchResultScreen(mode: widget.mode),
+              PremiumPageRoute(
+                child: BatchResultScreen(mode: widget.mode),
               ),
             );
           }

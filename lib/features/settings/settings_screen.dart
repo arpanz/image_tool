@@ -9,6 +9,7 @@ import '../../core/providers/theme_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
 import '../premium/paywall_screen.dart';
+import '../../core/widgets/premium_page_route.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -162,8 +163,9 @@ class SettingsScreen extends ConsumerWidget {
                   : _UpgradeTile(
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const PaywallScreen(),
+                        PremiumPageRoute(
+                          child: const PaywallScreen(),
+                          slideFromBottom: true,
                         ),
                       ),
                     ),

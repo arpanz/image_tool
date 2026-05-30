@@ -6,6 +6,7 @@ import '../../core/utils/ad_manager.dart';
 import '../editor/editor_screen.dart';
 import '../home/home_screen.dart';
 import 'picker_controller.dart';
+import '../../core/widgets/premium_page_route.dart';
 
 class PickerScreen extends ConsumerWidget {
   final ImageMode mode;
@@ -20,8 +21,8 @@ class PickerScreen extends ConsumerWidget {
     ref.listen<PickerState>(pickerProvider, (prev, next) {
       if (next is PickerLoaded) {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => EditorScreen(image: next.image, mode: mode),
+          PremiumPageRoute(
+            child: EditorScreen(image: next.image, mode: mode),
           ),
         );
       } else if (next is PickerError) {

@@ -15,6 +15,8 @@ import '../../core/providers/history_provider.dart';
 import '../editor/editor_controller.dart';
 import '../home/home_screen.dart';
 import '../picker/picker_controller.dart';
+import '../../core/widgets/premium_page_route.dart';
+import '../../core/widgets/fade_in_slide.dart';
 
 class ResultScreen extends ConsumerStatefulWidget {
   final CompressionResult result;
@@ -257,70 +259,97 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.86, end: 1),
-                duration: const Duration(milliseconds: 520),
-                curve: Curves.easeOutBack,
-                builder: (context, scale, child) {
-                  return Transform.scale(scale: scale, child: child);
-                },
-                child: Container(
-                  width: 68,
-                  height: 68,
-                  decoration: BoxDecoration(
-                    color: _accent.withOpacity(0.12),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: _accent.withOpacity(0.35), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _accent.withOpacity(0.22),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+              FadeInSlide(
+                delay: Duration.zero,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.86, end: 1),
+                  duration: const Duration(milliseconds: 520),
+                  curve: Curves.easeOutBack,
+                  builder: (context, scale, child) {
+                    return Transform.scale(scale: scale, child: child);
+                  },
+                  child: Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      color: _accent.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: _accent.withOpacity(0.35), width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _accent.withOpacity(0.22),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Icon(_modeIcon, size: 31, color: _accent),
                   ),
-                  child: Icon(_modeIcon, size: 31, color: _accent),
                 ),
               ),
               const Gap(12),
-              Text(_title, style: tt.headlineMedium),
+              FadeInSlide(
+                delay: const Duration(milliseconds: 60),
+                child: Text(_title, style: tt.headlineMedium),
+              ),
               const Gap(4),
-              Text(_subtitle,
-                  style: tt.bodyMedium, textAlign: TextAlign.center),
+              FadeInSlide(
+                delay: const Duration(milliseconds: 120),
+                child: Text(_subtitle,
+                    style: tt.bodyMedium, textAlign: TextAlign.center),
+              ),
               const Gap(18),
-              _ResultHeroMetric(
-                label: _heroMetricLabel,
-                value: _heroMetricValue,
-                color: _accent,
+              FadeInSlide(
+                delay: const Duration(milliseconds: 180),
+                child: _ResultHeroMetric(
+                  label: _heroMetricLabel,
+                  value: _heroMetricValue,
+                  color: _accent,
+                ),
               ),
               const Gap(16),
-              _OutputPreview(
-                  path: result.outputPath, result: result, mode: mode),
+              FadeInSlide(
+                delay: const Duration(milliseconds: 240),
+                child: _OutputPreview(
+                    path: result.outputPath, result: result, mode: mode),
+              ),
               const Gap(16),
-              _StatsCard(
-                  result: result,
-                  mode: mode,
-                  accent: _accent,
-                  outputFormat: _outputFormat,
-                  inputFormat: _inputFormat),
+              FadeInSlide(
+                delay: const Duration(milliseconds: 300),
+                child: _StatsCard(
+                    result: result,
+                    mode: mode,
+                    accent: _accent,
+                    outputFormat: _outputFormat,
+                    inputFormat: _inputFormat),
+              ),
               const Gap(16),
-              AdManager.instance.getBannerAdWidget(),
+              FadeInSlide(
+                delay: const Duration(milliseconds: 360),
+                child: AdManager.instance.getBannerAdWidget(),
+              ),
               const Gap(14),
-              PfButton(
-                label: _shareLabel,
-                icon: Icons.share_outlined,
-                backgroundColor: _accent,
-                onPressed: _share,
+              FadeInSlide(
+                delay: const Duration(milliseconds: 420),
+                child: PfButton(
+                  label: _shareLabel,
+                  icon: Icons.share_outlined,
+                  backgroundColor: _accent,
+                  onPressed: _share,
+                ),
               ),
               const Gap(10),
-              PfButton(
-                label: _saveLabel,
-                icon: Icons.download_outlined,
-                backgroundColor: isDark
-                    ? AppColors.surfaceElevated
-                    : AppColors.lightSurfaceElevated,
-                onPressed: () => _saveToDevice(context),
+              FadeInSlide(
+                delay: const Duration(milliseconds: 480),
+                child: PfButton(
+                  label: _saveLabel,
+                  icon: Icons.download_outlined,
+                  backgroundColor: isDark
+                      ? AppColors.surfaceElevated
+                      : AppColors.lightSurfaceElevated,
+                  onPressed: () => _saveToDevice(context),
+                ),
               ),
             ],
           ),
@@ -384,7 +413,7 @@ class _OutputPreview extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => _FullscreenViewer(path: path)),
+        PremiumPageRoute(child: _FullscreenViewer(path: path)),
       ),
       child: Stack(
         children: [

@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
 import '../home/home_screen.dart';
 import 'batch_screen.dart';
+import '../../core/widgets/premium_page_route.dart';
 
 /// Entry point for Batch mode. User picks Compress or Resize,
 /// then lands on the existing BatchScreen with the chosen mode.
@@ -94,8 +95,8 @@ class BatchEntryScreen extends StatelessWidget {
                 subtitle: 'Shrink file size of multiple images',
                 tag: 'JPG · PNG · WEBP',
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => BatchScreen(mode: ImageMode.compress),
+                  PremiumPageRoute(
+                    child: BatchScreen(mode: ImageMode.compress),
                   ),
                 ),
               ),
@@ -107,8 +108,8 @@ class BatchEntryScreen extends StatelessWidget {
                 subtitle: 'Change dimensions of multiple images',
                 tag: 'Pixels · Percentage',
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => BatchScreen(mode: ImageMode.resize),
+                  PremiumPageRoute(
+                    child: BatchScreen(mode: ImageMode.resize),
                   ),
                 ),
               ),
