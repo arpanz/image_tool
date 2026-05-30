@@ -270,34 +270,29 @@ class _PaywallScreenState extends State<PaywallScreen>
                               child: Column(
                                 children: [
                                   _featureRow(
-                                    Icons.compress_rounded,
-                                    'Unlimited Compressions',
+                                    Icons.bolt_rounded,
+                                    'Unlimited Single & Batch Processing',
                                     const Color(0xFF6C63FF),
                                   ),
                                   _featureRow(
-                                    Icons.photo_size_select_large_rounded,
-                                    'Unlimited Resizes',
-                                    const Color(0xFF11998E),
-                                  ),
-                                  _featureRow(
                                     Icons.block_flipped,
-                                    'Completely Ad-Free',
+                                    'Completely Ad-Free Experience',
                                     const Color(0xFFFF6B6B),
                                   ),
                                   _featureRow(
-                                    Icons.history_rounded,
-                                    'Full Image History',
-                                    Colors.tealAccent,
-                                  ),
-                                  _featureRow(
                                     Icons.auto_fix_high_rounded,
-                                    'All Output Formats',
+                                    'All Formats & HEIC Conversion',
                                     Colors.orangeAccent,
                                   ),
                                   _featureRow(
-                                    Icons.swap_horiz_rounded,
-                                    'HEIC/HEIF Conversion',
-                                    Colors.purpleAccent,
+                                    Icons.info_outline,
+                                    'Keep Original EXIF Metadata',
+                                    Colors.teal,
+                                  ),
+                                  _featureRow(
+                                    Icons.history_rounded,
+                                    'Full Image History Access',
+                                    Colors.tealAccent,
                                   ),
                                 ],
                               ),

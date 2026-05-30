@@ -1,7 +1,7 @@
 name: image_resizer
 description: Offline-first image compression and resizing utility by Livinlabs.
 publish_to: 'none'
-version: 1.5.0+5
+version: 2.0.0+7
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -33,7 +33,7 @@ dependencies:
   heif_converter: ^1.0.5
   file_picker: ^11.0.2
   image: ^4.8.0
-  native_exif: ^0.5.0
+  native_exif: ^0.8.0
 
 
 
