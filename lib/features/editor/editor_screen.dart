@@ -1358,63 +1358,71 @@ class _FitModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return GridView.count(
-      crossAxisCount: 3,
-      crossAxisSpacing: 8,
-      mainAxisSpacing: 8,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.25,
-      children: _modes.map((m) {
+    return Row(
+      children: List.generate(_modes.length, (index) {
+        final m = _modes[index];
         final isSelected = m.mode == current;
-        return GestureDetector(
-          onTap: () => onChanged(m.mode),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? cs.primary.withOpacity(0.12)
-                  : cs.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected
-                    ? cs.primary
-                    : cs.outlineVariant.withOpacity(0.3),
-                width: isSelected ? 1.5 : 1,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(m.icon,
-                    size: 20,
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(left: index > 0 ? 8.0 : 0.0),
+            child: GestureDetector(
+              onTap: () => onChanged(m.mode),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? cs.primary.withOpacity(0.12)
+                      : cs.surfaceContainerHighest.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
                     color: isSelected
                         ? cs.primary
-                        : Theme.of(context).textTheme.bodySmall?.color),
-                const Gap(4),
-                Text(m.label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected
-                          ? cs.primary
-                          : Theme.of(context).textTheme.bodyMedium?.color,
-                    )),
-                const Gap(2),
-                Text(m.desc,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(fontSize: 8.5),
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis),
-              ],
+                        : cs.outlineVariant.withOpacity(0.3),
+                    width: isSelected ? 1.5 : 1,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(m.icon,
+                        size: 20,
+                        color: isSelected
+                            ? cs.primary
+                            : Theme.of(context).textTheme.bodySmall?.color),
+                    const Gap(4),
+                    Text(
+                      m.label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? cs.primary
+                            : Theme.of(context).textTheme.bodyMedium?.color,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Gap(2),
+                    Text(
+                      m.desc,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontSize: 8.5),
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         );
-      }).toList(),
+      }),
     );
   }
 }
@@ -1498,65 +1506,67 @@ class _CustomColorPickerDialogState extends State<_CustomColorPickerDialog> {
       title: const Text('Custom Color',
           style: TextStyle(fontWeight: FontWeight.w800)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            height: 80,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: selectedColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  hexString,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: 80,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: selectedColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    hexString,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          const Gap(20),
-          _buildColorSlider(
-            label: 'Red',
-            value: _r,
-            activeColor: Colors.red,
-            onChanged: (v) => setState(() => _r = v.round()),
-          ),
-          const Gap(12),
-          _buildColorSlider(
-            label: 'Green',
-            value: _g,
-            activeColor: Colors.green,
-            onChanged: (v) => setState(() => _g = v.round()),
-          ),
-          const Gap(12),
-          _buildColorSlider(
-            label: 'Blue',
-            value: _b,
-            activeColor: Colors.blue,
-            onChanged: (v) => setState(() => _b = v.round()),
-          ),
-        ],
+            const Gap(20),
+            _buildColorSlider(
+              label: 'Red',
+              value: _r,
+              activeColor: Colors.red,
+              onChanged: (v) => setState(() => _r = v.round()),
+            ),
+            const Gap(12),
+            _buildColorSlider(
+              label: 'Green',
+              value: _g,
+              activeColor: Colors.green,
+              onChanged: (v) => setState(() => _g = v.round()),
+            ),
+            const Gap(12),
+            _buildColorSlider(
+              label: 'Blue',
+              value: _b,
+              activeColor: Colors.blue,
+              onChanged: (v) => setState(() => _b = v.round()),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
