@@ -486,6 +486,21 @@ class _PremiumTrackShape extends RoundedRectSliderTrackShape {
   const _PremiumTrackShape({required this.accent, required this.glowIntensity});
 
   @override
+  Rect getPreferredRect({
+    required RenderBox parentBox,
+    Offset offset = Offset.zero,
+    required SliderThemeData sliderTheme,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+  }) {
+    final double trackHeight = sliderTheme.trackHeight ?? 16.0;
+    final double trackLeft = offset.dx + 8;
+    final double trackWidth = parentBox.size.width - 16;
+    final double trackTop = offset.dy + (parentBox.size.height - trackHeight) / 2;
+    return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
+  }
+
+  @override
   void paint(
     PaintingContext context,
     Offset offset, {
@@ -500,12 +515,19 @@ class _PremiumTrackShape extends RoundedRectSliderTrackShape {
     double additionalActiveTrackHeight = 2,
   }) {
     final canvas = context.canvas;
-    final trackHeight = sliderTheme.trackHeight ?? 16.0;
     
-    // Slight horizontal inset to prevent clipping at boundaries
-    final trackLeft = offset.dx + 8;
-    final trackRight = parentBox.size.width - 8 + offset.dx;
-    final trackTop = thumbCenter.dy - trackHeight / 2;
+    final Rect trackRect = getPreferredRect(
+      parentBox: parentBox,
+      offset: offset,
+      sliderTheme: sliderTheme,
+      isEnabled: isEnabled,
+      isDiscrete: isDiscrete,
+    );
+    
+    final trackHeight = trackRect.height;
+    final trackLeft = trackRect.left;
+    final trackRight = trackRect.right;
+    final trackTop = trackRect.top;
     final radius = Radius.circular(trackHeight / 2);
 
     // Inactive track
