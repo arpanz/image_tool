@@ -44,7 +44,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     _targetSizeCtrl = TextEditingController();
     _dpiCtrl = TextEditingController(text: '72');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(editorProvider.notifier).reset();
+      ref.read(editorProvider.notifier).initialize(widget.image);
+      _syncDimensionsToNotifier();
     });
   }
 
@@ -117,6 +118,40 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     }
   }
 
+  void _syncDimensionsToNotifier() {
+    final notifier = ref.read(editorProvider.notifier);
+    if (widget.mode == ImageMode.compress) return;
+
+    switch (_dimUnit) {
+      case _DimUnit.percent:
+        final pct = double.tryParse(_percentCtrl.text.trim());
+        if (pct != null && pct > 0) {
+          notifier.setWidth((widget.image.width * pct / 100).round());
+          notifier.setHeight((widget.image.height * pct / 100).round());
+        } else {
+          notifier.setWidth(null);
+          notifier.setHeight(null);
+        }
+      case _DimUnit.px:
+        final w = int.tryParse(_widthCtrl.text.trim());
+        final h = int.tryParse(_heightCtrl.text.trim());
+        notifier.setWidth(w);
+        notifier.setHeight(h);
+      case _DimUnit.cm:
+        final dpi = double.tryParse(_dpiCtrl.text.trim()) ?? 72;
+        final wCm = double.tryParse(_widthCtrl.text.trim());
+        final hCm = double.tryParse(_heightCtrl.text.trim());
+        notifier.setWidth(wCm != null ? (wCm / 2.54 * dpi).round() : null);
+        notifier.setHeight(hCm != null ? (hCm / 2.54 * dpi).round() : null);
+      case _DimUnit.mm:
+        final dpi = double.tryParse(_dpiCtrl.text.trim()) ?? 72;
+        final wMm = double.tryParse(_widthCtrl.text.trim());
+        final hMm = double.tryParse(_heightCtrl.text.trim());
+        notifier.setWidth(wMm != null ? (wMm / 25.4 * dpi).round() : null);
+        notifier.setHeight(hMm != null ? (hMm / 25.4 * dpi).round() : null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(editorProvider);
@@ -164,6 +199,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                     originalSize: widget.image.originalSize,
                     width: widget.image.width,
                     height: widget.image.height,
+                    accent: _accent,
                   ),
                   const Gap(24),
 
@@ -246,8 +282,16 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                               ToolSwitch(
                                 value: _useTargetSize,
                                 accent: _accent,
-                                onChanged: (v) =>
-                                    setState(() => _useTargetSize = v),
+                                onChanged: (v) {
+                                  setState(() => _useTargetSize = v);
+                                  final kb = v
+                                      ? int.tryParse(
+                                          _targetSizeCtrl.text.trim())
+                                      : null;
+                                  ref
+                                      .read(editorProvider.notifier)
+                                      .setTargetSizeKB(kb);
+                                },
                               ),
                             ],
                           ),
@@ -270,7 +314,15 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                               helperText: _targetSizeCtrl.text.isNotEmpty
                                   ? '≈ ${(int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024 > 1 ? '${((int.tryParse(_targetSizeCtrl.text) ?? 0) / 1024).toStringAsFixed(1)} MB' : '${_targetSizeCtrl.text} KB'}'
                                   : null,
-                              onChanged: (_) => setState(() {}),
+                              onChanged: (text) {
+                                setState(() {});
+                                final kb = _useTargetSize
+                                    ? int.tryParse(text.trim())
+                                    : null;
+                                ref
+                                    .read(editorProvider.notifier)
+                                    .setTargetSizeKB(kb);
+                              },
                             ),
                             const Gap(8),
                             Wrap(
@@ -279,24 +331,49 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                               children: [
                                 _SizePresetChip(
                                     label: '100 KB',
-                                    onTap: () => setState(
-                                        () => _targetSizeCtrl.text = '100')),
+                                    onTap: () {
+                                      setState(
+                                          () => _targetSizeCtrl.text = '100');
+                                      ref
+                                          .read(editorProvider.notifier)
+                                          .setTargetSizeKB(100);
+                                    }),
                                 _SizePresetChip(
                                     label: '250 KB',
-                                    onTap: () => setState(
-                                        () => _targetSizeCtrl.text = '250')),
+                                    onTap: () {
+                                      setState(
+                                          () => _targetSizeCtrl.text = '250');
+                                      ref
+                                          .read(editorProvider.notifier)
+                                          .setTargetSizeKB(250);
+                                    }),
                                 _SizePresetChip(
                                     label: '500 KB',
-                                    onTap: () => setState(
-                                        () => _targetSizeCtrl.text = '500')),
+                                    onTap: () {
+                                      setState(
+                                          () => _targetSizeCtrl.text = '500');
+                                      ref
+                                          .read(editorProvider.notifier)
+                                          .setTargetSizeKB(500);
+                                    }),
                                 _SizePresetChip(
                                     label: '1 MB',
-                                    onTap: () => setState(
-                                        () => _targetSizeCtrl.text = '1024')),
+                                    onTap: () {
+                                      setState(
+                                          () => _targetSizeCtrl.text = '1024');
+                                      ref
+                                          .read(editorProvider.notifier)
+                                          .setTargetSizeKB(1024);
+                                    }),
                                 _SizePresetChip(
                                     label: '2 MB',
-                                    onTap: () => setState(
-                                        () => _targetSizeCtrl.text = '2048')),
+                                    onTap: () {
+                                      setState(
+                                          () => _targetSizeCtrl.text = '2048');
+                                      ref
+                                          .read(editorProvider.notifier)
+                                          .setTargetSizeKB(2048);
+                                    }),
                               ],
                             ),
                             if (settings.format.toUpperCase() == 'PNG')
@@ -331,6 +408,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                     _widthCtrl.clear();
                                     _heightCtrl.clear();
                                   });
+                                  _syncDimensionsToNotifier();
                                 },
                               ),
                             ],
@@ -357,24 +435,33 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                           RegExp(r'[0-9.]')),
                                     ],
                                     suffixText: '%',
-                                    onChanged: (_) => setState(() {}),
+                                    onChanged: (_) {
+                                      setState(() {});
+                                      _syncDimensionsToNotifier();
+                                    },
                                   ),
                                 ),
                                 const Gap(12),
                                 _PercentPreset(
                                     percent: 75,
-                                    onTap: () => setState(
-                                        () => _percentCtrl.text = '75')),
+                                    onTap: () {
+                                      setState(() => _percentCtrl.text = '75');
+                                      _syncDimensionsToNotifier();
+                                    }),
                                 const Gap(6),
                                 _PercentPreset(
                                     percent: 50,
-                                    onTap: () => setState(
-                                        () => _percentCtrl.text = '50')),
+                                    onTap: () {
+                                      setState(() => _percentCtrl.text = '50');
+                                      _syncDimensionsToNotifier();
+                                    }),
                                 const Gap(6),
                                 _PercentPreset(
                                     percent: 25,
-                                    onTap: () => setState(
-                                        () => _percentCtrl.text = '25')),
+                                    onTap: () {
+                                      setState(() => _percentCtrl.text = '25');
+                                      _syncDimensionsToNotifier();
+                                    }),
                               ],
                             ),
                             if (_percentCtrl.text.isNotEmpty) ...[
@@ -401,24 +488,33 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                       ],
                                       hintText: '72',
                                       helperText: 'Print: 300  Screen: 72',
-                                      onChanged: (_) => setState(() {}),
+                                      onChanged: (_) {
+                                        setState(() {});
+                                        _syncDimensionsToNotifier();
+                                      },
                                     ),
                                   ),
                                   const Gap(8),
                                   _DpiPreset(
                                       label: '72',
-                                      onTap: () =>
-                                          setState(() => _dpiCtrl.text = '72')),
+                                      onTap: () {
+                                        setState(() => _dpiCtrl.text = '72');
+                                        _syncDimensionsToNotifier();
+                                      }),
                                   const Gap(4),
                                   _DpiPreset(
                                       label: '150',
-                                      onTap: () => setState(
-                                          () => _dpiCtrl.text = '150')),
+                                      onTap: () {
+                                        setState(() => _dpiCtrl.text = '150');
+                                        _syncDimensionsToNotifier();
+                                      }),
                                   const Gap(4),
                                   _DpiPreset(
                                       label: '300',
-                                      onTap: () => setState(
-                                          () => _dpiCtrl.text = '300')),
+                                      onTap: () {
+                                        setState(() => _dpiCtrl.text = '300');
+                                        _syncDimensionsToNotifier();
+                                      }),
                                 ],
                               ),
                               const Gap(12),
@@ -454,7 +550,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                     hintText: _dimUnit == _DimUnit.px
                                         ? '${widget.image.width}'
                                         : null,
-                                    onChanged: (_) => setState(() {}),
+                                    onChanged: (_) {
+                                      setState(() {});
+                                      _syncDimensionsToNotifier();
+                                    },
                                   ),
                                 ),
                                 const Gap(12),
@@ -480,7 +579,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                     hintText: _dimUnit == _DimUnit.px
                                         ? '${widget.image.height}'
                                         : null,
-                                    onChanged: (_) => setState(() {}),
+                                    onChanged: (_) {
+                                      setState(() {});
+                                      _syncDimensionsToNotifier();
+                                    },
                                   ),
                                 ),
                               ],
@@ -620,24 +722,54 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
 // ── Image preview ─────────────────────────────────────────────────────────
 
-class _ImagePreview extends StatelessWidget {
+class _ImagePreview extends ConsumerWidget {
   final String path;
   final int originalSize;
   final int width;
   final int height;
+  final Color accent;
 
   const _ImagePreview({
     required this.path,
     required this.originalSize,
     required this.width,
     required this.height,
+    required this.accent,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(editorProvider);
     // Derive a sensible preview height: clamp to 36% of screen height
     final screenH = MediaQuery.of(context).size.height;
     final previewH = (screenH * 0.36).clamp(180.0, 280.0);
+
+    // Calculate dimensions preview based on settings
+    final settings = state.settings;
+    int targetW = width;
+    int targetH = height;
+
+    if (settings.resizePercentage != null) {
+      final pct = settings.resizePercentage! / 100.0;
+      targetW = (width * pct).round();
+      targetH = (height * pct).round();
+    } else if (settings.width != null || settings.height != null) {
+      targetW = settings.width ?? width;
+      targetH = settings.height ?? height;
+      if (settings.keepAspectRatio) {
+        if (settings.width != null && settings.height == null) {
+          targetH = (height * targetW / width).round();
+        } else if (settings.height != null && settings.width == null) {
+          targetW = (width * targetH / height).round();
+        } else if (settings.width != null && settings.height != null) {
+          final scale = (targetW / width) < (targetH / height)
+              ? targetW / width
+              : targetH / height;
+          targetW = (width * scale).round();
+          targetH = (height * scale).round();
+        }
+      }
+    }
 
     return Stack(
       children: [
@@ -650,30 +782,149 @@ class _ImagePreview extends StatelessWidget {
             fit: BoxFit.cover,
           ),
         ),
-        Positioned(bottom: 10, left: 10, child: _Badge('${width}×${height}')),
+        // Dark overlay gradient to make badges pop even on bright images
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.0),
+                    Colors.black.withOpacity(0.45),
+                  ],
+                  stops: const [0.6, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Top-left: Original Resolution
         Positioned(
-            bottom: 10, right: 10, child: _Badge(formatBytes(originalSize))),
+          top: 12,
+          left: 12,
+          child: _Badge(
+            'Original: $width×$height (${formatBytes(originalSize)})',
+          ),
+        ),
+        // Bottom-left: Target Resolution
+        Positioned(
+          bottom: 12,
+          left: 12,
+          child: _Badge(
+            'Target: $targetW×$targetH',
+            accentColor: accent.withOpacity(0.85),
+          ),
+        ),
+        // Bottom-right: Estimated Size
+        Positioned(
+          bottom: 12,
+          right: 12,
+          child: state.isEstimating
+              ? const _Badge('Calculating...', isPulse: true)
+              : (state.estimatedSize != null
+                  ? _Badge(
+                      'Est: ${formatBytes(state.estimatedSize!)}',
+                      accentColor: const Color(0xFF10B981).withOpacity(0.9),
+                    )
+                  : const _Badge('Est: --')),
+        ),
       ],
     );
   }
 }
 
-class _Badge extends StatelessWidget {
+class _Badge extends StatefulWidget {
   final String text;
-  const _Badge(this.text);
+  final Color? accentColor;
+  final bool isPulse;
+
+  const _Badge(
+    this.text, {
+    this.accentColor,
+    this.isPulse = false,
+  });
+
+  @override
+  State<_Badge> createState() => _BadgeState();
+}
+
+class _BadgeState extends State<_Badge> with SingleTickerProviderStateMixin {
+  AnimationController? _pulseCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isPulse) {
+      _pulseCtrl = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 1000),
+      )..repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_Badge oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isPulse != oldWidget.isPulse) {
+      if (widget.isPulse) {
+        _pulseCtrl ??= AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 1000),
+        );
+        _pulseCtrl!.repeat(reverse: true);
+      } else {
+        _pulseCtrl?.stop();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final baseBgColor = widget.accentColor ?? Colors.black.withOpacity(0.65);
+
+    Widget content = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: baseBgColor,
         borderRadius: BorderRadius.circular(8),
+        border: widget.accentColor != null
+            ? Border.all(color: Colors.white.withOpacity(0.12), width: 0.8)
+            : null,
       ),
-      child: Text(text,
-          style: const TextStyle(
-              color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+      child: Text(
+        widget.text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.1,
+        ),
+      ),
     );
+
+    if (widget.isPulse && _pulseCtrl != null) {
+      return AnimatedBuilder(
+        animation: _pulseCtrl!,
+        builder: (context, child) {
+          return Opacity(
+            opacity: 0.5 + 0.5 * _pulseCtrl!.value,
+            child: child,
+          );
+        },
+        child: content,
+      );
+    }
+
+    return content;
   }
 }
 

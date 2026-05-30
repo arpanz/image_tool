@@ -48,4 +48,30 @@ class CompressionSettings {
           clearResizePercentage ? null : (resizePercentage ?? this.resizePercentage),
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CompressionSettings &&
+          runtimeType == other.runtimeType &&
+          quality == other.quality &&
+          width == other.width &&
+          height == other.height &&
+          keepAspectRatio == other.keepAspectRatio &&
+          format == other.format &&
+          fitMode == other.fitMode &&
+          targetSizeKB == other.targetSizeKB &&
+          resizePercentage == other.resizePercentage;
+
+  @override
+  int get hashCode => Object.hash(
+        quality,
+        width,
+        height,
+        keepAspectRatio,
+        format,
+        fitMode,
+        targetSizeKB,
+        resizePercentage,
+      );
 }
