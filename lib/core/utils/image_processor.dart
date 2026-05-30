@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:heif_converter/heif_converter.dart';
 import 'package:image/image.dart' as img;
 import 'package:native_exif/native_exif.dart';
+import 'package:flutter/foundation.dart';
 import 'ad_manager.dart';
 
 import '../models/compression_result.dart';
@@ -46,8 +47,8 @@ Future<ui.Image> _decodeImage(File file) async {
     final frame = await codec.getNextFrame();
     return frame.image;
   } catch (e) {
-    // Fallback: decode using package:image
-    final imgImage = img.decodeImage(bytes);
+    // Fallback: decode using package:image (offloaded to background isolate)
+    final imgImage = await compute(img.decodeImage, bytes);
     if (imgImage == null) {
       throw Exception('Failed to decode image natively or with fallback: $e');
     }
@@ -87,9 +88,11 @@ Future<Uint8List> _encodeImage(
       order: img.ChannelOrder.rgba,
     );
     if (upperFormat == 'BMP') {
-      return Uint8List.fromList(img.encodeBmp(imgImage));
+      final encoded = await compute(img.encodeBmp, imgImage);
+      return Uint8List.fromList(encoded);
     } else {
-      return Uint8List.fromList(img.encodeTiff(imgImage));
+      final encoded = await compute(img.encodeTiff, imgImage);
+      return Uint8List.fromList(encoded);
     }
   }
 

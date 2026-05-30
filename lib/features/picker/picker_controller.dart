@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:heif_converter/heif_converter.dart';
 import 'package:image/image.dart' as img;
+import 'package:flutter/foundation.dart';
 import '../../core/models/selected_image.dart';
 
 sealed class PickerState {}
@@ -74,7 +75,7 @@ class PickerNotifier extends Notifier<PickerState> {
         } catch (_) {
           try {
             final data = await file.readAsBytes();
-            final decoded = img.decodeImage(data);
+            final decoded = await compute(img.decodeImage, data);
             if (decoded != null) {
               w = decoded.width;
               h = decoded.height;
@@ -147,7 +148,7 @@ class PickerNotifier extends Notifier<PickerState> {
         } catch (_) {
           try {
             final data = await file.readAsBytes();
-            final decoded = img.decodeImage(data);
+            final decoded = await compute(img.decodeImage, data);
             if (decoded != null) {
               w = decoded.width;
               h = decoded.height;
