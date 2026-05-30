@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,7 @@ import '../home/home_screen.dart';
 import 'batch_controller.dart';
 import 'batch_result_screen.dart';
 import '../../core/widgets/premium_page_route.dart';
+import '../../core/providers/batch_usage_provider.dart';
 
 class BatchScreen extends ConsumerStatefulWidget {
   final ImageMode mode;
@@ -53,9 +55,15 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
   }
 
   bool get _isCompress => widget.mode == ImageMode.compress;
+  bool get _isResize => widget.mode == ImageMode.resize;
+  bool get _isConvert => widget.mode == ImageMode.convert;
 
-  // Mode accent — compress=teal, resize=blue (consistent with editor/result)
-  Color get _accent => _isCompress ? AppColors.compress : AppColors.resize;
+  // Mode accent — compress=teal, resize=blue, convert=purple
+  Color get _accent {
+    if (_isCompress) return AppColors.compress;
+    if (_isResize) return AppColors.resize;
+    return AppColors.convert;
+  }
 
   void _updateTargetSizeSettings() {
     final notifier = ref.read(batchProvider.notifier);
@@ -72,12 +80,20 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
   }
 
   Future<void> _processAll() async {
+    final allowed = await ref.read(batchUsageProvider.notifier).checkAndIncrement();
+    if (!allowed) {
+      if (mounted) {
+        ProGate.guard(context, ProFeature.batchProcessing);
+      }
+      return;
+    }
+
     final notifier = ref.read(batchProvider.notifier);
     final state = ref.read(batchProvider);
 
     var finalSettings = state.settings;
 
-    if (_isCompress) {
+    if (_isCompress || _isConvert) {
       if (_useTargetSize) {
         final kb = int.tryParse(_targetSizeCtrl.text.trim());
         finalSettings = finalSettings.copyWith(
@@ -155,7 +171,11 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(_isCompress ? 'Batch Compress' : 'Batch Resize'),
+        title: Text(_isCompress
+            ? 'Batch Compress'
+            : _isConvert
+                ? 'Batch Convert'
+                : 'Batch Resize'),
         actions: [
           if (state.items.isNotEmpty)
             TextButton(
@@ -176,7 +196,7 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                 children: [
                   // ── Settings card ──────────────────────────────────────────
                   _SectionCard(
-                    child: _isCompress
+                    child: (_isCompress || _isConvert)
                         ? _CompressSettings(
                             settings: settings,
                             accent: _accent,
@@ -461,11 +481,15 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                     PfButton(
                       label: _isCompress
                           ? 'Compress ${state.items.length} Image${state.items.length > 1 ? "s" : ""}'
-                          : 'Resize ${state.items.length} Image${state.items.length > 1 ? "s" : ""}',
+                          : _isConvert
+                              ? 'Convert ${state.items.length} Image${state.items.length > 1 ? "s" : ""}'
+                              : 'Resize ${state.items.length} Image${state.items.length > 1 ? "s" : ""}',
                       isLoading: state.isProcessing,
                       icon: _isCompress
                           ? Icons.compress_rounded
-                          : Icons.photo_size_select_large_rounded,
+                          : _isConvert
+                              ? Icons.swap_horiz_rounded
+                              : Icons.photo_size_select_large_rounded,
                       backgroundColor: _accent,
                       onPressed: _processAll,
                     ),
@@ -478,8 +502,14 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
               accent: _accent,
               icon: _isCompress
                   ? Icons.compress_rounded
-                  : Icons.photo_size_select_large_rounded,
-              title: _isCompress ? 'Compressing batch' : 'Resizing batch',
+                  : _isConvert
+                      ? Icons.swap_horiz_rounded
+                      : Icons.photo_size_select_large_rounded,
+              title: _isCompress
+                  ? 'Compressing batch'
+                  : _isConvert
+                      ? 'Converting batch'
+                      : 'Resizing batch',
               subtitle:
                   'Processing ${state.doneCount + state.failedCount} of ${state.totalCount} images.',
               progress: state.totalCount == 0 ? null : state.progress,
@@ -961,3 +991,4 @@ class _SizePresetChip extends StatelessWidget {
     return ToolPresetChip(label: label, onTap: onTap);
   }
 }
+

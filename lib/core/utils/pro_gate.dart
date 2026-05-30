@@ -157,6 +157,7 @@ enum ProFeature {
   removeAds,
   heicConversion,
   keepMetadata,
+  batchProcessing,
 }
 
 class _FeatureInfo {
@@ -213,5 +214,12 @@ const _featureInfo = <ProFeature, _FeatureInfo>{
     title: 'Keep Original Metadata',
     body:
         'Preserving EXIF camera details, dates, and GPS coordinates is a Pro feature.\nUpgrade to Pro to preserve original image metadata.',
+  ),
+  ProFeature.batchProcessing: _FeatureInfo(
+    icon: Icons.photo_library_outlined,
+    color: Colors.blueAccent,
+    title: 'Unlimited Batch Processing',
+    body:
+        'Free users are limited to 3 batch operations per day.\nUpgrade to Pro for unlimited batch processing with no daily caps.',
   ),
 };

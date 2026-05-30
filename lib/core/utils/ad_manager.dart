@@ -20,6 +20,9 @@ class AdManager {
   bool _isPro = false;
   bool get isPro => _isPro;
 
+  @visibleForTesting
+  set isProForTesting(bool value) => _isPro = value;
+
   // IAP product IDs
   static const String productId = 'pro_lifetime';
   static const String legacyProductId = 'remove_ads_forever';

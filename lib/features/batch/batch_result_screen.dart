@@ -95,11 +95,16 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final isCompress = mode == ImageMode.compress;
+    final isConvert = mode == ImageMode.convert;
 
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(isCompress ? 'Batch Compressed!' : 'Batch Resized!'),
+        title: Text(isCompress
+            ? 'Batch Compressed!'
+            : isConvert
+                ? 'Batch Converted!'
+                : 'Batch Resized!'),
         actions: [
           TextButton(
             onPressed: () {
@@ -128,7 +133,9 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
                     gradient: LinearGradient(
                       colors: isCompress
                           ? [const Color(0xFF6C63FF), const Color(0xFF9D97FF)]
-                          : [const Color(0xFF11998E), const Color(0xFF38EF7D)],
+                          : isConvert
+                              ? [const Color(0xFFA855F7), const Color(0xFFC084FC)]
+                              : [const Color(0xFF11998E), const Color(0xFF38EF7D)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -137,7 +144,9 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
                       BoxShadow(
                         color: (isCompress
                                 ? const Color(0xFF6C63FF)
-                                : const Color(0xFF11998E))
+                                : isConvert
+                                    ? const Color(0xFFA855F7)
+                                    : const Color(0xFF11998E))
                             .withOpacity(0.35),
                         blurRadius: 20,
                         offset: const Offset(0, 6),
@@ -147,7 +156,9 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
                   child: Icon(
                     isCompress
                         ? Icons.compress_rounded
-                        : Icons.photo_size_select_large_rounded,
+                        : isConvert
+                            ? Icons.swap_horiz_rounded
+                            : Icons.photo_size_select_large_rounded,
                     size: 34,
                     color: Colors.white,
                   ),
@@ -157,7 +168,11 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
               FadeInSlide(
                 delay: const Duration(milliseconds: 60),
                 child: Text(
-                  isCompress ? 'Batch compression done!' : 'Batch resize done!',
+                  isCompress
+                      ? 'Batch compression done!'
+                      : isConvert
+                          ? 'Batch conversion done!'
+                          : 'Batch resize done!',
                   style: tt.headlineMedium,
                 ),
               ),
@@ -211,8 +226,8 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
                 FadeInSlide(
                   delay: const Duration(milliseconds: 240),
                   child: _isListView
-                      ? _ResultList(items: done)
-                      : _ResultGrid(items: done),
+                      ? _ResultList(items: done, mode: mode)
+                      : _ResultGrid(items: done, mode: mode),
                 ),
                 const Gap(20),
               ],
@@ -410,7 +425,11 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
       builder: (context) {
         final cs = Theme.of(context).colorScheme;
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final modeColor = widget.mode == ImageMode.compress ? AppColors.compress : AppColors.resize;
+        final modeColor = widget.mode == ImageMode.compress
+            ? AppColors.compress
+            : widget.mode == ImageMode.convert
+                ? AppColors.convert
+                : AppColors.resize;
         return Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.surfaceElevated : Colors.white,
@@ -511,7 +530,8 @@ class _StatRow extends StatelessWidget {
 
 class _ResultGrid extends StatelessWidget {
   final List<BatchItem> items;
-  const _ResultGrid({required this.items});
+  final ImageMode mode;
+  const _ResultGrid({required this.items, required this.mode});
 
   @override
   Widget build(BuildContext context) {
@@ -599,7 +619,8 @@ class _ResultGrid extends StatelessWidget {
 
 class _ResultList extends StatelessWidget {
   final List<BatchItem> items;
-  const _ResultList({required this.items});
+  final ImageMode mode;
+  const _ResultList({required this.items, required this.mode});
 
   Future<void> _shareIndividual(BatchItem item) async {
     if (item.result != null) {
@@ -689,7 +710,11 @@ class _ResultList extends StatelessWidget {
       builder: (context) {
         final cs = Theme.of(context).colorScheme;
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final modeColor = cs.primary;
+        final modeColor = mode == ImageMode.compress
+            ? AppColors.compress
+            : mode == ImageMode.convert
+                ? AppColors.convert
+                : AppColors.resize;
         return Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.surfaceElevated : Colors.white,
@@ -768,6 +793,11 @@ class _ResultList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final modeColor = mode == ImageMode.compress
+        ? AppColors.compress
+        : mode == ImageMode.convert
+            ? AppColors.convert
+            : AppColors.resize;
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -848,7 +878,7 @@ class _ResultList extends StatelessWidget {
                               Text(
                                 formatBytes(item.result!.newSize),
                                 style: TextStyle(
-                                    color: cs.primary,
+                                    color: modeColor,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700),
                               ),
@@ -896,6 +926,7 @@ class _ResultList extends StatelessWidget {
                         label: 'Save',
                         onTap: () => _showIndividualSaveOptions(context, item),
                         filled: true,
+                        color: modeColor,
                       ),
                     ),
                   ],
@@ -914,12 +945,14 @@ class _ActionButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool filled;
+  final Color? color;
 
   const _ActionButton({
     required this.icon,
     required this.label,
     required this.onTap,
     this.filled = false,
+    this.color,
   });
 
   @override
@@ -936,7 +969,7 @@ class _ActionButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: filled
-                ? cs.primary
+                ? (color ?? cs.primary)
                 : (isDark
                     ? cs.surfaceContainerHighest.withOpacity(0.6)
                     : cs.surfaceContainerHighest.withOpacity(0.5)),

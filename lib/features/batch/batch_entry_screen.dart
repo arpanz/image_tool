@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
 import '../home/home_screen.dart';
 import 'batch_screen.dart';
 import '../../core/widgets/premium_page_route.dart';
+import '../../core/widgets/pie_counter.dart';
 
 /// Entry point for Batch mode. User picks Compress or Resize,
 /// then lands on the existing BatchScreen with the chosen mode.
-class BatchEntryScreen extends StatelessWidget {
+class BatchEntryScreen extends ConsumerWidget {
   const BatchEntryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
 
@@ -23,6 +25,12 @@ class BatchEntryScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text('Batch'),
+        actions: [
+          if (!AdManager.instance.isPro) ...[
+            const PieCounter(),
+            const Gap(16),
+          ],
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -110,6 +118,19 @@ class BatchEntryScreen extends StatelessWidget {
                 onTap: () => Navigator.of(context).push(
                   PremiumPageRoute(
                     child: BatchScreen(mode: ImageMode.resize),
+                  ),
+                ),
+              ),
+              const Gap(16),
+              _BatchModeCard(
+                icon: Icons.swap_horiz_rounded,
+                accentColor: AppColors.convert,
+                title: 'Convert',
+                subtitle: 'Change format of multiple images',
+                tag: 'JPG · PNG · WEBP · BMP · TIFF',
+                onTap: () => Navigator.of(context).push(
+                  PremiumPageRoute(
+                    child: BatchScreen(mode: ImageMode.convert),
                   ),
                 ),
               ),
