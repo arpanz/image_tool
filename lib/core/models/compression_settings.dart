@@ -10,6 +10,7 @@ class CompressionSettings {
   final int? targetSizeKB;
   final int? resizePercentage;
   final int? backgroundColorHex;
+  final bool keepMetadata;
 
   const CompressionSettings({
     this.quality = 80,
@@ -21,6 +22,7 @@ class CompressionSettings {
     this.targetSizeKB,
     this.resizePercentage,
     this.backgroundColorHex,
+    this.keepMetadata = true,
   });
 
   CompressionSettings copyWith({
@@ -38,6 +40,7 @@ class CompressionSettings {
     bool clearHeight = false,
     int? backgroundColorHex,
     bool clearBackgroundColorHex = false,
+    bool? keepMetadata,
   }) {
     return CompressionSettings(
       quality: quality ?? this.quality,
@@ -52,6 +55,7 @@ class CompressionSettings {
           clearResizePercentage ? null : (resizePercentage ?? this.resizePercentage),
       backgroundColorHex:
           clearBackgroundColorHex ? null : (backgroundColorHex ?? this.backgroundColorHex),
+      keepMetadata: keepMetadata ?? this.keepMetadata,
     );
   }
 
@@ -68,7 +72,8 @@ class CompressionSettings {
           fitMode == other.fitMode &&
           targetSizeKB == other.targetSizeKB &&
           resizePercentage == other.resizePercentage &&
-          backgroundColorHex == other.backgroundColorHex;
+          backgroundColorHex == other.backgroundColorHex &&
+          keepMetadata == other.keepMetadata;
 
   @override
   int get hashCode => Object.hash(
@@ -81,5 +86,6 @@ class CompressionSettings {
         targetSizeKB,
         resizePercentage,
         backgroundColorHex,
+        keepMetadata,
       );
 }

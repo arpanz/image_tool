@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:gal/gal.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
 import '../../core/utils/app_review_service.dart';
@@ -293,12 +294,12 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
                 FadeInSlide(
                   delay: const Duration(milliseconds: 480),
                   child: PfButton(
-                    label: 'Save All to Device',
+                    label: 'Save All',
                     icon: Icons.download_outlined,
                     backgroundColor: isDark
                         ? AppColors.surface
                         : AppColors.lightSurfaceElevated,
-                    onPressed: () => _saveAll(context, done),
+                    onPressed: () => _showGlobalSaveOptions(context, done),
                   ),
                 ),
               ],
@@ -349,6 +350,141 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
         ));
       }
     }
+  }
+
+  Future<void> _saveAllAs(BuildContext context, List<BatchItem> items) async {
+    try {
+      final selectedDirectory = await FilePicker.getDirectoryPath(
+        dialogTitle: 'Select folder to save images:',
+      );
+
+      if (selectedDirectory == null) return;
+
+      int savedCount = 0;
+      for (final item in items) {
+        if (item.result == null) continue;
+        final originalFile = File(item.result!.outputPath);
+        if (!await originalFile.exists()) continue;
+
+        final bytes = await originalFile.readAsBytes();
+        final originalName = item.image.path.split(RegExp(r'[/\\]')).last;
+        final ext = originalFile.path.split('.').last;
+        
+        final dotIndex = originalName.lastIndexOf('.');
+        final baseName = dotIndex != -1 ? originalName.substring(0, dotIndex) : originalName;
+        final targetPath = '$selectedDirectory/${baseName}_processed.$ext';
+
+        await File(targetPath).writeAsBytes(bytes);
+        savedCount++;
+      }
+
+      // Save explicitly to history on successful save
+      _saveBatchToHistory(items);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$savedCount images saved successfully to folder!'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Save failed: $e. If this is a mobile device, please use "Save to Gallery".'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+
+  void _showGlobalSaveOptions(BuildContext context, List<BatchItem> items) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final cs = Theme.of(context).colorScheme;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final modeColor = widget.mode == ImageMode.compress ? AppColors.compress : AppColors.resize;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceElevated : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: cs.onSurfaceVariant.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const Gap(20),
+                Text(
+                  'Choose Save Location',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const Gap(24),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: modeColor.withOpacity(0.12),
+                    child: Icon(Icons.photo_library_outlined, color: modeColor),
+                  ),
+                  title: const Text(
+                    'Save all to Gallery',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('Save all images to default "ImageResizer" album'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _saveAll(context, items);
+                  },
+                ),
+                const Gap(8),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: modeColor.withOpacity(0.12),
+                    child: Icon(Icons.folder_open_outlined, color: modeColor),
+                  ),
+                  title: const Text(
+                    'Save all to Custom Folder...',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('Select a destination folder for all images'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _saveAllAs(context, items);
+                  },
+                ),
+                const Gap(12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -501,6 +637,135 @@ class _ResultList extends StatelessWidget {
     }
   }
 
+  Future<void> _saveIndividualAs(BuildContext context, BatchItem item) async {
+    if (item.result == null) return;
+    try {
+      final originalFile = File(item.result!.outputPath);
+      if (!await originalFile.exists()) {
+        throw Exception("Processed file not found");
+      }
+      final bytes = await originalFile.readAsBytes();
+
+      final originalName = item.image.path.split(RegExp(r'[/\\]')).last;
+      final ext = originalFile.path.split('.').last;
+      final dotIndex = originalName.lastIndexOf('.');
+      final baseName = dotIndex != -1 ? originalName.substring(0, dotIndex) : originalName;
+      final defaultFileName = '${baseName}_processed.$ext';
+
+      final String? path = await FilePicker.saveFile(
+        dialogTitle: 'Select location to save image:',
+        fileName: defaultFileName,
+        bytes: bytes,
+      );
+
+      if (path != null) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Image saved successfully!'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } on Exception catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Save failed: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+
+  void _showIndividualSaveOptions(BuildContext context, BatchItem item) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final cs = Theme.of(context).colorScheme;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final modeColor = cs.primary;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceElevated : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: cs.onSurfaceVariant.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const Gap(20),
+                Text(
+                  'Choose Save Location',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const Gap(24),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: modeColor.withOpacity(0.12),
+                    child: Icon(Icons.photo_library_outlined, color: modeColor),
+                  ),
+                  title: const Text(
+                    'Save to Gallery',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('Save to default "ImageResizer" album'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _saveIndividual(context, item);
+                  },
+                ),
+                const Gap(8),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: modeColor.withOpacity(0.12),
+                    child: Icon(Icons.folder_open_outlined, color: modeColor),
+                  ),
+                  title: const Text(
+                    'Save As...',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('Choose a custom folder and filename'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _saveIndividualAs(context, item);
+                  },
+                ),
+                const Gap(12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
@@ -628,8 +893,8 @@ class _ResultList extends StatelessWidget {
                     Expanded(
                       child: _ActionButton(
                         icon: Icons.download_outlined,
-                        label: 'Save to Gallery',
-                        onTap: () => _saveIndividual(context, item),
+                        label: 'Save',
+                        onTap: () => _showIndividualSaveOptions(context, item),
                         filled: true,
                       ),
                     ),

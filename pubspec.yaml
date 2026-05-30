@@ -33,6 +33,7 @@ dependencies:
   heif_converter: ^1.0.5
   file_picker: ^11.0.2
   image: ^4.8.0
+  native_exif: ^0.5.0
 
 
 

@@ -160,6 +160,13 @@ class EditorNotifier extends Notifier<EditorState> {
     _triggerEstimation();
   }
 
+  void setKeepMetadata(bool keep) {
+    state = state.copyWith(
+      settings: state.settings.copyWith(keepMetadata: keep),
+    );
+    _triggerEstimation();
+  }
+
   Future<CompressionResult?> compress(SelectedImage image) async {
     state = state.copyWith(compressionState: const AsyncLoading());
     try {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gal/gal.dart';
 import 'package:gap/gap.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/models/compression_result.dart';
 import '../../core/theme/app_theme.dart';
@@ -223,6 +224,140 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     }
   }
 
+  Future<void> _saveAs(BuildContext context) async {
+    try {
+      final originalFile = File(result.outputPath);
+      if (!await originalFile.exists()) {
+        throw Exception("Processed file not found");
+      }
+      final bytes = await originalFile.readAsBytes();
+
+      String defaultFileName = 'output.${_outputFormat.toLowerCase()}';
+      final pickerState = ref.read(pickerProvider);
+      if (pickerState is PickerLoaded) {
+        final originalName = pickerState.image.path.split(RegExp(r'[/\\]')).last;
+        final ext = _outputFormat.toLowerCase();
+        final dotIndex = originalName.lastIndexOf('.');
+        final baseName = dotIndex != -1 ? originalName.substring(0, dotIndex) : originalName;
+        defaultFileName = '${baseName}_processed.$ext';
+      }
+
+      final String? path = await FilePicker.saveFile(
+        dialogTitle: 'Select location to save image:',
+        fileName: defaultFileName,
+        bytes: bytes,
+      );
+
+      if (path != null) {
+        // Save explicitly to history on successful save
+        _saveHistoryIfNeeded();
+
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Image saved successfully!'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } on Exception catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Save failed: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+
+  void _showSaveOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final cs = Theme.of(context).colorScheme;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceElevated : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: cs.onSurfaceVariant.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const Gap(20),
+                Text(
+                  'Choose Save Location',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const Gap(24),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: _accent.withOpacity(0.12),
+                    child: Icon(Icons.photo_library_outlined, color: _accent),
+                  ),
+                  title: const Text(
+                    'Save to Gallery',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('Save to default "ImageResizer" album'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _saveToDevice(context);
+                  },
+                ),
+                const Gap(8),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: _accent.withOpacity(0.12),
+                    child: Icon(Icons.folder_open_outlined, color: _accent),
+                  ),
+                  title: const Text(
+                    'Save As...',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('Choose a custom folder and filename'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _saveAs(context);
+                  },
+                ),
+                const Gap(12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _share() async {
     // Save explicitly to history on share triggers
     _saveHistoryIfNeeded();
@@ -348,7 +483,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                   backgroundColor: isDark
                       ? AppColors.surfaceElevated
                       : AppColors.lightSurfaceElevated,
-                  onPressed: () => _saveToDevice(context),
+                  onPressed: () => _showSaveOptions(context),
                 ),
               ),
             ],

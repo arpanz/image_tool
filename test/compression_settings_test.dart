@@ -13,6 +13,7 @@ void main() {
       expect(settings.fitMode, ResizeFitMode.fit);
       expect(settings.targetSizeKB, isNull);
       expect(settings.resizePercentage, isNull);
+      expect(settings.keepMetadata, isTrue);
     });
 
     test('copyWith keeps existing and updates fields', () {
@@ -22,14 +23,16 @@ void main() {
         height: 200,
         resizePercentage: 50,
         targetSizeKB: 500,
+        keepMetadata: true,
       );
 
-      final updated = settings.copyWith(quality: 90);
+      final updated = settings.copyWith(quality: 90, keepMetadata: false);
       expect(updated.quality, 90);
       expect(updated.width, 100);
       expect(updated.height, 200);
       expect(updated.resizePercentage, 50);
       expect(updated.targetSizeKB, 500);
+      expect(updated.keepMetadata, isFalse);
     });
 
     test('copyWith clears fields correctly', () {
@@ -52,6 +55,7 @@ void main() {
       expect(updated.height, isNull);
       expect(updated.resizePercentage, isNull);
       expect(updated.targetSizeKB, isNull);
+      expect(updated.keepMetadata, isTrue);
     });
   });
 }

@@ -7,6 +7,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:heif_converter/heif_converter.dart';
 import 'package:image/image.dart' as img;
+import 'package:native_exif/native_exif.dart';
 
 import '../models/compression_result.dart';
 import '../models/compression_settings.dart';
@@ -364,6 +365,25 @@ class ImageProcessor {
       }
 
       await File(outputPath).writeAsBytes(resultBytes);
+
+      // Preserve metadata (EXIF) if enabled
+      if (settings.keepMetadata) {
+        try {
+          final originalExif = await Exif.fromPath(inputPath);
+          final attrs = await originalExif.getAttributes();
+          await originalExif.close();
+
+          if (attrs != null && attrs.isNotEmpty) {
+            final exif = await Exif.fromPath(outputPath);
+            await exif.writeAttributes(attrs);
+            // Reset Orientation to '1' to avoid double rotation (resized canvas is already correctly oriented)
+            await exif.writeAttribute('Orientation', '1');
+            await exif.close();
+          }
+        } catch (e) {
+          print('Error copying EXIF metadata: $e');
+        }
+      }
 
       return CompressionResult.fromSizes(
         originalSize: originalSize,

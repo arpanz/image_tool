@@ -1281,3 +1281,115 @@ class _ToolSelectionChipState extends State<_ToolSelectionChip>
     );
   }
 }
+
+class ToolExpandableCard extends StatefulWidget {
+  final String title;
+  final Widget child;
+  final Color accent;
+  final bool isExpanded;
+  final ValueChanged<bool>? onExpansionChanged;
+
+  const ToolExpandableCard({
+    super.key,
+    required this.title,
+    required this.child,
+    required this.accent,
+    this.isExpanded = false,
+    this.onExpansionChanged,
+  });
+
+  @override
+  State<ToolExpandableCard> createState() => _ToolExpandableCardState();
+}
+
+class _ToolExpandableCardState extends State<ToolExpandableCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _heightFactor;
+  late final Animation<double> _iconTurns;
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.isExpanded;
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    _heightFactor = _controller.drive(CurveTween(curve: Curves.easeInOutQuart));
+    _iconTurns = _controller.drive(Tween<double>(begin: 0.0, end: 0.5).chain(CurveTween(curve: Curves.easeInOut)));
+    if (_isExpanded) {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ToolExpandableCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isExpanded != widget.isExpanded) {
+      _handleTap();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+      widget.onExpansionChanged?.call(_isExpanded);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ToolSurface(
+      padding: EdgeInsets.zero,
+      accent: widget.accent,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: _handleTap,
+            borderRadius: BorderRadius.circular(18),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.title,
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  RotationTransition(
+                    turns: _iconTurns,
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: widget.accent,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizeTransition(
+            sizeFactor: _heightFactor,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+              child: widget.child,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

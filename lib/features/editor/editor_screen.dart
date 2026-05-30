@@ -762,6 +762,42 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                     const Gap(14),
                   ],
 
+                  // ── Metadata Options expandable card ──
+                  ToolExpandableCard(
+                    title: 'Metadata Options',
+                    accent: _accent,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Keep original metadata',
+                                style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const Gap(2),
+                              Text(
+                                'Preserves camera info, capture date, and GPS location coordinates.',
+                                style: tt.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Gap(16),
+                        ToolSwitch(
+                          value: settings.keepMetadata,
+                          accent: _accent,
+                          onChanged: (v) {
+                            ref.read(editorProvider.notifier).setKeepMetadata(v);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Gap(14),
+
                   // ── Ad ─────────────────────────────────────────────────────
                   AdManager.instance.getBannerAdWidget(),
                   const Gap(16),
