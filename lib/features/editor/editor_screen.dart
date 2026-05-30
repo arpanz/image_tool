@@ -16,6 +16,7 @@ import '../../core/widgets/premium_page_route.dart';
 import '../home/home_screen.dart';
 import '../result/result_screen.dart';
 import 'editor_controller.dart';
+import '../../core/providers/resize_presets_provider.dart';
 
 enum _DimUnit { px, percent, cm, mm }
 
@@ -67,6 +68,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
   Future<void> _onProcess() async {
     final notifier = ref.read(editorProvider.notifier);
+    final settings = ref.read(editorProvider).settings;
 
     if (widget.mode == ImageMode.compress && _useTargetSize) {
       final kb = int.tryParse(_targetSizeCtrl.text.trim());
@@ -105,6 +107,15 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
     final result = await notifier.compress(widget.image);
     if (result != null && mounted) {
+      if (widget.mode == ImageMode.resize && _dimUnit == _DimUnit.px) {
+        ref.read(resizePresetsProvider.notifier).addPreset(
+              width: result.outWidth,
+              height: result.outHeight,
+              keepAspectRatio: settings.keepAspectRatio,
+              fitMode: settings.fitMode,
+              backgroundColorHex: settings.backgroundColorHex,
+            );
+      }
       AdManager.instance.showInterstitial(
         context,
         onAdDismissed: () {
@@ -161,6 +172,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final isProcessing = state.compressionState is AsyncLoading;
     final isCompress = widget.mode == ImageMode.compress;
     final tt = Theme.of(context).textTheme;
+    final recentPresets = ref.watch(resizePresetsProvider);
 
     ref.listen<EditorState>(editorProvider, (_, next) {
       if (next.compressionState is AsyncError) {
@@ -589,6 +601,62 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                 ),
                               ],
                             ),
+                            if (_dimUnit == _DimUnit.px) ...[
+                              const Gap(10),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    if (recentPresets.isNotEmpty) ...[
+                                      for (var item in recentPresets) ...[
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 6),
+                                          child: ToolPresetChip(
+                                            label: 'Recent: ${item.width}x${item.height}',
+                                            accent: _accent,
+                                            onTap: () {
+                                              setState(() {
+                                                _widthCtrl.text = '${item.width}';
+                                                _heightCtrl.text = '${item.height}';
+                                              });
+                                              final notifier = ref.read(editorProvider.notifier);
+                                              notifier.setWidth(item.width);
+                                              notifier.setHeight(item.height);
+                                              if (settings.keepAspectRatio != item.keepAspectRatio) {
+                                                notifier.toggleAspectRatio();
+                                              }
+                                              notifier.setFitMode(item.fitMode);
+                                              notifier.setBackgroundColorHex(item.backgroundColorHex);
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                      Container(
+                                        height: 16,
+                                        width: 1,
+                                        color: Theme.of(context).colorScheme.outlineVariant,
+                                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                                      ),
+                                    ],
+                                    for (var preset in popularPresets) ...[
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 6),
+                                        child: ToolPresetChip(
+                                          label: '${preset.label} (${preset.width}x${preset.height})',
+                                          onTap: () {
+                                            setState(() {
+                                              _widthCtrl.text = '${preset.width}';
+                                              _heightCtrl.text = '${preset.height}';
+                                            });
+                                            _syncDimensionsToNotifier();
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
                             if (_widthCtrl.text.isNotEmpty ||
                                 _heightCtrl.text.isNotEmpty) ...[
                               const Gap(12),

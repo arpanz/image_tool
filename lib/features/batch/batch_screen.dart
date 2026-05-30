@@ -17,6 +17,7 @@ import 'batch_controller.dart';
 import 'batch_result_screen.dart';
 import '../../core/widgets/premium_page_route.dart';
 import '../../core/providers/batch_usage_provider.dart';
+import '../../core/providers/resize_presets_provider.dart';
 
 class BatchScreen extends ConsumerStatefulWidget {
   final ImageMode mode;
@@ -80,7 +81,8 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
   }
 
   Future<void> _processAll() async {
-    final allowed = await ref.read(batchUsageProvider.notifier).checkAndIncrement();
+    final allowed =
+        await ref.read(batchUsageProvider.notifier).checkAndIncrement();
     if (!allowed) {
       if (mounted) {
         ProGate.guard(context, ProFeature.batchProcessing);
@@ -142,6 +144,19 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
     await notifier.processAll();
 
     if (mounted && ref.read(batchProvider).isDone) {
+      if (widget.mode == ImageMode.resize && !_usePercentage) {
+        final w = int.tryParse(_widthCtrl.text.trim());
+        final h = int.tryParse(_heightCtrl.text.trim());
+        if (w != null && h != null && w > 0 && h > 0) {
+          ref.read(resizePresetsProvider.notifier).addPreset(
+                width: w,
+                height: h,
+                keepAspectRatio: finalSettings.keepAspectRatio,
+                fitMode: finalSettings.fitMode,
+                backgroundColorHex: finalSettings.backgroundColorHex,
+              );
+        }
+      }
       AdManager.instance.showInterstitial(
         context,
         onAdDismissed: () {
@@ -164,6 +179,7 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
     final settings = state.settings;
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+    final recentPresets = ref.watch(resizePresetsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -211,6 +227,7 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                             usePercentage: _usePercentage,
                             onToggle: (v) => setState(() => _usePercentage = v),
                             onChanged: (s) => notifier.updateSettings(s),
+                            recentPresets: recentPresets,
                           ),
                   ),
                   const Gap(12),
@@ -351,16 +368,20 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                                 children: [
                                   Text(
                                     'Keep original metadata',
-                                    style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                                    style: tt.bodyMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
                                   ),
                                   if (!AdManager.instance.isPro) ...[
                                     const Gap(6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: _accent.withOpacity(0.12),
                                         borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: _accent.withOpacity(0.3), width: 0.8),
+                                        border: Border.all(
+                                            color: _accent.withOpacity(0.3),
+                                            width: 0.8),
                                       ),
                                       child: Text(
                                         'PRO',
@@ -389,11 +410,13 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                           accent: _accent,
                           onChanged: (v) {
                             if (v) {
-                              if (!ProGate.guard(context, ProFeature.keepMetadata)) {
+                              if (!ProGate.guard(
+                                  context, ProFeature.keepMetadata)) {
                                 return;
                               }
                             }
-                            notifier.updateSettings(settings.copyWith(keepMetadata: v));
+                            notifier.updateSettings(
+                                settings.copyWith(keepMetadata: v));
                           },
                         ),
                       ],
@@ -591,6 +614,7 @@ class _ResizeSettings extends StatelessWidget {
   final bool usePercentage;
   final ValueChanged<bool> onToggle;
   final ValueChanged<CompressionSettings> onChanged;
+  final List<RecentResizePreset> recentPresets;
 
   const _ResizeSettings({
     required this.settings,
@@ -601,6 +625,7 @@ class _ResizeSettings extends StatelessWidget {
     required this.usePercentage,
     required this.onToggle,
     required this.onChanged,
+    required this.recentPresets,
   });
 
   @override
@@ -675,6 +700,59 @@ class _ResizeSettings extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const Gap(10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                if (recentPresets.isNotEmpty) ...[
+                  for (var item in recentPresets) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ToolPresetChip(
+                        label: 'Recent: ${item.width}x${item.height}',
+                        accent: accent,
+                        onTap: () {
+                          widthCtrl.text = '${item.width}';
+                          heightCtrl.text = '${item.height}';
+                          onChanged(settings.copyWith(
+                            width: item.width,
+                            height: item.height,
+                            keepAspectRatio: item.keepAspectRatio,
+                            fitMode: item.fitMode,
+                            backgroundColorHex: item.backgroundColorHex,
+                          ));
+                        },
+                      ),
+                    ),
+                  ],
+                  Container(
+                    height: 16,
+                    width: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                  ),
+                ],
+                for (var preset in popularPresets) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ToolPresetChip(
+                      label:
+                          '${preset.label} (${preset.width}x${preset.height})',
+                      onTap: () {
+                        widthCtrl.text = '${preset.width}';
+                        heightCtrl.text = '${preset.height}';
+                        onChanged(settings.copyWith(
+                          width: preset.width,
+                          height: preset.height,
+                        ));
+                      },
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
         const Gap(12),
@@ -991,4 +1069,3 @@ class _SizePresetChip extends StatelessWidget {
     return ToolPresetChip(label: label, onTap: onTap);
   }
 }
-

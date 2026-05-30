@@ -873,6 +873,7 @@ class _ToolSegmentedControlState<T> extends State<ToolSegmentedControl<T>>
                       segmentCount: count,
                       accent: widget.accent,
                       isDark: isDark,
+                      maxWidth: constraints.maxWidth,
                     ),
                   // ── Segment labels ──
                   Row(
@@ -941,44 +942,42 @@ class _SlidingIndicator extends StatelessWidget {
   final int segmentCount;
   final Color accent;
   final bool isDark;
+  final double maxWidth;
 
   const _SlidingIndicator({
     required this.slideValue,
     required this.segmentCount,
     required this.accent,
     required this.isDark,
+    required this.maxWidth,
   });
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth <= 0 || segmentCount == 0) {
-          return const SizedBox.shrink();
-        }
-        final segmentWidth = constraints.maxWidth / segmentCount;
-        final left = slideValue * segmentWidth;
+    if (maxWidth <= 0 || segmentCount == 0) {
+      return const SizedBox.shrink();
+    }
+    final segmentWidth = maxWidth / segmentCount;
+    final left = slideValue * segmentWidth;
 
-        return Positioned(
-          left: left,
-          top: 0,
-          bottom: 0,
-          width: segmentWidth,
-          child: Container(
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: accent.withOpacity(isDark ? 0.3 : 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+    return Positioned(
+      left: left,
+      top: 0,
+      bottom: 0,
+      width: segmentWidth,
+      child: Container(
+        decoration: BoxDecoration(
+          color: accent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withOpacity(isDark ? 0.3 : 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }
