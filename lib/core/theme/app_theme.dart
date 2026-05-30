@@ -26,7 +26,7 @@ class AppColors {
   static const error = Color(0xFFEF5350);
 
   static const textPrimary = Color(0xFFF0F0F0);
-  static const textSecondary = Color(0xFF888888);
+  static const textSecondary = Color(0xFFBCBCBC);
   static const textFaint = Color(0xFF555555);
 
   // ── Light theme ──────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ class AppColors {
   static const lightPrimaryDim = Color(0xFF0B8A5E);
 
   static const lightTextPrimary = Color(0xFF111111);
-  static const lightTextSecondary = Color(0xFF666666);
+  static const lightTextSecondary = Color(0xFF484848);
   static const lightTextFaint = Color(0xFFAAAAAA);
 }
 
@@ -102,7 +102,7 @@ class AppTheme {
         ),
         bodyMedium: GoogleFonts.inter(
           fontSize: 14,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w500,
           color: AppColors.textSecondary,
         ),
         bodySmall: GoogleFonts.inter(
@@ -273,7 +273,7 @@ class AppTheme {
         ),
         bodyMedium: GoogleFonts.inter(
           fontSize: 14,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w500,
           color: AppColors.lightTextSecondary,
         ),
         bodySmall: GoogleFonts.inter(

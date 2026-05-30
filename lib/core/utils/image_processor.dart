@@ -108,6 +108,7 @@ Future<ui.Image> _resizeCanvas(
   int targetW,
   int targetH,
   ResizeFitMode mode,
+  int? backgroundColorHex,
 ) async {
   final srcW = src.width.toDouble();
   final srcH = src.height.toDouble();
@@ -137,6 +138,12 @@ Future<ui.Image> _resizeCanvas(
         ui.Paint(),
       );
     case ResizeFitMode.fit:
+      if (backgroundColorHex != null) {
+        canvas.drawRect(
+          ui.Rect.fromLTWH(0, 0, dstW, dstH),
+          ui.Paint()..color = ui.Color(backgroundColorHex),
+        );
+      }
       final scale = (dstW / srcW) < (dstH / srcH) ? dstW / srcW : dstH / srcH;
       final scaledW = srcW * scale;
       final scaledH = srcH * scale;
@@ -274,7 +281,7 @@ class ImageProcessor {
 
         if (actuallyResized) {
           final resized =
-              await _resizeCanvas(src, targetW, targetH, settings.fitMode);
+              await _resizeCanvas(src, targetW, targetH, settings.fitMode, settings.backgroundColorHex);
           src.dispose();
           resultBytes =
               await _encodeImage(resized, settings.format, settings.quality);
@@ -315,7 +322,7 @@ class ImageProcessor {
             } else {
               final src = await _decodeImage(File(activeInputPath));
               final resized =
-                  await _resizeCanvas(src, outW, outH, settings.fitMode);
+                  await _resizeCanvas(src, outW, outH, settings.fitMode, settings.backgroundColorHex);
               src.dispose();
               attempt = await _encodeImage(resized, settings.format, mid);
               resized.dispose();
@@ -342,7 +349,7 @@ class ImageProcessor {
               scaleH = (outH * factor).round().clamp(1, outH);
               final src = await _decodeImage(File(activeInputPath));
               final resized =
-                  await _resizeCanvas(src, scaleW, scaleH, settings.fitMode);
+                  await _resizeCanvas(src, scaleW, scaleH, settings.fitMode, settings.backgroundColorHex);
               src.dispose();
               scaled =
                   await _encodeImage(resized, settings.format, bestQuality);

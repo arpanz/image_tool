@@ -638,6 +638,103 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                   .read(editorProvider.notifier)
                                   .setFitMode(m),
                             ),
+                            if (settings.fitMode == ResizeFitMode.fit) ...[
+                              const Gap(16),
+                              const Divider(height: 1, thickness: 0.5),
+                              const Gap(14),
+                              Text('Background Color', style: tt.bodySmall),
+                              const Gap(10),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    _buildColorChip(
+                                      context,
+                                      isSelected:
+                                          settings.backgroundColorHex == null,
+                                      child: const _CheckeredBackground(),
+                                      onTap: () => ref
+                                          .read(editorProvider.notifier)
+                                          .setBackgroundColorHex(null),
+                                    ),
+                                    const Gap(10),
+                                    _buildColorChip(
+                                      context,
+                                      isSelected: settings.backgroundColorHex ==
+                                          0xFFFFFFFF,
+                                      color: Colors.white,
+                                      onTap: () => ref
+                                          .read(editorProvider.notifier)
+                                          .setBackgroundColorHex(0xFFFFFFFF),
+                                    ),
+                                    const Gap(10),
+                                    _buildColorChip(
+                                      context,
+                                      isSelected: settings.backgroundColorHex ==
+                                          0xFF000000,
+                                      color: Colors.black,
+                                      onTap: () => ref
+                                          .read(editorProvider.notifier)
+                                          .setBackgroundColorHex(0xFF000000),
+                                    ),
+                                    const Gap(10),
+                                    _buildColorChip(
+                                      context,
+                                      isSelected: settings.backgroundColorHex ==
+                                          0xFFF5F5F7,
+                                      color: const Color(0xFFF5F5F7),
+                                      onTap: () => ref
+                                          .read(editorProvider.notifier)
+                                          .setBackgroundColorHex(0xFFF5F5F7),
+                                    ),
+                                    const Gap(10),
+                                    _buildColorChip(
+                                      context,
+                                      isSelected: settings.backgroundColorHex ==
+                                          0xFFE8F0FE,
+                                      color: const Color(0xFFE8F0FE),
+                                      onTap: () => ref
+                                          .read(editorProvider.notifier)
+                                          .setBackgroundColorHex(0xFFE8F0FE),
+                                    ),
+                                    const Gap(10),
+                                    _buildCustomColorChip(
+                                      context,
+                                      isSelected:
+                                          settings.backgroundColorHex != null &&
+                                              settings.backgroundColorHex !=
+                                                  0xFFFFFFFF &&
+                                              settings.backgroundColorHex !=
+                                                  0xFF000000 &&
+                                              settings.backgroundColorHex !=
+                                                  0xFFF5F5F7 &&
+                                              settings.backgroundColorHex !=
+                                                  0xFFE8F0FE,
+                                      currentColor: settings.backgroundColorHex,
+                                      accent: _accent,
+                                      onTap: () async {
+                                        final initialColor =
+                                            settings.backgroundColorHex ??
+                                                0xFFFFFFFF;
+                                        final selected = await showDialog<int>(
+                                          context: context,
+                                          builder: (_) =>
+                                              _CustomColorPickerDialog(
+                                            initialColor: initialColor,
+                                            accent: _accent,
+                                          ),
+                                        );
+                                        if (selected != null) {
+                                          ref
+                                              .read(editorProvider.notifier)
+                                              .setBackgroundColorHex(selected);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -717,6 +814,103 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       case _DimUnit.mm:
         return 'mm';
     }
+  }
+
+  Widget _buildColorChip(
+    BuildContext context, {
+    required bool isSelected,
+    Color? color,
+    Widget? child,
+    required VoidCallback onTap,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected ? _accent : cs.outlineVariant.withOpacity(0.4),
+            width: isSelected ? 2.5 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: _accent.withOpacity(0.25),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  )
+                ]
+              : null,
+        ),
+        padding: const EdgeInsets.all(2),
+        child: ClipOval(
+          child: child ?? Container(color: color),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomColorChip(
+    BuildContext context, {
+    required bool isSelected,
+    int? currentColor,
+    required Color accent,
+    required VoidCallback onTap,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final displayColor = currentColor != null ? Color(currentColor) : null;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected ? accent : cs.outlineVariant.withOpacity(0.4),
+            width: isSelected ? 2.5 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: accent.withOpacity(0.25),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  )
+                ]
+              : null,
+        ),
+        padding: const EdgeInsets.all(2),
+        child: ClipOval(
+          child: displayColor != null
+              ? Container(
+                  color: displayColor,
+                  child: const Icon(Icons.colorize_rounded,
+                      size: 14, color: Colors.white),
+                )
+              : Container(
+                  decoration: const BoxDecoration(
+                    gradient: SweepGradient(
+                      colors: [
+                        Colors.red,
+                        Colors.yellow,
+                        Colors.green,
+                        Colors.blue,
+                        Colors.amber,
+                        Colors.red,
+                      ],
+                    ),
+                  ),
+                  child: const Icon(Icons.add_rounded,
+                      size: 16, color: Colors.white),
+                ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1148,41 +1342,36 @@ class _FitModeSelector extends StatelessWidget {
         mode: ResizeFitMode.stretch,
         label: 'Stretch',
         icon: Icons.open_with_rounded,
-        desc: 'Fill frame exactly, may distort'),
+        desc: 'Fill frame exactly'),
     _FitModeOption(
         mode: ResizeFitMode.crop,
         label: 'Crop',
         icon: Icons.crop_rounded,
-        desc: 'Fill frame, center-crop excess'),
+        desc: 'Fill frame, crop excess'),
     _FitModeOption(
         mode: ResizeFitMode.fit,
         label: 'Fit',
         icon: Icons.fit_screen_rounded,
-        desc: 'Fit inside, transparent fill'),
-    _FitModeOption(
-        mode: ResizeFitMode.background,
-        label: 'Background',
-        icon: Icons.rectangle_outlined,
-        desc: 'Fit inside, white fill'),
+        desc: 'Fit inside frame'),
   ];
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
+      crossAxisCount: 3,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 2.6,
+      childAspectRatio: 1.25,
       children: _modes.map((m) {
         final isSelected = m.mode == current;
         return GestureDetector(
           onTap: () => onChanged(m.mode),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected
                   ? cs.primary.withOpacity(0.12)
@@ -1195,42 +1384,226 @@ class _FitModeSelector extends StatelessWidget {
                 width: isSelected ? 1.5 : 1,
               ),
             ),
-            child: Row(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(m.icon,
-                    size: 18,
+                    size: 20,
                     color: isSelected
                         ? cs.primary
                         : Theme.of(context).textTheme.bodySmall?.color),
-                const Gap(8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(m.label,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected
-                                ? cs.primary
-                                : Theme.of(context).textTheme.bodyMedium?.color,
-                          )),
-                      Text(m.desc,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(fontSize: 10),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
-                    ],
-                  ),
-                ),
+                const Gap(4),
+                Text(m.label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected
+                          ? cs.primary
+                          : Theme.of(context).textTheme.bodyMedium?.color,
+                    )),
+                const Gap(2),
+                Text(m.desc,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(fontSize: 8.5),
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+// ── Checkered Background Widget ──────────────────────────────────────────
+
+class _CheckeredBackground extends StatelessWidget {
+  const _CheckeredBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _CheckeredPainter(),
+      child: Container(),
+    );
+  }
+}
+
+class _CheckeredPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint1 = Paint()..color = Colors.grey[300]!;
+    final paint2 = Paint()..color = Colors.grey[400]!;
+
+    const double sizeSquare = 4.0;
+    for (double i = 0; i < size.width; i += sizeSquare) {
+      for (double j = 0; j < size.height; j += sizeSquare) {
+        final isEven =
+            ((i / sizeSquare).round() + (j / sizeSquare).round()) % 2 == 0;
+        canvas.drawRect(
+          Rect.fromLTWH(i, j, sizeSquare, sizeSquare),
+          isEven ? paint1 : paint2,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ── Custom Color Picker Dialog ───────────────────────────────────────────
+
+class _CustomColorPickerDialog extends StatefulWidget {
+  final int initialColor;
+  final Color accent;
+
+  const _CustomColorPickerDialog({
+    required this.initialColor,
+    required this.accent,
+  });
+
+  @override
+  State<_CustomColorPickerDialog> createState() =>
+      _CustomColorPickerDialogState();
+}
+
+class _CustomColorPickerDialogState extends State<_CustomColorPickerDialog> {
+  late int _r;
+  late int _g;
+  late int _b;
+
+  @override
+  void initState() {
+    super.initState();
+    final color = Color(widget.initialColor);
+    _r = color.red;
+    _g = color.green;
+    _b = color.blue;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final selectedColor = Color.fromARGB(255, _r, _g, _b);
+    final hexString =
+        '#${_r.toRadixString(16).padLeft(2, '0')}${_g.toRadixString(16).padLeft(2, '0')}${_b.toRadixString(16).padLeft(2, '0')}'
+            .toUpperCase();
+
+    return AlertDialog(
+      title: const Text('Custom Color',
+          style: TextStyle(fontWeight: FontWeight.w800)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 80,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: selectedColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  hexString,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const Gap(20),
+          _buildColorSlider(
+            label: 'Red',
+            value: _r,
+            activeColor: Colors.red,
+            onChanged: (v) => setState(() => _r = v.round()),
+          ),
+          const Gap(12),
+          _buildColorSlider(
+            label: 'Green',
+            value: _g,
+            activeColor: Colors.green,
+            onChanged: (v) => setState(() => _g = v.round()),
+          ),
+          const Gap(12),
+          _buildColorSlider(
+            label: 'Blue',
+            value: _b,
+            activeColor: Colors.blue,
+            onChanged: (v) => setState(() => _b = v.round()),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Cancel', style: TextStyle(color: cs.onSurfaceVariant)),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop(selectedColor.value),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.accent,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: const Text('Select', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColorSlider({
+    required String label,
+    required int value,
+    required Color activeColor,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label,
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            Text('$value',
+                style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+          ],
+        ),
+        Slider(
+          value: value.toDouble(),
+          min: 0,
+          max: 255,
+          activeColor: activeColor,
+          inactiveColor: activeColor.withOpacity(0.2),
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 }

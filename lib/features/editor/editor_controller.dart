@@ -151,6 +151,15 @@ class EditorNotifier extends Notifier<EditorState> {
     _triggerEstimation();
   }
 
+  void setBackgroundColorHex(int? hex) {
+    state = state.copyWith(
+      settings: hex == null
+          ? state.settings.copyWith(clearBackgroundColorHex: true)
+          : state.settings.copyWith(backgroundColorHex: hex),
+    );
+    _triggerEstimation();
+  }
+
   Future<CompressionResult?> compress(SelectedImage image) async {
     state = state.copyWith(compressionState: const AsyncLoading());
     try {
