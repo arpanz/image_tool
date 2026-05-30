@@ -156,6 +156,7 @@ enum ProFeature {
   allFormats,
   removeAds,
   heicConversion,
+  keepMetadata,
 }
 
 class _FeatureInfo {
@@ -205,5 +206,12 @@ const _featureInfo = <ProFeature, _FeatureInfo>{
     title: 'HEIC/HEIF Conversion',
     body:
         'Converting high-efficiency HEIC or HEIF formats to standard formats is a Pro feature.\nUpgrade to Pro to unlock unlimited format conversions.',
+  ),
+  ProFeature.keepMetadata: _FeatureInfo(
+    icon: Icons.info_outline,
+    color: Colors.teal,
+    title: 'Keep Original Metadata',
+    body:
+        'Preserving EXIF camera details, dates, and GPS coordinates is a Pro feature.\nUpgrade to Pro to preserve original image metadata.',
   ),
 };

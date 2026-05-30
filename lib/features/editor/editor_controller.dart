@@ -4,6 +4,7 @@ import '../../core/models/compression_settings.dart';
 import '../../core/models/compression_result.dart';
 import '../../core/models/selected_image.dart';
 import '../../core/utils/image_processor.dart';
+import '../../core/utils/ad_manager.dart';
 
 typedef CompressionAsyncState = AsyncValue<CompressionResult?>;
 
@@ -42,18 +43,18 @@ class EditorNotifier extends Notifier<EditorState> {
   CompressionSettings? _lastEstimatedSettings;
 
   @override
-  EditorState build() => const EditorState(
-        settings: CompressionSettings(),
-        compressionState: AsyncData(null),
+  EditorState build() => EditorState(
+        settings: CompressionSettings(keepMetadata: AdManager.instance.isPro),
+        compressionState: const AsyncData(null),
       );
 
   void initialize(SelectedImage image) {
     _debounceTimer?.cancel();
     _lastEstimatedSettings = null;
     _currentImage = image;
-    state = const EditorState(
-      settings: CompressionSettings(),
-      compressionState: AsyncData(null),
+    state = EditorState(
+      settings: CompressionSettings(keepMetadata: AdManager.instance.isPro),
+      compressionState: const AsyncData(null),
     );
     _triggerEstimation();
   }
@@ -188,9 +189,9 @@ class EditorNotifier extends Notifier<EditorState> {
     _debounceTimer?.cancel();
     _currentImage = null;
     _lastEstimatedSettings = null;
-    state = const EditorState(
-      settings: CompressionSettings(),
-      compressionState: AsyncData(null),
+    state = EditorState(
+      settings: CompressionSettings(keepMetadata: AdManager.instance.isPro),
+      compressionState: const AsyncData(null),
     );
   }
 }

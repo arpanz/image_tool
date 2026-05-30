@@ -8,6 +8,7 @@ import '../../core/models/compression_settings.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
 import '../../core/utils/image_processor.dart';
+import '../../core/utils/pro_gate.dart';
 import '../../core/widgets/pf_button.dart';
 import '../../core/widgets/tool_ui.dart';
 import '../home/home_screen.dart';
@@ -326,9 +327,33 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Keep original metadata',
-                                style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Keep original metadata',
+                                    style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                  if (!AdManager.instance.isPro) ...[
+                                    const Gap(6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: _accent.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: _accent.withOpacity(0.3), width: 0.8),
+                                      ),
+                                      child: Text(
+                                        'PRO',
+                                        style: TextStyle(
+                                          color: _accent,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                               const Gap(2),
                               Text(
@@ -343,6 +368,11 @@ class _BatchScreenState extends ConsumerState<BatchScreen> {
                           value: settings.keepMetadata,
                           accent: _accent,
                           onChanged: (v) {
+                            if (v) {
+                              if (!ProGate.guard(context, ProFeature.keepMetadata)) {
+                                return;
+                              }
+                            }
                             notifier.updateSettings(settings.copyWith(keepMetadata: v));
                           },
                         ),

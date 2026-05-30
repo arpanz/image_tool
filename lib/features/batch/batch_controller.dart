@@ -7,6 +7,7 @@ import '../../core/models/compression_result.dart';
 import '../../core/models/compression_settings.dart';
 import '../../core/models/selected_image.dart';
 import '../../core/utils/image_processor.dart';
+import '../../core/utils/ad_manager.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 // ─── Helper ────────────────────────────────────────────────────────────────────
@@ -120,7 +121,9 @@ class BatchState {
 // ─── Notifier ──────────────────────────────────────────────────────────────────
 
 class BatchNotifier extends StateNotifier<BatchState> {
-  BatchNotifier() : super(const BatchState());
+  BatchNotifier() : super(BatchState(
+    settings: CompressionSettings(keepMetadata: AdManager.instance.isPro),
+  ));
 
   Future<void> pickImages() async {
     final picker = ImagePicker();
@@ -157,7 +160,9 @@ class BatchNotifier extends StateNotifier<BatchState> {
     state = state.copyWith(items: updated);
   }
 
-  void clearAll() => state = const BatchState();
+  void clearAll() => state = BatchState(
+        settings: CompressionSettings(keepMetadata: AdManager.instance.isPro),
+      );
 
   void updateSettings(CompressionSettings settings) =>
       state = state.copyWith(settings: settings);

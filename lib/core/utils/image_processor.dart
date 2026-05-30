@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:heif_converter/heif_converter.dart';
 import 'package:image/image.dart' as img;
 import 'package:native_exif/native_exif.dart';
+import 'ad_manager.dart';
 
 import '../models/compression_result.dart';
 import '../models/compression_settings.dart';
@@ -366,8 +367,8 @@ class ImageProcessor {
 
       await File(outputPath).writeAsBytes(resultBytes);
 
-      // Preserve metadata (EXIF) if enabled
-      if (settings.keepMetadata) {
+      // Preserve metadata (EXIF) if enabled and user is Pro
+      if (settings.keepMetadata && AdManager.instance.isPro) {
         try {
           final originalExif = await Exif.fromPath(inputPath);
           final attrs = await originalExif.getAttributes();
