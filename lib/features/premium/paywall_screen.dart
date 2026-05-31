@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../core/utils/ad_manager.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/review_service.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -118,6 +119,7 @@ class _PaywallScreenState extends State<PaywallScreen>
     if (mounted) {
       setState(() => _isLoading = false);
       final messenger = ScaffoldMessenger.of(context);
+      final navContext = Navigator.of(context).context;
       Navigator.pop(context);
       messenger.showSnackBar(const SnackBar(
         content: Text(
@@ -125,6 +127,7 @@ class _PaywallScreenState extends State<PaywallScreen>
         backgroundColor: Color(0xFF4CAF50),
         behavior: SnackBarBehavior.floating,
       ));
+      ReviewService.triggerPostPurchaseReview(navContext);
     }
   }
 
