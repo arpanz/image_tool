@@ -250,6 +250,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
         // Save explicitly to history on successful save
         _saveHistoryIfNeeded();
 
+        await ReviewService.trackImageProcessed();
+
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -259,6 +261,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
+
+        await ReviewService.triggerSuccessReview(context);
       }
     } on Exception catch (e) {
       if (!context.mounted) return;
@@ -360,6 +364,10 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     // Save explicitly to history on share triggers
     _saveHistoryIfNeeded();
     await Share.shareXFiles([XFile(result.outputPath)]);
+    await ReviewService.trackImageProcessed();
+    if (context.mounted) {
+      await ReviewService.triggerSuccessReview(context);
+    }
   }
 
   @override

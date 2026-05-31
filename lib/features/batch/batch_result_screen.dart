@@ -320,7 +320,13 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
         .where((i) => i.result != null)
         .map((i) => XFile(i.result!.outputPath))
         .toList();
-    if (files.isNotEmpty) await Share.shareXFiles(files);
+    if (files.isNotEmpty) {
+      await Share.shareXFiles(files);
+      await ReviewService.trackImageProcessed();
+      if (mounted) {
+        await ReviewService.triggerSuccessReview(context);
+      }
+    }
   }
 
   Future<void> _saveAll(BuildContext ctx, List<BatchItem> items) async {
@@ -621,9 +627,13 @@ class _ResultList extends StatelessWidget {
   final ImageMode mode;
   const _ResultList({required this.items, required this.mode});
 
-  Future<void> _shareIndividual(BatchItem item) async {
+  Future<void> _shareIndividual(BuildContext context, BatchItem item) async {
     if (item.result != null) {
       await Share.shareXFiles([XFile(item.result!.outputPath)]);
+      await ReviewService.trackImageProcessed();
+      if (context.mounted) {
+        await ReviewService.triggerSuccessReview(context);
+      }
     }
   }
 
@@ -635,6 +645,8 @@ class _ResultList extends StatelessWidget {
         await Gal.requestAccess();
       }
       await Gal.putImage(item.result!.outputPath, album: 'ImageResizer');
+      await ReviewService.trackImageProcessed();
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -643,6 +655,10 @@ class _ResultList extends StatelessWidget {
             behavior: SnackBarBehavior.floating,
           ),
         );
+      }
+
+      if (context.mounted) {
+        await ReviewService.triggerSuccessReview(context);
       }
     } catch (e) {
       if (context.mounted) {
@@ -679,6 +695,8 @@ class _ResultList extends StatelessWidget {
       );
 
       if (path != null) {
+        await ReviewService.trackImageProcessed();
+
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -688,6 +706,8 @@ class _ResultList extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
+
+        await ReviewService.triggerSuccessReview(context);
       }
     } on Exception catch (e) {
       if (!context.mounted) return;
@@ -915,7 +935,7 @@ class _ResultList extends StatelessWidget {
                       child: _ActionButton(
                         icon: Icons.share_outlined,
                         label: 'Share',
-                        onTap: () => _shareIndividual(item),
+                        onTap: () => _shareIndividual(context, item),
                       ),
                     ),
                     const Gap(8),
