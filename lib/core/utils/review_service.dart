@@ -81,13 +81,13 @@ class ReviewService {
         return;
       }
 
-      // Eligibility: qualify if 5+ images processed OR 2+ active days.
+      // Eligibility: qualify if 2+ images processed OR 2+ active days.
       // This handles two user types:
       //   - Power users who process many images in a single session
       //   - Casual users who return on different days
       final imagesProcessed = prefs.getInt(_kImagesProcessedKey) ?? 0;
       final activeDays = prefs.getInt(_kActiveDaysKey) ?? 0;
-      if (imagesProcessed < 5 && activeDays < 2) return;
+      if (imagesProcessed < 2 && activeDays < 2) return;
 
       final InAppReview inAppReview = InAppReview.instance;
       final isReviewAvailable = await inAppReview.isAvailable();
@@ -102,9 +102,8 @@ class ReviewService {
 
       if (result == null) {
         // Dismissed without choosing — 5-day cooldown
-        final cooldownUntil = DateTime.now()
-            .add(const Duration(days: 5))
-            .millisecondsSinceEpoch;
+        final cooldownUntil =
+            DateTime.now().add(const Duration(days: 5)).millisecondsSinceEpoch;
         await prefs.setInt(_kCooldownUntilKey, cooldownUntil);
         return;
       }
@@ -125,9 +124,8 @@ class ReviewService {
         }
       } else {
         // User said "Could be better" — 30-day cooldown, try again later
-        final cooldownUntil = DateTime.now()
-            .add(const Duration(days: 30))
-            .millisecondsSinceEpoch;
+        final cooldownUntil =
+            DateTime.now().add(const Duration(days: 30)).millisecondsSinceEpoch;
         await prefs.setInt(_kCooldownUntilKey, cooldownUntil);
         if (context.mounted) {
           _showFeedbackRedirect(context);
@@ -170,9 +168,8 @@ class ReviewService {
         }
       } else if (result == false) {
         // "Could be better" after a purchase — short 7-day cooldown only.
-        final cooldown = DateTime.now()
-            .add(const Duration(days: 7))
-            .millisecondsSinceEpoch;
+        final cooldown =
+            DateTime.now().add(const Duration(days: 7)).millisecondsSinceEpoch;
         await prefs.setInt(_kCooldownUntilKey, cooldown);
         if (context.mounted) _showFeedbackRedirect(context);
       }
