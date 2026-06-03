@@ -8,6 +8,7 @@ import '../../core/providers/theme_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
 import '../../core/utils/review_service.dart';
+import '../onboarding/onboarding_screen.dart';
 import '../premium/paywall_screen.dart';
 import '../../core/widgets/premium_page_route.dart';
 
@@ -223,6 +224,19 @@ class SettingsScreen extends ConsumerWidget {
               //   subtitle: 'Opens the love-it prompt',
               //   onTap: () => ReviewService.showReviewDialogForTesting(context),
               // ),
+              _SettingsTile(
+                icon: Icons.slideshow_rounded,
+                iconColor: Colors.deepPurple,
+                title: 'Temp: Preview Onboarding',
+                subtitle: 'Re-opens the onboarding flow',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => OnboardingScreen(
+                      onCompleted: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                ),
+              ),
               _SettingsTile(
                 icon: Icons.share_rounded,
                 iconColor: Colors.pink,
