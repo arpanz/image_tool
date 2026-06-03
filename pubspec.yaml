@@ -1,7 +1,7 @@
 name: image_resizer
 description: Offline-first image compression and resizing utility by Livinlabs.
 publish_to: 'none'
-version: 2.1.0+10
+version: 2.2.0+12
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
