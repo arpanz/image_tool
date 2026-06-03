@@ -13,68 +13,111 @@ class _ReviewStarCluster extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 82,
-      height: 64,
+      width: 88,
+      height: 70,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
-          // Background glow
+          // Soft ambient glow
           Positioned.fill(
             child: Center(
               child: Container(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: colorScheme.primary.withOpacity(0.15),
-                      blurRadius: 24,
-                      spreadRadius: 8,
+                      color: colorScheme.primary.withOpacity(0.12),
+                      blurRadius: 28,
+                      spreadRadius: 10,
                     ),
                   ],
                 ),
               ),
             ),
           ),
-          // Top-left small sparkle
+          // Top-left sparkle — playful tilt
           Positioned(
-            left: 4,
-            top: 4,
+            left: 2,
+            top: 6,
             child: Transform.rotate(
-              angle: -0.25,
+              angle: -0.35,
               child: _FourPointSparkle(
-                size: 16,
+                size: 18,
+                color: colorScheme.primary.withOpacity(0.6),
+              ),
+            ),
+          ),
+          // Bottom-right sparkle — opposite tilt
+          Positioned(
+            right: 2,
+            bottom: 6,
+            child: Transform.rotate(
+              angle: 0.4,
+              child: _FourPointSparkle(
+                size: 20,
+                color: colorScheme.primary.withOpacity(0.55),
+              ),
+            ),
+          ),
+          // Top-right tiny dot sparkle
+          Positioned(
+            right: 14,
+            top: 0,
+            child: Transform.rotate(
+              angle: 0.2,
+              child: _FourPointSparkle(
+                size: 10,
+                color: colorScheme.primary.withOpacity(0.4),
+              ),
+            ),
+          ),
+          // Bottom-left tiny dot sparkle
+          Positioned(
+            left: 14,
+            bottom: 0,
+            child: Transform.rotate(
+              angle: -0.15,
+              child: _FourPointSparkle(
+                size: 8,
+                color: colorScheme.primary.withOpacity(0.35),
+              ),
+            ),
+          ),
+          // Center main sparkle — big and bouncy
+          Transform.rotate(
+            angle: 0.05,
+            child: _FourPointSparkle(
+              size: 52,
+              color: colorScheme.primary,
+            ),
+          ),
+          // Tiny circle dot accents for cuteness
+          Positioned(
+            right: 22,
+            top: 10,
+            child: Container(
+              width: 5,
+              height: 5,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
                 color: colorScheme.primary.withOpacity(0.5),
               ),
             ),
           ),
-          // Bottom-right small sparkle
           Positioned(
-            right: 4,
-            bottom: 4,
-            child: Transform.rotate(
-              angle: 0.3,
-              child: _FourPointSparkle(
-                size: 18,
-                color: colorScheme.primary.withOpacity(0.45),
+            left: 20,
+            bottom: 12,
+            child: Container(
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colorScheme.primary.withOpacity(0.4),
               ),
             ),
-          ),
-          // Top-right tiny sparkle
-          Positioned(
-            right: 12,
-            top: 0,
-            child: _FourPointSparkle(
-              size: 10,
-              color: colorScheme.primary.withOpacity(0.35),
-            ),
-          ),
-          // Center main sparkle — large and crisp
-          _FourPointSparkle(
-            size: 50,
-            color: colorScheme.primary,
           ),
         ],
       ),
