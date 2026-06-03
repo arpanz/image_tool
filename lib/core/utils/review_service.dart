@@ -89,15 +89,15 @@ class ReviewService {
       final activeDays = prefs.getInt(_kActiveDaysKey) ?? 0;
       if (imagesProcessed < 2 && activeDays < 2) return;
 
-      final InAppReview inAppReview = InAppReview.instance;
-      final isReviewAvailable = await inAppReview.isAvailable();
-
       if (!context.mounted) return;
 
       // Set the session flag BEFORE showing the dialog to prevent concurrent triggers
       _sessionPrompted = true;
 
-      // Show Pre-Ask Dialog to filter out negative experiences privately
+      // Show Pre-Ask Dialog to filter out negative experiences privately.
+      // isAvailable() is intentionally deferred until AFTER the user taps
+      // "Love it!" — calling it before the dialog caused a network round-trip
+      // that could unmount the context before the dialog ever appeared.
       final result = await _showPreAskDialog(context);
 
       if (result == null) {
@@ -111,16 +111,18 @@ class ReviewService {
       if (result == true) {
         // User is happy — mark permanently completed
         await prefs.setBool(_kReviewCompletedKey, true);
-        // Let the OS decide to show the actual prompt
+
+        final InAppReview inAppReview = InAppReview.instance;
+        final isReviewAvailable = await inAppReview.isAvailable();
+
         if (isReviewAvailable) {
+          // OS will show the native prompt — no need for our snackbar.
           await inAppReview.requestReview();
-        }
-        // Belt-and-suspenders: if the OS silently ate the prompt (quota exhausted),
-        // give the user a direct link to the Play Store as a fallback.
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(_buildReviewSnackBar(context));
+        } else if (context.mounted) {
+          // OS quota exhausted or unavailable — show Play Store link as fallback.
+          ScaffoldMessenger.of(context).showSnackBar(
+            _buildReviewSnackBar(context),
+          );
         }
       } else {
         // User said "Could be better" — 30-day cooldown, try again later
@@ -148,23 +150,27 @@ class ReviewService {
 
       if (!context.mounted) return;
 
-      final InAppReview inAppReview = InAppReview.instance;
-      final isReviewAvailable = await inAppReview.isAvailable();
-
-      if (!context.mounted) return;
-
       // Mark session as prompted so normal flow doesn't fire again.
       _sessionPrompted = true;
 
+      // Show dialog first — deferring isAvailable() avoids a network call
+      // that could unmount the context before the dialog appears.
       final result = await _showPreAskDialog(context);
 
       if (result == true) {
         await prefs.setBool(_kReviewCompletedKey, true);
-        if (isReviewAvailable) await inAppReview.requestReview();
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(_buildReviewSnackBar(context));
+
+        final InAppReview inAppReview = InAppReview.instance;
+        final isReviewAvailable = await inAppReview.isAvailable();
+
+        if (isReviewAvailable) {
+          // OS will show the native prompt — no need for our snackbar.
+          await inAppReview.requestReview();
+        } else if (context.mounted) {
+          // OS quota exhausted or unavailable — show Play Store link as fallback.
+          ScaffoldMessenger.of(context).showSnackBar(
+            _buildReviewSnackBar(context),
+          );
         }
       } else if (result == false) {
         // "Could be better" after a purchase — short 7-day cooldown only.
