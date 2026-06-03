@@ -35,10 +35,10 @@ class _ReviewStarClusterState extends State<_ReviewStarCluster>
 
   @override
   Widget build(BuildContext context) {
-    // Animated sparkles emoji ✨ — driven by our own controller so we can
+    // Animated glowing star emoji 🌟 — driven by our own controller so we can
     // play it slower than its native speed.
     return AnimatedEmoji(
-      AnimatedEmojis.sparkles,
+      AnimatedEmojis.glowingStar,
       size: 52,
       controller: _controller,
       onLoaded: (duration) {

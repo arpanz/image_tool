@@ -216,13 +216,13 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'Show your support',
                 onTap: _rateApp,
               ),
-              _SettingsTile(
-                icon: Icons.rate_review_rounded,
-                iconColor: AppColors.convert,
-                title: 'Temp: Test Review Dialog',
-                subtitle: 'Opens the love-it prompt',
-                onTap: () => ReviewService.showReviewDialogForTesting(context),
-              ),
+              // _SettingsTile(
+              //   icon: Icons.rate_review_rounded,
+              //   iconColor: AppColors.convert,
+              //   title: 'Temp: Test Review Dialog',
+              //   subtitle: 'Opens the love-it prompt',
+              //   onTap: () => ReviewService.showReviewDialogForTesting(context),
+              // ),
               _SettingsTile(
                 icon: Icons.share_rounded,
                 iconColor: Colors.pink,
