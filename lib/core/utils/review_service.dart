@@ -5,6 +5,141 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:animated_emoji/animated_emoji.dart';
 
+class _ReviewStarCluster extends StatelessWidget {
+  final ColorScheme colorScheme;
+
+  const _ReviewStarCluster({required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 82,
+      height: 64,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          // Background glow
+          Positioned.fill(
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.primary.withOpacity(0.15),
+                      blurRadius: 24,
+                      spreadRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Top-left small sparkle
+          Positioned(
+            left: 4,
+            top: 4,
+            child: Transform.rotate(
+              angle: -0.25,
+              child: _FourPointSparkle(
+                size: 16,
+                color: colorScheme.primary.withOpacity(0.5),
+              ),
+            ),
+          ),
+          // Bottom-right small sparkle
+          Positioned(
+            right: 4,
+            bottom: 4,
+            child: Transform.rotate(
+              angle: 0.3,
+              child: _FourPointSparkle(
+                size: 18,
+                color: colorScheme.primary.withOpacity(0.45),
+              ),
+            ),
+          ),
+          // Top-right tiny sparkle
+          Positioned(
+            right: 12,
+            top: 0,
+            child: _FourPointSparkle(
+              size: 10,
+              color: colorScheme.primary.withOpacity(0.35),
+            ),
+          ),
+          // Center main sparkle — large and crisp
+          _FourPointSparkle(
+            size: 50,
+            color: colorScheme.primary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FourPointSparkle extends StatelessWidget {
+  final Color color;
+  final double size;
+
+  const _FourPointSparkle({
+    required this.color,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _FourPointSparklePainter(color: color),
+      ),
+    );
+  }
+}
+
+class _FourPointSparklePainter extends CustomPainter {
+  final Color color;
+
+  const _FourPointSparklePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _sparklePath(size);
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+    canvas.drawPath(path, paint);
+  }
+
+  Path _sparklePath(Size size) {
+    final w = size.width;
+    final h = size.height;
+    final cx = w / 2;
+    final cy = h / 2;
+
+    // Tighter control points for a cleaner, sharper sparkle
+    return Path()
+      ..moveTo(cx, 0)
+      ..quadraticBezierTo(cx + w * 0.07, cy - h * 0.07, w, cy)
+      ..quadraticBezierTo(cx + w * 0.07, cy + h * 0.07, cx, h)
+      ..quadraticBezierTo(cx - w * 0.07, cy + h * 0.07, 0, cy)
+      ..quadraticBezierTo(cx - w * 0.07, cy - h * 0.07, cx, 0)
+      ..close();
+  }
+
+  @override
+  bool shouldRepaint(_FourPointSparklePainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
+}
+
 class ReviewService {
   static const String _playStoreWebUrl =
       'https://play.google.com/store/apps/details?id=com.livinlabs.imageresizer';
@@ -432,10 +567,7 @@ class ReviewService {
                               ),
                             ],
                           ),
-                          child: const AnimatedEmoji(
-                            AnimatedEmojis.warmSmile,
-                            size: 44,
-                          ),
+                          child: _ReviewStarCluster(colorScheme: colorScheme),
                         ),
                       );
                     },
