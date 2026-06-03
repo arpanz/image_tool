@@ -167,13 +167,13 @@ class _FourPointSparklePainter extends CustomPainter {
     final cx = w / 2;
     final cy = h / 2;
 
-    // Tighter control points for a cleaner, sharper sparkle
+    // Slightly rounder control points for a softer, cuter sparkle
     return Path()
       ..moveTo(cx, 0)
-      ..quadraticBezierTo(cx + w * 0.07, cy - h * 0.07, w, cy)
-      ..quadraticBezierTo(cx + w * 0.07, cy + h * 0.07, cx, h)
-      ..quadraticBezierTo(cx - w * 0.07, cy + h * 0.07, 0, cy)
-      ..quadraticBezierTo(cx - w * 0.07, cy - h * 0.07, cx, 0)
+      ..quadraticBezierTo(cx + w * 0.09, cy - h * 0.09, w, cy)
+      ..quadraticBezierTo(cx + w * 0.09, cy + h * 0.09, cx, h)
+      ..quadraticBezierTo(cx - w * 0.09, cy + h * 0.09, 0, cy)
+      ..quadraticBezierTo(cx - w * 0.09, cy - h * 0.09, cx, 0)
       ..close();
   }
 
