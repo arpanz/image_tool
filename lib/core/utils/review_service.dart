@@ -6,6 +6,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:animated_emoji/animated_emoji.dart';
 
 class ReviewService {
+  static const String _playStoreWebUrl =
+      'https://play.google.com/store/apps/details?id=com.livinlabs.imageresizer';
+  static const String _playStoreMarketUrl =
+      'market://details?id=com.livinlabs.imageresizer';
+
   static const String _kActiveDaysKey = 'ir_active_use_days';
   static const String _kLastActiveDateKey = 'ir_last_active_date';
   static const String _kImagesProcessedKey = 'ir_images_processed_count';
@@ -109,21 +114,8 @@ class ReviewService {
       }
 
       if (result == true) {
-        // User is happy — mark permanently completed
-        await prefs.setBool(_kReviewCompletedKey, true);
-
-        final InAppReview inAppReview = InAppReview.instance;
-        final isReviewAvailable = await inAppReview.isAvailable();
-
-        if (isReviewAvailable) {
-          // OS will show the native prompt — no need for our snackbar.
-          await inAppReview.requestReview();
-        } else if (context.mounted) {
-          // OS quota exhausted or unavailable — show Play Store link as fallback.
-          ScaffoldMessenger.of(context).showSnackBar(
-            _buildReviewSnackBar(context),
-          );
-        }
+        if (!context.mounted) return;
+        await _handlePositiveReview(context, prefs);
       } else {
         // User said "Could be better" — 30-day cooldown, try again later
         final cooldownUntil =
@@ -158,20 +150,8 @@ class ReviewService {
       final result = await _showPreAskDialog(context);
 
       if (result == true) {
-        await prefs.setBool(_kReviewCompletedKey, true);
-
-        final InAppReview inAppReview = InAppReview.instance;
-        final isReviewAvailable = await inAppReview.isAvailable();
-
-        if (isReviewAvailable) {
-          // OS will show the native prompt — no need for our snackbar.
-          await inAppReview.requestReview();
-        } else if (context.mounted) {
-          // OS quota exhausted or unavailable — show Play Store link as fallback.
-          ScaffoldMessenger.of(context).showSnackBar(
-            _buildReviewSnackBar(context),
-          );
-        }
+        if (!context.mounted) return;
+        await _handlePositiveReview(context, prefs);
       } else if (result == false) {
         // "Could be better" after a purchase — short 7-day cooldown only.
         final cooldown =
@@ -189,12 +169,107 @@ class ReviewService {
   static Future<void> showReviewDialogForTesting(BuildContext context) async {
     final result = await _showPreAskDialog(context);
     if (result == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(_buildReviewSnackBar(context));
+      await WidgetsBinding.instance.endOfFrame;
+      if (!context.mounted) return;
+      _showPlayStoreReviewDialog(context);
     } else if (result == false && context.mounted) {
       _showFeedbackRedirect(context);
     }
   }
 
+  static Future<void> openPlayStoreListing() async {
+    try {
+      await InAppReview.instance.openStoreListing();
+      return;
+    } catch (_) {
+      // Fall through to explicit Play Store/browser launch.
+    }
+
+    try {
+      if (await launchUrl(
+        Uri.parse(_playStoreMarketUrl),
+        mode: LaunchMode.externalApplication,
+      )) {
+        return;
+      }
+    } catch (_) {
+      // Fall through to the web listing.
+    }
+
+    try {
+      await launchUrl(
+        Uri.parse(_playStoreWebUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {
+      // Nothing else to do from a review CTA.
+    }
+  }
+
+  static Future<void> _handlePositiveReview(
+    BuildContext context,
+    SharedPreferences prefs,
+  ) async {
+    await prefs.setBool(_kReviewCompletedKey, true);
+
+    final inAppReview = InAppReview.instance;
+    final isReviewAvailable = await inAppReview.isAvailable();
+    if (!context.mounted) return;
+
+    if (isReviewAvailable) {
+      await inAppReview.requestReview();
+      await Future<void>.delayed(const Duration(seconds: 2));
+    }
+
+    if (context.mounted) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!context.mounted) return;
+      _showPlayStoreReviewDialog(context);
+    }
+  }
+
+  static void _showPlayStoreReviewDialog(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          icon: Icon(
+            Icons.favorite_rounded,
+            color: colorScheme.primary,
+            size: 36,
+          ),
+          title: const Text('Thanks for the love!'),
+          content: const Text(
+            'Your rating helps more people discover Image Resizer. Would you like to rate it on the Play Store?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Maybe later'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+              ),
+              onPressed: () {
+                Navigator.pop(dialogCtx);
+                openPlayStoreListing();
+              },
+              child: const Text(
+                'Open Play Store',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ignore: unused_element
   static SnackBar _buildReviewSnackBar(BuildContext context) {
     return SnackBar(
       behavior: SnackBarBehavior.floating,
@@ -235,12 +310,7 @@ class ReviewService {
             ),
             onPressed: () {
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              launchUrl(
-                Uri.parse(
-                  'https://play.google.com/store/apps/details?id=com.livinlabs.imageresizer',
-                ),
-                mode: LaunchMode.externalApplication,
-              );
+              openPlayStoreListing();
             },
             child: const Text(
               'RATE',
@@ -306,7 +376,6 @@ class ReviewService {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(5, (index) {
-                      final delay = index * 0.12;
                       return TweenAnimationBuilder<double>(
                         tween: Tween(begin: 0.0, end: 1.0),
                         duration: Duration(milliseconds: 500 + (index * 100)),

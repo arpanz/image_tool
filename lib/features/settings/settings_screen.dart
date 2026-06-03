@@ -1,25 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:in_app_review/in_app_review.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/providers/theme_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
+import '../../core/utils/review_service.dart';
 import '../premium/paywall_screen.dart';
 import '../../core/widgets/premium_page_route.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  Future<void> _rateApp() async {
-    final inAppReview = InAppReview.instance;
-    if (await inAppReview.isAvailable()) {
-      inAppReview.openStoreListing();
-    }
-  }
+  Future<void> _rateApp() => ReviewService.openPlayStoreListing();
 
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
@@ -220,6 +215,13 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Rate on Play Store',
                 subtitle: 'Show your support',
                 onTap: _rateApp,
+              ),
+              _SettingsTile(
+                icon: Icons.rate_review_rounded,
+                iconColor: AppColors.convert,
+                title: 'Temp: Test Review Dialog',
+                subtitle: 'Opens the love-it prompt',
+                onTap: () => ReviewService.showReviewDialogForTesting(context),
               ),
               _SettingsTile(
                 icon: Icons.share_rounded,
