@@ -444,7 +444,7 @@ class ReviewService {
 
                   // Title
                   Text(
-                    'Enjoying Image Resizer?',
+                    'Loving Image Resizer?',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
@@ -456,7 +456,7 @@ class ReviewService {
 
                   // Subtitle
                   Text(
-                    'We hope it\'s making your photo workflow faster. How has your experience been?',
+                    'A quick rating helps support the app and keeps better tools coming.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
@@ -483,7 +483,7 @@ class ReviewService {
                             ),
                           ),
                           child: Text(
-                            'Could be better',
+                            'Send feedback',
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
@@ -513,7 +513,7 @@ class ReviewService {
                               Icon(Icons.favorite_rounded, size: 16),
                               const SizedBox(width: 6),
                               Text(
-                                'Love it!',
+                                'Rate the app',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 13,
