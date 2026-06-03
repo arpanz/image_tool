@@ -86,13 +86,13 @@ class ReviewService {
         return;
       }
 
-      // Eligibility: qualify if 2+ images processed OR 2+ active days.
+      // Eligibility: qualify if 3+ images processed OR 2+ active days.
       // This handles two user types:
       //   - Power users who process many images in a single session
       //   - Casual users who return on different days
       final imagesProcessed = prefs.getInt(_kImagesProcessedKey) ?? 0;
       final activeDays = prefs.getInt(_kActiveDaysKey) ?? 0;
-      if (imagesProcessed < 2 && activeDays < 2) return;
+      if (imagesProcessed < 3 && activeDays < 2) return;
 
       if (!context.mounted) return;
 
