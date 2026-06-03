@@ -5,181 +5,47 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:animated_emoji/animated_emoji.dart';
 
-class _ReviewStarCluster extends StatelessWidget {
+class _ReviewStarCluster extends StatefulWidget {
   final ColorScheme colorScheme;
 
   const _ReviewStarCluster({required this.colorScheme});
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 88,
-      height: 70,
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
-        children: [
-          // Soft ambient glow
-          Positioned.fill(
-            child: Center(
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.primary.withOpacity(0.12),
-                      blurRadius: 28,
-                      spreadRadius: 10,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Top-left sparkle — playful tilt
-          Positioned(
-            left: 2,
-            top: 6,
-            child: Transform.rotate(
-              angle: -0.35,
-              child: _FourPointSparkle(
-                size: 18,
-                color: colorScheme.primary.withOpacity(0.6),
-              ),
-            ),
-          ),
-          // Bottom-right sparkle — opposite tilt
-          Positioned(
-            right: 2,
-            bottom: 6,
-            child: Transform.rotate(
-              angle: 0.4,
-              child: _FourPointSparkle(
-                size: 20,
-                color: colorScheme.primary.withOpacity(0.55),
-              ),
-            ),
-          ),
-          // Top-right tiny dot sparkle
-          Positioned(
-            right: 14,
-            top: 0,
-            child: Transform.rotate(
-              angle: 0.2,
-              child: _FourPointSparkle(
-                size: 10,
-                color: colorScheme.primary.withOpacity(0.4),
-              ),
-            ),
-          ),
-          // Bottom-left tiny dot sparkle
-          Positioned(
-            left: 14,
-            bottom: 0,
-            child: Transform.rotate(
-              angle: -0.15,
-              child: _FourPointSparkle(
-                size: 8,
-                color: colorScheme.primary.withOpacity(0.35),
-              ),
-            ),
-          ),
-          // Center main sparkle — big and bouncy
-          Transform.rotate(
-            angle: 0.05,
-            child: _FourPointSparkle(
-              size: 52,
-              color: colorScheme.primary,
-            ),
-          ),
-          // Tiny circle dot accents for cuteness
-          Positioned(
-            right: 22,
-            top: 10,
-            child: Container(
-              width: 5,
-              height: 5,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colorScheme.primary.withOpacity(0.5),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 20,
-            bottom: 12,
-            child: Container(
-              width: 4,
-              height: 4,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colorScheme.primary.withOpacity(0.4),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  State<_ReviewStarCluster> createState() => _ReviewStarClusterState();
 }
 
-class _FourPointSparkle extends StatelessWidget {
-  final Color color;
-  final double size;
+class _ReviewStarClusterState extends State<_ReviewStarCluster>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
 
-  const _FourPointSparkle({
-    required this.color,
-    required this.size,
-  });
+  // Higher = slower. 1.0 is the emoji's natural speed.
+  static const double _slowFactor = 2.2;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(
-        painter: _FourPointSparklePainter(color: color),
-      ),
+    // Animated sparkles emoji ✨ — driven by our own controller so we can
+    // play it slower than its native speed.
+    return AnimatedEmoji(
+      AnimatedEmojis.sparkles,
+      size: 52,
+      controller: _controller,
+      onLoaded: (duration) {
+        _controller.duration = duration * _slowFactor;
+        _controller.repeat();
+      },
     );
-  }
-}
-
-class _FourPointSparklePainter extends CustomPainter {
-  final Color color;
-
-  const _FourPointSparklePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = _sparklePath(size);
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-    canvas.drawPath(path, paint);
-  }
-
-  Path _sparklePath(Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w / 2;
-    final cy = h / 2;
-
-    // Slightly rounder control points for a softer, cuter sparkle
-    return Path()
-      ..moveTo(cx, 0)
-      ..quadraticBezierTo(cx + w * 0.09, cy - h * 0.09, w, cy)
-      ..quadraticBezierTo(cx + w * 0.09, cy + h * 0.09, cx, h)
-      ..quadraticBezierTo(cx - w * 0.09, cy + h * 0.09, 0, cy)
-      ..quadraticBezierTo(cx - w * 0.09, cy - h * 0.09, cx, 0)
-      ..close();
-  }
-
-  @override
-  bool shouldRepaint(_FourPointSparklePainter oldDelegate) {
-    return oldDelegate.color != color;
   }
 }
 
