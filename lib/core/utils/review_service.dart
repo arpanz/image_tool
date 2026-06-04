@@ -130,7 +130,7 @@ class ReviewService {
         return;
       }
 
-      // Eligibility: qualify if 3+ images processed OR 2+ active days.
+      // Eligibility: qualify if 2+ images processed OR 2+ active days.
       // This handles two user types:
       //   - Power users who process many images in a single session
       //   - Casual users who return on different days
@@ -298,10 +298,10 @@ class ReviewService {
             'Your rating helps more people discover Image Resizer. Would you like to rate it on the Play Store?',
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Maybe later'),
-            ),
+            // TextButton(
+            //   onPressed: () => Navigator.pop(dialogCtx),
+            //   child: const Text('Maybe later'),
+            // ),
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: colorScheme.primary,
@@ -575,30 +575,30 @@ class ReviewService {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      foregroundColor: colorScheme.onSurfaceVariant.withOpacity(
-                        0.6,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Maybe later',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
+                  // const SizedBox(height: 12),
+                  // TextButton(
+                  //   onPressed: () => Navigator.pop(context),
+                  //   style: TextButton.styleFrom(
+                  //     foregroundColor: colorScheme.onSurfaceVariant.withOpacity(
+                  //       0.6,
+                  //     ),
+                  //     padding: const EdgeInsets.symmetric(
+                  //       horizontal: 24,
+                  //       vertical: 10,
+                  //     ),
+                  //     shape: RoundedRectangleBorder(
+                  //       borderRadius: BorderRadius.circular(12),
+                  //     ),
+                  //   ),
+                  //   child: const Text(
+                  //     'Maybe later',
+                  //     style: TextStyle(
+                  //       fontWeight: FontWeight.w600,
+                  //       fontSize: 13,
+                  //       letterSpacing: 0.2,
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
@@ -757,23 +757,23 @@ class ReviewService {
                           elevation: 0,
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogCtx),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          'Maybe later',
-                          style: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                      // const SizedBox(height: 10),
+                      // TextButton(
+                      //   onPressed: () => Navigator.pop(dialogCtx),
+                      //   style: TextButton.styleFrom(
+                      //     padding: const EdgeInsets.symmetric(vertical: 14),
+                      //     shape: RoundedRectangleBorder(
+                      //       borderRadius: BorderRadius.circular(14),
+                      //     ),
+                      //   ),
+                      //   child: Text(
+                      //     'Maybe later',
+                      //     style: TextStyle(
+                      //       color: colorScheme.onSurfaceVariant,
+                      //       fontWeight: FontWeight.w600,
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ],
