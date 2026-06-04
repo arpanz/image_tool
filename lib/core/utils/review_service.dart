@@ -257,14 +257,23 @@ class ReviewService {
     await prefs.setBool(_kReviewCompletedKey, true);
 
     final inAppReview = InAppReview.instance;
-    final isReviewAvailable = await inAppReview.isAvailable();
-    if (!context.mounted) return;
-
-    if (isReviewAvailable) {
-      await inAppReview.requestReview();
-      await Future<void>.delayed(const Duration(seconds: 2));
+    bool isAvailable = false;
+    try {
+      isAvailable = await inAppReview.isAvailable();
+    } catch (_) {
+      isAvailable = false;
     }
 
+    if (isAvailable) {
+      try {
+        await inAppReview.requestReview();
+        return; // Native review requested successfully. Exit to avoid overlapping manual dialog.
+      } catch (_) {
+        // Fall through to manual dialog if requestReview throws
+      }
+    }
+
+    // Fallback path: Only show manual Play Store review dialog if native review is unavailable
     if (context.mounted) {
       await WidgetsBinding.instance.endOfFrame;
       if (!context.mounted) return;
