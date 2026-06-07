@@ -9,7 +9,6 @@ import 'core/utils/ad_manager.dart';
 import 'core/providers/history_provider.dart';
 import 'features/home/home_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
-import 'core/utils/review_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +17,6 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
   await AdManager.instance.initialize();
-  await ReviewService.trackDailyLaunch();
 
   final prefs = await SharedPreferences.getInstance();
   await Hive.initFlutter();

@@ -8,7 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/models/compression_result.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
-import '../../core/utils/review_service.dart';
+import '../../core/utils/app_review_service.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/widgets/pf_button.dart';
 import '../../core/widgets/tool_ui.dart';
@@ -69,7 +69,13 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     _isSavedToHistory = true;
   }
 
-
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppReviewService.registerSuccessfulAction();
+    });
+  }
 
   Color get _accent {
     switch (mode) {
@@ -194,8 +200,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
       // Save explicitly to history on successful gallery save
       _saveHistoryIfNeeded();
 
-      await ReviewService.trackImageProcessed();
-
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -206,8 +210,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
-
-      await ReviewService.triggerSuccessReview(context);
     } on Exception catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -250,8 +252,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
         // Save explicitly to history on successful save
         _saveHistoryIfNeeded();
 
-        await ReviewService.trackImageProcessed();
-
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -261,8 +261,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
-
-        await ReviewService.triggerSuccessReview(context);
       }
     } on Exception catch (e) {
       if (!context.mounted) return;
@@ -364,10 +362,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     // Save explicitly to history on share triggers
     _saveHistoryIfNeeded();
     await Share.shareXFiles([XFile(result.outputPath)]);
-    await ReviewService.trackImageProcessed();
-    if (context.mounted) {
-      await ReviewService.triggerSuccessReview(context);
-    }
   }
 
   @override

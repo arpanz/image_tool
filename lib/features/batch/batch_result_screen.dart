@@ -7,7 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ad_manager.dart';
-import '../../core/utils/review_service.dart';
+import '../../core/utils/app_review_service.dart';
 import '../../core/utils/image_processor.dart';
 import '../../core/widgets/pf_button.dart';
 import '../../core/providers/history_provider.dart';
@@ -70,7 +70,18 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
     );
   }
 
-
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = ref.read(batchProvider);
+      final hasSuccess =
+          state.items.any((i) => i.status == BatchItemStatus.done);
+      if (hasSuccess) {
+        AppReviewService.registerSuccessfulAction();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -322,10 +333,6 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
         .toList();
     if (files.isNotEmpty) {
       await Share.shareXFiles(files);
-      await ReviewService.trackImageProcessed();
-      if (mounted) {
-        await ReviewService.triggerSuccessReview(context);
-      }
     }
   }
 
@@ -342,8 +349,6 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
         await Gal.putImage(item.result!.outputPath, album: 'ImageResizer');
         saved++;
       }
-      await ReviewService.trackImageProcessed();
-
       if (ctx.mounted) {
         ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
           content: Text('$saved images saved to gallery!'),
@@ -352,10 +357,6 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ));
-      }
-
-      if (ctx.mounted) {
-        await ReviewService.triggerSuccessReview(ctx);
       }
     } on Exception catch (e) {
       if (ctx.mounted) {
@@ -397,8 +398,6 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
       // Save explicitly to history on successful save
       _saveBatchToHistory(items);
 
-      await ReviewService.trackImageProcessed();
-
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -408,8 +407,6 @@ class _BatchResultScreenState extends ConsumerState<BatchResultScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
-
-      await ReviewService.triggerSuccessReview(context);
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -630,10 +627,6 @@ class _ResultList extends StatelessWidget {
   Future<void> _shareIndividual(BuildContext context, BatchItem item) async {
     if (item.result != null) {
       await Share.shareXFiles([XFile(item.result!.outputPath)]);
-      await ReviewService.trackImageProcessed();
-      if (context.mounted) {
-        await ReviewService.triggerSuccessReview(context);
-      }
     }
   }
 
@@ -645,8 +638,6 @@ class _ResultList extends StatelessWidget {
         await Gal.requestAccess();
       }
       await Gal.putImage(item.result!.outputPath, album: 'ImageResizer');
-      await ReviewService.trackImageProcessed();
-
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -655,10 +646,6 @@ class _ResultList extends StatelessWidget {
             behavior: SnackBarBehavior.floating,
           ),
         );
-      }
-
-      if (context.mounted) {
-        await ReviewService.triggerSuccessReview(context);
       }
     } catch (e) {
       if (context.mounted) {
@@ -695,8 +682,6 @@ class _ResultList extends StatelessWidget {
       );
 
       if (path != null) {
-        await ReviewService.trackImageProcessed();
-
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -706,8 +691,6 @@ class _ResultList extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
-
-        await ReviewService.triggerSuccessReview(context);
       }
     } on Exception catch (e) {
       if (!context.mounted) return;

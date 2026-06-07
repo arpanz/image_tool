@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../core/utils/ad_manager.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/utils/review_service.dart';
+
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -118,9 +118,6 @@ class _PaywallScreenState extends State<PaywallScreen>
     await AdManager.instance.enableProVersion();
     if (mounted) {
       setState(() => _isLoading = false);
-      // Capture the navigator context BEFORE popping, so it stays valid
-      // for the review dialog that needs to push a route on top of it.
-      final navigatorContext = Navigator.of(context).context;
       final messenger = ScaffoldMessenger.of(context);
       Navigator.pop(context);
       messenger.showSnackBar(const SnackBar(
@@ -129,9 +126,6 @@ class _PaywallScreenState extends State<PaywallScreen>
         backgroundColor: Color(0xFF4CAF50),
         behavior: SnackBarBehavior.floating,
       ));
-      // Use the captured navigator context — still mounted after the pop
-      // because it belongs to the navigator, not the paywall route itself.
-      ReviewService.triggerPostPurchaseReview(navigatorContext);
     }
   }
 
