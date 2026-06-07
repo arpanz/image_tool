@@ -167,7 +167,7 @@ class _PageBeforeAfter extends StatelessWidget {
                 const _BeforeAfterCard(),
                 const SizedBox(height: 28),
                 Text(
-                  'Photos too big to send?',
+                  'Reduce Size, Keep Quality',
                   textAlign: TextAlign.center,
                   style: tt.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
@@ -177,8 +177,8 @@ class _PageBeforeAfter extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Shrink any image up to 90% — without visible quality loss. '
-                  'Uploads, emails, and shares that always go through.',
+                  'Compress photos by up to 90% with zero visible quality loss. '
+                  'Upload and share your images instantly without limits.',
                   textAlign: TextAlign.center,
                   style: tt.bodyLarge?.copyWith(
                     color: cs.onSurfaceVariant,
@@ -494,7 +494,7 @@ class _PageResize extends StatelessWidget {
                 const _ResizeCard(),
                 const SizedBox(height: 28),
                 Text(
-                  'Resize to any dimension',
+                  'Pixel-Perfect Resizing',
                   textAlign: TextAlign.center,
                   style: tt.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
@@ -504,8 +504,8 @@ class _PageResize extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Type exact pixels or pick a preset. '
-                  'Lock the aspect ratio so nothing gets stretched.',
+                  'Resize images using standard social media presets or input custom dimensions. '
+                  'Lock aspect ratio to keep images looking perfect.',
                   textAlign: TextAlign.center,
                   style: tt.bodyLarge?.copyWith(
                     color: cs.onSurfaceVariant,
@@ -883,7 +883,7 @@ class _PageFormatConvert extends StatelessWidget {
                 const _FormatConvertCard(),
                 const SizedBox(height: 28),
                 Text(
-                  'Convert to any format',
+                  'Convert Formats Instantly',
                   textAlign: TextAlign.center,
                   style: tt.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
@@ -893,8 +893,8 @@ class _PageFormatConvert extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'HEIC from your iPhone? PNG for a designer? '
-                  'WebP for your website? One tap handles it all.',
+                  'Seamlessly convert HEIC, PNG, JPEG, WebP, and AVIF. '
+                  'Ensure your files are compatible with every device and platform.',
                   textAlign: TextAlign.center,
                   style: tt.bodyLarge?.copyWith(
                     color: cs.onSurfaceVariant,
