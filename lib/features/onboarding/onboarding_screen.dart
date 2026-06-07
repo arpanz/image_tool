@@ -17,7 +17,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentIndex = 0;
   bool _isSaving = false;
 
-  static const int _pageCount = 4;
+  static const int _pageCount = 3;
 
   @override
   void initState() {
@@ -71,7 +71,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     _PageBeforeAfter(),
                     _PageResize(),
                     _PageFormatConvert(),
-                    _PageTrustFeatures(),
                   ],
                 ),
               ),
@@ -118,7 +117,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      isLast ? 'Resize my first photo' : 'Next',
+                      isLast ? 'Let\'s Go!' : 'Next',
                       style: tt.labelLarge?.copyWith(
                         color: cs.onPrimary,
                         fontWeight: FontWeight.w700,
@@ -279,10 +278,26 @@ class _BeforeAfterCardState extends State<_BeforeAfterCard>
                           children: [
                             ColorFiltered(
                               colorFilter: const ColorFilter.matrix([
-                                0.6, 0.3, 0.1, 0, 0,
-                                0.2, 0.7, 0.1, 0, 0,
-                                0.1, 0.1, 0.8, 0, 0,
-                                0,   0,   0,   1, 0,
+                                0.6,
+                                0.3,
+                                0.1,
+                                0,
+                                0,
+                                0.2,
+                                0.7,
+                                0.1,
+                                0,
+                                0,
+                                0.1,
+                                0.1,
+                                0.8,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                1,
+                                0,
                               ]),
                               child: Image.asset(
                                 _imageUrl,
@@ -340,7 +355,8 @@ class _BeforeAfterCardState extends State<_BeforeAfterCard>
                                   end: Alignment.bottomCenter,
                                   colors: [
                                     Colors.transparent,
-                                    const Color(0xFF1DB88A).withValues(alpha: 0.18),
+                                    const Color(0xFF1DB88A)
+                                        .withValues(alpha: 0.18),
                                   ],
                                 ),
                               ),
@@ -432,9 +448,7 @@ class _SizeBadge extends StatelessWidget {
   final Color bgColor;
   final Color textColor;
   const _SizeBadge(
-      {required this.label,
-      required this.bgColor,
-      required this.textColor});
+      {required this.label, required this.bgColor, required this.textColor});
 
   @override
   Widget build(BuildContext context) {
@@ -539,7 +553,8 @@ class _ResizeCardState extends State<_ResizeCard>
     _fadeIn = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
     _slideUp = Tween<double>(begin: 16, end: 0).animate(
       CurvedAnimation(
-          parent: _ctrl, curve: const Interval(0.0, 0.6, curve: Curves.easeOut)),
+          parent: _ctrl,
+          curve: const Interval(0.0, 0.6, curve: Curves.easeOut)),
     );
     _badgeScale = CurvedAnimation(
       parent: _ctrl,
@@ -673,7 +688,8 @@ class _ResizeCardState extends State<_ResizeCard>
               width: size,
               height: size,
               child: CustomPaint(
-                painter: _CornerPainter(color: color, radius: radius, thickness: thickness),
+                painter: _CornerPainter(
+                    color: color, radius: radius, thickness: thickness),
               ),
             ),
           ),
@@ -828,8 +844,8 @@ class _PresetChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: selected ? color : color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: selected ? color : color.withValues(alpha: 0.25)),
+        border:
+            Border.all(color: selected ? color : color.withValues(alpha: 0.25)),
       ),
       child: Text(
         label,
@@ -916,7 +932,7 @@ class _FormatConvertCardState extends State<_FormatConvertCard>
   // Format flow: input on left, output formats on right
   static const _outputFormats = [
     _FormatBadgeData(label: 'JPEG', color: Color(0xFF3B9EFF), selected: false),
-    _FormatBadgeData(label: 'PNG',  color: Color(0xFF1DB88A), selected: false),
+    _FormatBadgeData(label: 'PNG', color: Color(0xFF1DB88A), selected: false),
     _FormatBadgeData(label: 'WebP', color: Color(0xFFA855F7), selected: true),
     _FormatBadgeData(label: 'AVIF', color: Color(0xFFFFB800), selected: false),
   ];
@@ -1059,9 +1075,7 @@ class _FormatPickerChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: data.selected
-            ? data.color
-            : data.color.withValues(alpha: 0.10),
+        color: data.selected ? data.color : data.color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: data.selected ? data.color : data.color.withValues(alpha: 0.3),
@@ -1132,276 +1146,6 @@ class _FormatTag extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Page 4 — Trust + Feature proof, action-oriented close
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _PageTrustFeatures extends StatelessWidget {
-  const _PageTrustFeatures();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const _FeatureProofCard(),
-                const SizedBox(height: 28),
-                Text(
-                  'Everything you need, nothing you don\'t',
-                  textAlign: TextAlign.center,
-                  style: tt.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
-                    color: cs.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Resize, convert, and batch-process in seconds. '
-                  'Your photos never leave your device.',
-                  textAlign: TextAlign.center,
-                  style: tt.bodyLarge?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    height: 1.45,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _FeatureProofCard extends StatelessWidget {
-  const _FeatureProofCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cs = Theme.of(context).colorScheme;
-
-    const green = Color(0xFF1DB88A);
-    const blue = Color(0xFF3B9EFF);
-    const purple = Color(0xFFA855F7);
-
-    final features = [
-      _FeatureRow(
-        icon: Icons.compress_rounded,
-        color: green,
-        title: 'Compress',
-        detail: 'Up to 90% smaller',
-      ),
-      _FeatureRow(
-        icon: Icons.photo_size_select_large_rounded,
-        color: blue,
-        title: 'Resize & Convert',
-        detail: 'Any size, any format',
-      ),
-      _FeatureRow(
-        icon: Icons.photo_library_outlined,
-        color: purple,
-        title: 'Batch process',
-        detail: 'Handle 50+ files at once',
-      ),
-      _FeatureRow(
-        icon: Icons.lock_rounded,
-        color: green,
-        title: 'Stays on your device',
-        detail: 'No uploads, no cloud',
-        isPrivacy: true,
-      ),
-    ];
-
-    return AspectRatio(
-      aspectRatio: 1.05,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFEFF2F6),
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.04)
-                : const Color(0xFFDEE4EC),
-          ),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Top stat row
-            Row(
-              children: [
-                _StatChip(
-                  value: '50M+',
-                  label: 'images processed',
-                  color: green,
-                ),
-                const SizedBox(width: 10),
-                _StatChip(
-                  value: '4.8 ★',
-                  label: 'App Store rating',
-                  color: const Color(0xFFFFB800),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Feature list
-            ...features.map((f) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _FeatureTile(row: f, cs: cs),
-                )),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color color;
-  const _StatChip(
-      {required this.value, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: color,
-                letterSpacing: -0.5,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: cs.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FeatureRow {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String detail;
-  final bool isPrivacy;
-
-  const _FeatureRow({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.detail,
-    this.isPrivacy = false,
-  });
-}
-
-class _FeatureTile extends StatelessWidget {
-  final _FeatureRow row;
-  final ColorScheme cs;
-  const _FeatureTile({required this.row, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: row.color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(row.icon, size: 17, color: row.color),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    row.title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if (row.isPrivacy) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1DB88A).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'PRIVATE',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF1DB88A),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ]
-                ],
-              ),
-              Text(
-                row.detail,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Icon(Icons.check_circle_rounded,
-            size: 16, color: row.color.withValues(alpha: 0.7)),
-      ],
     );
   }
 }

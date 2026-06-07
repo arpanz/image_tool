@@ -235,10 +235,12 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
       String defaultFileName = 'output.${_outputFormat.toLowerCase()}';
       final pickerState = ref.read(pickerProvider);
       if (pickerState is PickerLoaded) {
-        final originalName = pickerState.image.path.split(RegExp(r'[/\\]')).last;
+        final originalName =
+            pickerState.image.path.split(RegExp(r'[/\\]')).last;
         final ext = _outputFormat.toLowerCase();
         final dotIndex = originalName.lastIndexOf('.');
-        final baseName = dotIndex != -1 ? originalName.substring(0, dotIndex) : originalName;
+        final baseName =
+            dotIndex != -1 ? originalName.substring(0, dotIndex) : originalName;
         defaultFileName = '${baseName}_processed.$ext';
       }
 
@@ -258,7 +260,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             content: const Text('Image saved successfully!'),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -269,7 +272,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
           content: Text('Save failed: $e'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
