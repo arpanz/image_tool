@@ -266,39 +266,43 @@ class _PaywallScreenState extends State<PaywallScreen>
 
                             // Feature rows
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
                               child: Column(
                                 children: [
                                   _featureRow(
-                                    Icons.bolt_rounded,
-                                    'Unlimited Single & Batch Processing',
+                                    Icons.compress_rounded,
+                                    'Unlimited Compressions',
                                     const Color(0xFF6C63FF),
                                   ),
                                   _featureRow(
+                                    Icons.photo_size_select_large_rounded,
+                                    'Unlimited Resizes',
+                                    const Color(0xFF11998E),
+                                  ),
+                                  _featureRow(
                                     Icons.block_flipped,
-                                    'Completely Ad-Free Experience',
+                                    'Completely Ad-Free',
                                     const Color(0xFFFF6B6B),
                                   ),
                                   _featureRow(
                                     Icons.auto_fix_high_rounded,
-                                    'All Formats & HEIC Conversion',
+                                    'All Output Formats',
                                     Colors.orangeAccent,
                                   ),
                                   _featureRow(
                                     Icons.info_outline,
-                                    'Keep Original EXIF Metadata',
+                                    'Keep Original Metadata',
                                     Colors.teal,
                                   ),
                                   _featureRow(
                                     Icons.history_rounded,
-                                    'Full Image History Access',
+                                    'Full Image History',
                                     Colors.tealAccent,
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 18),
                           ],
                         ),
                       ),
@@ -431,14 +435,14 @@ class _PaywallScreenState extends State<PaywallScreen>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: color.withOpacity(0.2), width: 1),
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 14),
           Expanded(
