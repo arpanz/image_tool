@@ -218,25 +218,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                   const Gap(24),
 
                   if (isCompress) ...[
-                    // ── Output format (before quality — format affects target-size compat) ──
-                    _SectionCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const _SectionLabel('Output Format'),
-                          const Gap(12),
-                          ToolChipSelector(
-                            value: settings.format,
-                            options: AppConstants.supportedFormats,
-                            accent: _accent,
-                            onChanged: (f) =>
-                                ref.read(editorProvider.notifier).setFormat(f),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Gap(14),
-
                     // ── Quality slider ──────────────────────────────────
                     _SectionCard(
                       child: Column(
@@ -400,6 +381,25 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                 ),
                               ),
                           ],
+                        ],
+                      ),
+                    ),
+                    const Gap(14),
+
+                    // ── Output format (format affects target-size compat) ──
+                    _SectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _SectionLabel('Output Format'),
+                          const Gap(12),
+                          ToolChipSelector(
+                            value: settings.format,
+                            options: AppConstants.supportedFormats,
+                            accent: _accent,
+                            onChanged: (f) =>
+                                ref.read(editorProvider.notifier).setFormat(f),
+                          ),
                         ],
                       ),
                     ),
@@ -610,23 +610,30 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                     if (recentPresets.isNotEmpty) ...[
                                       for (var item in recentPresets) ...[
                                         Padding(
-                                          padding: const EdgeInsets.only(right: 6),
+                                          padding:
+                                              const EdgeInsets.only(right: 6),
                                           child: ToolPresetChip(
-                                            label: 'Recent: ${item.width}x${item.height}',
+                                            label:
+                                                'Recent: ${item.width}x${item.height}',
                                             accent: _accent,
                                             onTap: () {
                                               setState(() {
-                                                _widthCtrl.text = '${item.width}';
-                                                _heightCtrl.text = '${item.height}';
+                                                _widthCtrl.text =
+                                                    '${item.width}';
+                                                _heightCtrl.text =
+                                                    '${item.height}';
                                               });
-                                              final notifier = ref.read(editorProvider.notifier);
+                                              final notifier = ref.read(
+                                                  editorProvider.notifier);
                                               notifier.setWidth(item.width);
                                               notifier.setHeight(item.height);
-                                              if (settings.keepAspectRatio != item.keepAspectRatio) {
+                                              if (settings.keepAspectRatio !=
+                                                  item.keepAspectRatio) {
                                                 notifier.toggleAspectRatio();
                                               }
                                               notifier.setFitMode(item.fitMode);
-                                              notifier.setBackgroundColorHex(item.backgroundColorHex);
+                                              notifier.setBackgroundColorHex(
+                                                  item.backgroundColorHex);
                                             },
                                           ),
                                         ),
@@ -634,19 +641,26 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                       Container(
                                         height: 16,
                                         width: 1,
-                                        color: Theme.of(context).colorScheme.outlineVariant,
-                                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .outlineVariant,
+                                        margin: const EdgeInsets.symmetric(
+                                            horizontal: 6),
                                       ),
                                     ],
                                     for (var preset in popularPresets) ...[
                                       Padding(
-                                        padding: const EdgeInsets.only(right: 6),
+                                        padding:
+                                            const EdgeInsets.only(right: 6),
                                         child: ToolPresetChip(
-                                          label: '${preset.label} (${preset.width}x${preset.height})',
+                                          label:
+                                              '${preset.label} (${preset.width}x${preset.height})',
                                           onTap: () {
                                             setState(() {
-                                              _widthCtrl.text = '${preset.width}';
-                                              _heightCtrl.text = '${preset.height}';
+                                              _widthCtrl.text =
+                                                  '${preset.width}';
+                                              _heightCtrl.text =
+                                                  '${preset.height}';
                                             });
                                             _syncDimensionsToNotifier();
                                           },
@@ -694,7 +708,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                 onChanged: (v) {
                                   setState(() => _useTargetSize = v);
                                   final kb = v
-                                      ? int.tryParse(_targetSizeCtrl.text.trim())
+                                      ? int.tryParse(
+                                          _targetSizeCtrl.text.trim())
                                       : null;
                                   ref
                                       .read(editorProvider.notifier)
@@ -903,16 +918,20 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                                 children: [
                                   Text(
                                     'Keep original metadata',
-                                    style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                                    style: tt.bodyMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
                                   ),
                                   if (!AdManager.instance.isPro) ...[
                                     const Gap(6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: _accent.withOpacity(0.12),
                                         borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: _accent.withOpacity(0.3), width: 0.8),
+                                        border: Border.all(
+                                            color: _accent.withOpacity(0.3),
+                                            width: 0.8),
                                       ),
                                       child: Text(
                                         'PRO',
@@ -941,11 +960,14 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                           accent: _accent,
                           onChanged: (v) {
                             if (v) {
-                              if (!ProGate.guard(context, ProFeature.keepMetadata)) {
+                              if (!ProGate.guard(
+                                  context, ProFeature.keepMetadata)) {
                                 return;
                               }
                             }
-                            ref.read(editorProvider.notifier).setKeepMetadata(v);
+                            ref
+                                .read(editorProvider.notifier)
+                                .setKeepMetadata(v);
                           },
                         ),
                       ],
