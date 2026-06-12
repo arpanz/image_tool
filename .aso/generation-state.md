@@ -2,7 +2,7 @@
 
 ## Settings
 - **Brand colour**: Emerald Green (#06C974)
-- **Target display size**: 1290×2900 (Google Play optimized aspect ratio)
+- **Target display size**: 1290×2610 (Google Play optimized aspect ratio)
 
 ## Screenshots
 
