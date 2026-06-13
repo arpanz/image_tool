@@ -8,7 +8,7 @@ class AppReviewService {
   static const _promptCountKey = 'review_prompt_count';
   static const _lastPromptMsKey = 'review_last_prompt_ms';
 
-  static const _minSuccessesBeforePrompt = 4;
+  static const _minSuccessesBeforePrompt = 2;
   static const _cooldownDays = 21;
   static const _maxPrompts = 3;
 
